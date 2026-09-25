@@ -256,6 +256,29 @@ export function zoneAt(x, y, except) {
   return best;
 }
 
+/* Part du bloc qui doit recouvrir une zone pour y entrer. Un tiers suffit :
+   lâché à cheval sur le bord, le bloc est attiré dedans. */
+const JOIN_SHARE = 0.3;
+
+/** La zone qui recouvre le plus un bloc, si elle en recouvre assez. */
+export function zoneFor(b) {
+  const area = Math.max(1, b.w * b.h);
+  let best = null;
+  let bestShare = JOIN_SHARE;
+  for (const z of Object.values(state.doc.zones)) {
+    if (!isContainer(z)) continue;
+    const w = Math.min(b.x + b.w, z.x + z.w) - Math.max(b.x, z.x);
+    const h = Math.min(b.y + b.h, z.y + z.h) - Math.max(b.y, z.y);
+    if (w <= 0 || h <= 0) continue;
+    const share = (w * h) / area;
+    if (share > bestShare || (share === bestShare && best && z.w * z.h < best.w * best.h)) {
+      best = z;
+      bestShare = share;
+    }
+  }
+  return best;
+}
+
 /** La zone d'un bloc, si elle existe encore. */
 export const zoneOf = (b) => (b && b.zone && isContainer(state.doc.zones[b.zone]) ? state.doc.zones[b.zone] : null);
 
@@ -272,7 +295,7 @@ export function childrenOf(zoneId) {
 /** Recalcule la zone d'un bloc d'après sa position — après un glisser. */
 export function adopt(b) {
   if (b.archived) return;
-  b.zone = zoneAt(b.x + b.w / 2, b.y + Math.min(b.h, 60) / 2)?.id || null;
+  b.zone = zoneFor(b)?.id || null;
 }
 
 /** Le lien entre deux blocs, dans un sens ou dans l'autre. */

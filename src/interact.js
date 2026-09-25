@@ -6,7 +6,7 @@
    de la fenêtre. */
 
 import { state, begin, commit, mutate, addBlock, addZone, addLink, linkBetween, raise, item, emit,
-         childrenOf, adopt, zoneAt, zoneOf } from "./store.js";
+         childrenOf, adopt, zoneFor, zoneOf } from "./store.js";
 import { toWorld, panBy, zoomAt, viewCenter } from "./viewport.js";
 import { render, nodeFor, curveTo } from "./render.js";
 import { moveItem, indexAt, renameItem } from "./lists.js";
@@ -469,7 +469,7 @@ function liveZones(g) {
     if (state.doc.zones[id]) Object.assign(state.doc.zones[id], size);
   }
   // Un bloc qui voyage avec sa zone ne cherche pas de nouvelle zone.
-  const z = b.zone && g.movedIds.has(b.zone) ? null : zoneAt(b.x + b.w / 2, b.y + Math.min(b.h, 60) / 2);
+  const z = b.zone && g.movedIds.has(b.zone) ? null : zoneFor(b);
 
   let guides = [];
   if (z) {
@@ -543,9 +543,10 @@ function setDropZone(zoneId, blockId) {
   dropZone = zoneId;
 }
 
-/* Au lâcher : un bloc dans une zone en devient l'enfant, dehors il redevient
-   libre. Il rentre sous le nom de la zone s'il débordait en haut ou à gauche,
-   puis se pose avec un léger rebond. */
+/* Au lâcher : un bloc qui recouvre assez une zone en devient l'enfant, sinon
+   il redevient libre. À cheval sur le bord haut ou gauche, il est attiré
+   dedans, sous le nom de la zone ; la zone s'est déjà étirée à droite et en
+   bas. Il se pose avec un léger rebond. */
 function settleInZones(items) {
   setDropZone(null);
   drawGuides([]);
