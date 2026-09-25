@@ -42,6 +42,8 @@ export function initInteract() {
   canvas.addEventListener("contextmenu", onContextMenu);
   canvas.addEventListener("click", onClick);
 
+  addEventListener("keydown", onModifier);
+  addEventListener("keyup", onModifier);
   addEventListener("keydown", (e) => {
     if (e.code === "Space" && !isTyping(e.target)) { spaceHeld = true; canvas.classList.add("is-panning"); }
   });
@@ -257,28 +259,8 @@ function onPointerMove(e) {
   }
 
   if (gesture.mode === "resize") {
-    const it = item(gesture.id);
-    if (!it) return;
-    // Option (Alt) : on grandit depuis le centre, donc deux fois plus vite.
-    const k = e.altKey ? 2 : 1;
-    let w = Math.max(80, gesture.w0 + (world.x - gesture.ox) * k);
-    let h = Math.max(48, gesture.h0 + (world.y - gesture.oy) * k);
-    // Maj enfoncée : les proportions de départ sont gardées. On suit l'axe où
-    // le pointeur est allé le plus loin, l'autre s'en déduit.
-    if (e.shiftKey && gesture.w0 && gesture.h0) {
-      const ratio = gesture.w0 / gesture.h0;
-      if (w / gesture.w0 >= h / gesture.h0) h = w / ratio;
-      else w = h * ratio;
-      if (h < 48) { h = 48; w = h * ratio; }
-      if (w < 80) { w = 80; h = w / ratio; }
-    }
-    it.w = Math.round(w);
-    it.h = Math.round(h);
-    // Centre fixe avec Option ; sinon le coin haut-gauche reste en place.
-    it.x = Math.round(e.altKey ? gesture.x0 + (gesture.w0 - w) / 2 : gesture.x0);
-    it.y = Math.round(e.altKey ? gesture.y0 + (gesture.h0 - h) / 2 : gesture.y0);
-    render();
-    return;
+    gesture.pointer = world;
+    return applyResize(e);
   }
 
   if (gesture.mode === "draw-zone") {
@@ -421,6 +403,43 @@ function commitStroke(points) {
   emit("selection");
   render();
   return block;
+}
+
+/* ---------- Redimensionnement ---------- */
+
+/* Appelé au mouvement du pointeur, mais aussi quand Maj ou Option change en
+   plein geste : la taille se met à jour tout de suite, sans attendre que la
+   souris bouge. */
+function applyResize(mods) {
+  const g = gesture;
+  const it = item(g.id);
+  if (!it || !g.pointer) return;
+  // Option (Alt) : on grandit depuis le centre, donc deux fois plus vite.
+  const k = mods.altKey ? 2 : 1;
+  let w = Math.max(80, g.w0 + (g.pointer.x - g.ox) * k);
+  let h = Math.max(48, g.h0 + (g.pointer.y - g.oy) * k);
+  // Maj : les proportions de départ sont gardées. On suit l'axe où le
+  // pointeur est allé le plus loin, l'autre s'en déduit.
+  if (mods.shiftKey && g.w0 && g.h0) {
+    const ratio = g.w0 / g.h0;
+    if (w / g.w0 >= h / g.h0) h = w / ratio;
+    else w = h * ratio;
+    if (h < 48) { h = 48; w = h * ratio; }
+    if (w < 80) { w = 80; h = w / ratio; }
+  }
+  it.w = Math.round(w);
+  it.h = Math.round(h);
+  // Centre fixe avec Option ; sinon le coin haut-gauche reste en place.
+  it.x = Math.round(mods.altKey ? g.x0 + (g.w0 - w) / 2 : g.x0);
+  it.y = Math.round(mods.altKey ? g.y0 + (g.h0 - h) / 2 : g.y0);
+  render();
+}
+
+function onModifier(e) {
+  if (gesture?.mode === "resize" && (e.key === "Shift" || e.key === "Alt")) {
+    e.preventDefault(); // Option seule ouvrirait parfois un menu du navigateur
+    applyResize(e);
+  }
 }
 
 /* ---------- Entrer et sortir d'une zone ---------- */
