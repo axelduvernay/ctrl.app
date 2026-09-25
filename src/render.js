@@ -286,11 +286,17 @@ function renderLinks() {
     const a = state.doc.blocks[link.from];
     const b = state.doc.blocks[link.to];
     if (!a || !b) continue;
+    const d = curve(a, b);
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    path.setAttribute("d", curve(a, b));
+    path.setAttribute("d", d);
     if (state.selection.has(a.id) || state.selection.has(b.id)) path.classList.add("is-highlighted");
+    if (state.selection.has(link.id)) path.classList.add("is-selected");
     if (link.kind === "variant") path.classList.add("is-variant");
-    linksRoot.append(path);
+    const hit = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    hit.setAttribute("d", d);
+    hit.setAttribute("class", "hit");
+    hit.dataset.link = link.id;
+    linksRoot.append(path, hit);
   }
 }
 

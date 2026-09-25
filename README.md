@@ -40,6 +40,7 @@ du code peut passer inaperçue au rechargement.
 | Maj ou ⌘ + clic | Ajouter ou retirer de la sélection |
 | Clic droit | Catégorie, échéance et rappel, liens, variante, zone, suppression |
 | Tirer le point du bord droit d'un bloc | Le relier à un autre bloc (relâché sur un bloc déjà relié : retire le lien ; dans le vide : crée un bloc relié) |
+| Clic sur un trait de liaison | Le sélectionner ; `Suppr` l'efface |
 | `/idea` `/task` … | Catégoriser depuis le clavier |
 | `/rappel` `/echeance` | Ajouter un rappel ou une échéance à n'importe quel bloc |
 | `/tracklist` `/folder` | Transformer le bloc en tracklist ou en dossier |
@@ -101,6 +102,12 @@ alimente l'historique d'annulation. Les images et fichiers partent dans un
 magasin à part, et le bloc n'en garde que la clé. L'annulation reste donc
 instantanée sur un board rempli d'images — et le jour de la synchronisation,
 seul le document aura besoin d'être fusionné.
+
+**Net à tous les zooms.** `will-change: transform` n'est posé sur `#world`
+que pendant un déplacement ou un zoom. Permanent, il ferait garder au
+navigateur une image du canvas rendue à l'échelle de départ, et le texte
+deviendrait flou en zoomant. Au repos, le navigateur redessine le texte à la
+bonne taille.
 
 **Rendu différentiel.** On réutilise les éléments DOM existants plutôt que de
 reconstruire, pour ne jamais casser une édition ou une sélection en cours.

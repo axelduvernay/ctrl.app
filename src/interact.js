@@ -96,6 +96,17 @@ function onPointerDown(e) {
     return;
   }
 
+  // Un trait de liaison : on le sélectionne, Suppr l'efface.
+  const linkHit = target.closest("[data-link]");
+  if (linkHit) {
+    const id = linkHit.dataset.link;
+    if (!(e.shiftKey || e.metaKey || e.ctrlKey)) state.selection.clear();
+    state.selection.add(id);
+    emit("selection");
+    render();
+    return;
+  }
+
   // Poignée de connexion : on tire un lien vers un autre bloc.
   const connect = target.closest("[data-connect]");
   if (connect) {
@@ -548,6 +559,14 @@ function onDoubleClick(e) {
 
 function onContextMenu(e) {
   e.preventDefault();
+  const linkHit = hitTarget(e).closest("[data-link]");
+  if (linkHit) {
+    state.selection.clear();
+    state.selection.add(linkHit.dataset.link);
+    emit("selection");
+    render();
+    return openContextMenu(e.clientX, e.clientY, { onEmpty: false, world: toWorld(e.clientX, e.clientY) });
+  }
   const node = hitTarget(e).closest("[data-id]");
   if (node && !state.selection.has(node.dataset.id)) {
     state.selection.clear();

@@ -12,7 +12,7 @@ const MIN_SCALE = 0.1;
 const MAX_SCALE = 4;
 const GRID = 32;
 
-let world, canvas, zoomLabel;
+let world, canvas, zoomLabel, settle;
 
 export function initViewport() {
   world = document.getElementById("world");
@@ -24,6 +24,9 @@ export function initViewport() {
 export function apply() {
   const { x, y, scale } = state.view;
   world.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
+  world.classList.add("is-moving");
+  clearTimeout(settle);
+  settle = setTimeout(() => world.classList.remove("is-moving"), 160);
   canvas.style.setProperty("--grid-size", `${GRID * scale}px`);
   canvas.style.setProperty("--grid-x", `${x}px`);
   canvas.style.setProperty("--grid-y", `${y}px`);

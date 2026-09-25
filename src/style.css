@@ -100,8 +100,12 @@ button { font: inherit; color: inherit; }
   top: 0; left: 0;
   width: 0; height: 0;
   transform-origin: 0 0;
-  will-change: transform;
 }
+
+/* Pendant un déplacement ou un zoom seulement : le navigateur fige alors le
+   canvas en image pour rester fluide. Au repos on retire l'indication, et il
+   redessine le texte net à la bonne échelle. */
+#world.is-moving { will-change: transform; }
 
 #links {
   position: absolute;
@@ -112,6 +116,9 @@ button { font: inherit; color: inherit; }
 
 #links path { fill: none; stroke: var(--line-strong); stroke-width: 2; }
 #links path.is-highlighted { stroke: var(--accent); }
+#links path.is-selected { stroke: var(--accent); stroke-width: 3; }
+/* Zone de clic invisible et large autour du trait : viser 2 px est pénible. */
+#links path.hit { stroke: transparent; stroke-width: 16; pointer-events: stroke; cursor: pointer; }
 
 /* ---------- Blocs ---------- */
 

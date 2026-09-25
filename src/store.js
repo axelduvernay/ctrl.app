@@ -183,7 +183,7 @@ export const canRedo = () => redoStack.length > 0;
 function afterTimeTravel() {
   // Une sélection peut pointer vers un bloc qui n'existe plus.
   for (const id of [...state.selection]) {
-    if (!state.doc.blocks[id] && !state.doc.zones[id]) state.selection.delete(id);
+    if (!state.doc.blocks[id] && !state.doc.zones[id] && !state.doc.links[id]) state.selection.delete(id);
   }
   save();
   emit("change");
@@ -238,6 +238,7 @@ export function removeItems(ids) {
   for (const id of ids) {
     delete state.doc.blocks[id];
     delete state.doc.zones[id];
+    delete state.doc.links[id];
     state.doc.order = state.doc.order.filter((x) => x !== id);
     for (const [lid, link] of Object.entries(state.doc.links)) {
       if (link.from === id || link.to === id) delete state.doc.links[lid];

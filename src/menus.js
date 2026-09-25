@@ -76,6 +76,16 @@ export function openContextMenu(x, y, { onEmpty, world }) {
     ]);
   }
 
+  // Seulement des traits de liaison sélectionnés : rien d'autre à proposer.
+  if (ids.length && ids.every((id) => state.doc.links[id])) {
+    return openPopup(x, y, [
+      action(ids.length > 1 ? `Supprimer les liens (${ids.length})` : "Supprimer le lien", () => {
+        mutate(() => removeItems(ids));
+        render();
+      }, { hint: "suppr" }),
+    ]);
+  }
+
   const many = ids.length > 1;
   const linkIds = Object.values(state.doc.links)
     .filter((l) => blockIds.includes(l.from) || blockIds.includes(l.to)).map((l) => l.id);
