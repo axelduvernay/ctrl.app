@@ -32,6 +32,7 @@ du code peut passer inaperçue au rechargement.
 | --- | --- |
 | Double-clic sur le fond | Nouveau bloc, prêt à écrire — dans une zone, le bloc lui appartient |
 | Maj en redimensionnant | Garde les proportions (images, dessins) |
+| Option en redimensionnant | Grandit ou rétrécit autour du centre (combinable avec Maj) |
 | Glisser un bloc dans ou hors d'une zone | L'y range, ou l'en sort |
 | Clic sur un bloc sélectionné, ou double-clic | Modifier son texte, curseur au point cliqué |
 | Clic sur le nom d'une zone | La renommer (`Entrée` pour valider) |

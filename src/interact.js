@@ -133,7 +133,7 @@ function onPointerDown(e) {
     const it = item(node.dataset.id);
     if (it) {
       begin();
-      gesture = { mode: "resize", id: it.id, ox: world.x, oy: world.y, w0: it.w, h0: it.h };
+      gesture = { mode: "resize", id: it.id, ox: world.x, oy: world.y, x0: it.x, y0: it.y, w0: it.w, h0: it.h };
     }
     return;
   }
@@ -259,8 +259,10 @@ function onPointerMove(e) {
   if (gesture.mode === "resize") {
     const it = item(gesture.id);
     if (!it) return;
-    let w = Math.max(80, gesture.w0 + world.x - gesture.ox);
-    let h = Math.max(48, gesture.h0 + world.y - gesture.oy);
+    // Option (Alt) : on grandit depuis le centre, donc deux fois plus vite.
+    const k = e.altKey ? 2 : 1;
+    let w = Math.max(80, gesture.w0 + (world.x - gesture.ox) * k);
+    let h = Math.max(48, gesture.h0 + (world.y - gesture.oy) * k);
     // Maj enfoncée : les proportions de départ sont gardées. On suit l'axe où
     // le pointeur est allé le plus loin, l'autre s'en déduit.
     if (e.shiftKey && gesture.w0 && gesture.h0) {
@@ -272,6 +274,9 @@ function onPointerMove(e) {
     }
     it.w = Math.round(w);
     it.h = Math.round(h);
+    // Centre fixe avec Option ; sinon le coin haut-gauche reste en place.
+    it.x = Math.round(e.altKey ? gesture.x0 + (gesture.w0 - w) / 2 : gesture.x0);
+    it.y = Math.round(e.altKey ? gesture.y0 + (gesture.h0 - h) / 2 : gesture.y0);
     render();
     return;
   }
