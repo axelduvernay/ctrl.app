@@ -72,7 +72,7 @@ function runSearch(query) {
   state.search.hits = !q
     ? []
     : Object.values(state.doc.blocks)
-        .filter((b) => fold([b.text, b.name, b.url, b.category].filter(Boolean).join(" ")).includes(q))
+        .filter((b) => fold([b.text, b.name, b.url, b.category, ...(b.items || []).map((it) => it.name)].filter(Boolean).join(" ")).includes(q))
         .sort((a, b) => (a.y - b.y) || (a.x - b.x))
         .map((b) => b.id);
 

@@ -38,13 +38,19 @@ du code peut passer inaperçue au rechargement.
 | Espace + glisser | Déplacer la vue à la souris |
 | Glisser sur le fond | Sélection au lasso |
 | Maj ou ⌘ + clic | Ajouter ou retirer de la sélection |
-| Clic droit | Catégorie, échéance et rappel, liens, zone, suppression |
+| Clic droit | Catégorie, échéance et rappel, liens, variante, zone, suppression |
+| Tirer le point du bord droit d'un bloc | Le relier à un autre bloc (relâché sur un bloc déjà relié : retire le lien ; dans le vide : crée un bloc relié) |
 | `/idea` `/task` … | Catégoriser depuis le clavier |
+| `/rappel` `/echeance` | Ajouter un rappel ou une échéance à n'importe quel bloc |
+| `/tracklist` `/folder` | Transformer le bloc en tracklist ou en dossier |
+| `/variant` | Créer une v2 du bloc et de tout ce qui lui est relié |
+| Déposer des fichiers audio | Crée une tracklist ; déposés sur une liste, ils s'y ajoutent |
 
 | Raccourci | Effet |
 | --- | --- |
 | `V` `D` `Z` | Outils sélection, dessin, zone |
 | `N` | Nouveau bloc au centre |
+| `/` | Nouveau bloc, menu des commandes ouvert |
 | `R` | Aligner proprement |
 | `⌘F` | Chercher |
 | `1` à `4` | Filtrer par catégorie |
@@ -75,6 +81,8 @@ src/
   props.js      Panneau échéance et rappel d'un bloc
   reminders.js  Déclenchement des rappels et notifications
   archive.js    Zone « Fait » des tâches terminées
+  lists.js      Blocs tracklist et dossier, lecteur audio
+  variant.js    Variantes : v2 d'un ensemble de blocs reliés
   welcome.js    Board d'accueil du premier lancement
   util.js       Utilitaires partagés
 ```
@@ -117,6 +125,18 @@ Tâche a les trois d'office ; les autres se règlent depuis le gestionnaire de
 catégories. Un bloc sélectionné propose ses champs encore vides en pointillés.
 Désactiver un champ le masque sans effacer ce qui a été saisi.
 
+**Les listes rangent des fichiers dans un ordre.** Une tracklist et un dossier
+sont un même bloc, `kind: "list"`. Une tracklist lit ses morceaux à la suite,
+un dossier ouvre ou télécharge ses fichiers. On y renomme au double-clic et on
+réordonne à la poignée. Les fichiers vont dans le magasin d'assets, comme les
+images.
+
+**Une variante est une branche.** `/variant` copie le bloc et tout ce qui lui
+est relié, ou la sélection si plusieurs blocs sont choisis. La copie est posée
+à droite de l'original, avec le numéro de version suivant. Toutes les versions
+partagent une lignée, et un lien pointillé les rattache. Les rappels ne sont pas
+copiés, pour qu'une même alarme ne sonne pas deux fois.
+
 **Les rappels sonnent tant que l'app est ouverte**, même en arrière-plan :
 notification du système si elle est autorisée, message dans l'app sinon.
 Application fermée, rien ne sonne — il faudra pour ça un serveur qui envoie les
@@ -134,7 +154,9 @@ rappels, catégorisation par
 slash-commande et clic droit, échéances, tâches cochables avec archivage
 automatique, sélection multiple, liens entre blocs, recherche, filtres par
 surlignage, rangement automatique, thèmes clair et sombre, annulation,
-sauvegarde locale, export et import, board d'accueil, pincement tactile.
+sauvegarde locale, export et import, board d'accueil, pincement tactile,
+connexion de blocs par glisser, tracklists, dossiers, variantes, rappel sur
+n'importe quel bloc.
 
 Pas encore : connexion, synchronisation multi-appareils, blocs journée et
 bilan, rappels et routines, bloc emails, bloc projet audio, assistant IA,

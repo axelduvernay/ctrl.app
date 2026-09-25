@@ -7,6 +7,7 @@ import { state, mutate, addBlock, putAsset, emptyDoc, save, emit } from "./store
 import { toWorld, viewCenter } from "./viewport.js";
 import { render } from "./render.js";
 import { toast } from "./main.js";
+import { addFiles, isAudio, toList, LIST_TYPES } from "./lists.js";
 
 const MAX_W = 360;
 
@@ -22,6 +23,10 @@ export function initIO() {
     e.preventDefault();
     const at = toWorld(e.clientX, e.clientY);
     const files = [...(e.dataTransfer?.files || [])];
+    // Déposé sur une tracklist ou un dossier : les fichiers y entrent.
+    const target = document.elementFromPoint(e.clientX, e.clientY)?.closest("[data-id]");
+    const list = target && state.doc.blocks[target.dataset.id];
+    if (files.length && list?.kind === "list") return addFiles(list.id, files);
     if (files.length) return dropFiles(files, at);
 
     const url = e.dataTransfer.getData("text/uri-list") || e.dataTransfer.getData("text/plain");
@@ -39,6 +44,15 @@ export function initIO() {
 }
 
 async function dropFiles(files, at) {
+  // Que des morceaux : ils forment une tracklist plutôt qu'une pile de fichiers.
+  if (files.every(isAudio)) {
+    const block = mutate(() => {
+      const b = addBlock({ x: Math.round(at.x - 150), y: Math.round(at.y - 40), text: LIST_TYPES.tracks.title });
+      toList(b, "tracks");
+      return b;
+    });
+    return addFiles(block.id, files);
+  }
   let offset = 0;
   for (const file of files) {
     const key = await putAsset(file);

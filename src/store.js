@@ -31,10 +31,11 @@ export const DEFAULT_CATEGORIES = [
   { id: "question", label: "Question", color: "#8E6FA3", cmd: "question", checkable: false, fields: NO_FIELDS },
 ];
 
-/** Ce qu'un bloc peut porter, selon sa catégorie. */
+/** Ce qu'un bloc peut porter : ce que sa catégorie prévoit, plus ce qu'on
+    lui a ajouté à la main avec `/rappel` ou `/echeance`. */
 export function fieldsOf(block) {
   const cat = block && getCategory(block.category);
-  return cat ? { ...NO_FIELDS, ...cat.fields } : NO_FIELDS;
+  return { ...NO_FIELDS, ...cat?.fields, ...block?.fields };
 }
 
 /* Teintes désaturées, lisibles sur fond clair comme sur fond sombre.
@@ -205,6 +206,7 @@ export function addBlock(props) {
     createdAt: Date.now(),
     updatedAt: Date.now(),
     ...props,
+    id, // après les props : une copie passe `id: undefined`
   };
   state.doc.blocks[id] = block;
   state.doc.order.push(id);
@@ -213,20 +215,24 @@ export function addBlock(props) {
 
 export function addZone(props) {
   const id = uid();
-  state.doc.zones[id] = { id, x: 0, y: 0, w: 400, h: 300, name: "", ...props };
+  state.doc.zones[id] = { x: 0, y: 0, w: 400, h: 300, name: "", ...props, id };
   return state.doc.zones[id];
 }
 
-export function addLink(from, to) {
+export function addLink(from, to, kind) {
   if (from === to) return null;
   const exists = Object.values(state.doc.links).find(
     (l) => (l.from === from && l.to === to) || (l.from === to && l.to === from)
   );
   if (exists) return exists;
   const id = uid();
-  state.doc.links[id] = { id, from, to };
+  state.doc.links[id] = kind ? { id, from, to, kind } : { id, from, to };
   return state.doc.links[id];
 }
+
+/** Le lien entre deux blocs, dans un sens ou dans l'autre. */
+export const linkBetween = (a, b) =>
+  Object.values(state.doc.links).find((l) => (l.from === a && l.to === b) || (l.from === b && l.to === a)) || null;
 
 export function removeItems(ids) {
   for (const id of ids) {

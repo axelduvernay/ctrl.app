@@ -733,3 +733,124 @@ button { font: inherit; color: inherit; }
 .popup.props input:focus { outline: none; border-color: var(--accent); }
 .popup.props input[type="time"] { flex: 0 0 96px; }
 .popup.props .hint { padding: 8px 4px 0; font-size: 12px; color: var(--text-2); }
+
+/* ---------- Connexions ---------- */
+
+/* Poignée de connexion : un point sur le bord droit, visible au survol. */
+.block .connect {
+  position: absolute;
+  top: 50%; right: -1px;
+  width: 22px; height: 22px;
+  margin-top: -11px;
+  cursor: crosshair;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  touch-action: none;
+}
+.block .connect::after {
+  content: "";
+  position: absolute;
+  top: 6px; right: 5px;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1.5px solid var(--accent);
+}
+.block:hover .connect, .block.is-selected .connect { opacity: 1; }
+.block.kind-draw .connect { display: none; }
+/* Au doigt, pas de survol : la poignée reste visible sur le bloc sélectionné. */
+@media (hover: none) { .block.is-selected .connect { opacity: 1; } }
+
+#ink .link-preview { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 5 5; }
+#links path.is-variant { stroke-dasharray: 3 6; }
+
+/* Numéro de version d'une variante. */
+.block .version {
+  padding: 0 6px;
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  color: var(--text);
+  font-weight: 500;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+/* ---------- Listes : tracklist et dossier ---------- */
+
+.block.kind-list { padding: 10px 10px 8px; }
+.block.kind-list .list-body { white-space: normal; }
+
+.list-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 2px 4px 8px;
+  color: var(--text-2);
+}
+.list-head svg { flex: none; }
+.list-title {
+  flex: 1; min-width: 0;
+  color: var(--text);
+  font-weight: 500;
+  outline: none;
+  overflow-wrap: anywhere;
+}
+.list-title:empty::before { content: attr(data-placeholder); color: var(--text-2); }
+.block.is-editing .list-title { cursor: text; }
+.list-count { font-size: 12px; font-variant-numeric: tabular-nums; }
+
+.block .items { list-style: none; margin: 0; padding: 0; }
+.block .item {
+  position: relative;
+  display: flex; align-items: center; gap: 6px;
+  min-height: 32px;
+  padding: 0 4px 0 2px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.block .item:hover { background: var(--surface-2); }
+.block .item.is-playing .item-name { color: var(--accent); }
+.block .item-btn, .block .item-x, .list-add {
+  border: 0; background: transparent; color: var(--text-2);
+  cursor: pointer; padding: 0;
+  display: grid; place-items: center;
+}
+.block .item-btn { flex: none; width: 26px; height: 26px; border-radius: 6px; }
+.block .item-btn:hover { background: var(--surface); color: var(--text); }
+.block .item.is-playing .item-btn { color: var(--accent); }
+.block .item-btn svg path[d^="M8 5v14l"] { fill: currentColor; }
+.block .item-num { flex: none; width: 16px; font-size: 12px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.block .item-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; outline: none; }
+.block .item-name[contenteditable="true"] { white-space: normal; user-select: text; -webkit-user-select: text; cursor: text; }
+.block .item-grip { flex: none; color: var(--text-2); cursor: grab; opacity: 0; display: grid; touch-action: none; }
+.block .item-x { flex: none; width: 20px; height: 20px; border-radius: 5px; opacity: 0; }
+.block .item:hover .item-grip, .block .item:hover .item-x { opacity: 1; }
+@media (hover: none) { .block.is-selected .item-grip, .block.is-selected .item-x { opacity: 1; } }
+.block .item-x:hover { color: var(--text); background: var(--surface); }
+.block.is-reordering, .block.is-reordering .item-grip { cursor: grabbing; }
+.block .progress {
+  position: absolute; left: 0; bottom: 0;
+  height: 2px; width: 0;
+  background: var(--accent);
+}
+
+.list-empty {
+  padding: 14px 8px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 8px;
+  color: var(--text-2);
+  font-size: 13px;
+  text-align: center;
+}
+.list-add {
+  display: flex; gap: 6px;
+  width: 100%;
+  margin-top: 4px;
+  padding: 6px 6px;
+  border-radius: 8px;
+  font-size: 13px;
+  justify-content: flex-start;
+}
+.list-add:hover { background: var(--surface-2); color: var(--text); }
+
+/* Menu slash : un pictogramme à la place de la pastille de couleur. */
+.popup .glyph { width: 8px; flex: none; display: grid; place-items: center; color: var(--text-2); }
+.popup.slash { max-height: min(420px, 70vh); overflow-y: auto; }

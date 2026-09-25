@@ -39,8 +39,19 @@ function tick() {
   for (const block of due) ring(block);
 }
 
+const firstLine = (b) => (b.text || b.name || "").trim().split("\n")[0].slice(0, 120);
+
 function ring(block) {
-  const text = (block.text || block.name || "Rappel").trim().split("\n")[0].slice(0, 120);
+  // Un rappel relié à d'autres blocs dit de quoi il parle : « Rappel ·
+  // Appeler Léa → Devis studio, photo ».
+  const linked = Object.values(state.doc.links)
+    .filter((l) => l.kind !== "variant" && (l.from === block.id || l.to === block.id))
+    .map((l) => state.doc.blocks[l.from === block.id ? l.to : l.from])
+    .filter(Boolean)
+    .map((b) => firstLine(b) || (b.kind === "image" ? "image" : b.kind === "draw" ? "dessin" : ""))
+    .filter(Boolean);
+  const own = firstLine(block) || "Rappel";
+  const text = linked.length ? `${own} → ${linked.slice(0, 3).join(", ")}` : own;
   toast(`Rappel · ${text}`);
 
   if (!("Notification" in window) || Notification.permission !== "granted") return;

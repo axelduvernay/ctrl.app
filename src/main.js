@@ -193,6 +193,17 @@ function wireKeyboard() {
     if (e.key === "z" || e.key === "Z") { state.tool = "zone"; return emit("tool"); }
     if (e.key === "d" || e.key === "D") { state.tool = "draw"; return emit("tool"); }
     if (e.key === "n" || e.key === "N") { e.preventDefault(); return createBlockAtCenter(); }
+    // « / » sur le canvas : un nouveau bloc, menu des commandes déjà ouvert.
+    if (e.key === "/") {
+      e.preventDefault();
+      const block = createBlockAtCenter();
+      const body = nodeFor(block.id)?.querySelector(".body");
+      if (!body) return;
+      body.textContent = "/";
+      getSelection().collapse(body.firstChild, 1);
+      body.dispatchEvent(new Event("input"));
+      return;
+    }
     if (e.key === "r" || e.key === "R") { e.preventDefault(); return arrange("tidy"); }
 
     // Filtres rapides : 1 à 4 selon l'ordre des catégories.

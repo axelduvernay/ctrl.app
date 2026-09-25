@@ -11,6 +11,8 @@ import { fitAll } from "./viewport.js";
 import { exportBoard, importBoard } from "./io.js";
 import { toggleFilter, toggleDoneFilter, clearFilters } from "./search.js";
 import { toast } from "./main.js";
+import { createVariant } from "./variant.js";
+import { toList, LIST_TYPES } from "./lists.js";
 
 let popup = null;
 
@@ -57,6 +59,8 @@ export function openContextMenu(x, y, { onEmpty, world }) {
       action("Nouveau bloc", () => {
         import("./interact.js").then((m) => m.createBlockAt(world.x, world.y));
       }, { hint: "double-clic" }),
+      action("Nouvelle tracklist", () => newList("tracks", world), { hint: "/tracklist" }),
+      action("Nouveau dossier", () => newList("files", world), { hint: "/folder" }),
       action("Nouvelle zone", () => {
         mutate(() => addZone({ x: world.x - 210, y: world.y - 150, w: 420, h: 300 }));
         render();
@@ -73,6 +77,8 @@ export function openContextMenu(x, y, { onEmpty, world }) {
   }
 
   const many = ids.length > 1;
+  const linkIds = Object.values(state.doc.links)
+    .filter((l) => blockIds.includes(l.from) || blockIds.includes(l.to)).map((l) => l.id);
   return openPopup(x, y, [
     blockIds.length ? label("Catégorie") : null,
     ...(blockIds.length
@@ -90,6 +96,15 @@ export function openContextMenu(x, y, { onEmpty, world }) {
           render();
           toast(`${blockIds.length} blocs liés`);
         })
+      : null,
+    linkIds.length
+      ? action(linkIds.length > 1 ? `Retirer les liens (${linkIds.length})` : "Retirer le lien", () => {
+          mutate(() => { for (const id of linkIds) delete state.doc.links[id]; });
+          render();
+        })
+      : null,
+    blockIds.length
+      ? action("Créer une variante", () => createVariant(blockIds[0]), { hint: "/variant" })
       : null,
     ids.length
       ? action("Grouper dans une zone", () => {
@@ -119,7 +134,14 @@ function fieldItems(blockIds) {
 
   if (single) {
     const f = fieldsOf(single);
-    if (!f.due && !f.remind) return [];
+    // Sans champ prévu par sa catégorie, n'importe quel bloc peut recevoir un rappel.
+    if (!f.due && !f.remind) {
+      return [action("Ajouter un rappel…", () => {
+        mutate(() => { single.fields = { ...single.fields, remind: true }; });
+        render();
+        openProps(single.id);
+      }, { iconPath: ICON_PATHS.remind, hint: "/rappel" }), sep()];
+    }
     const text = f.due && f.remind ? "Échéance et rappel…" : f.due ? "Échéance…" : "Rappel…";
     return [action(text, () => openProps(single.id), { iconPath: ICON_PATHS[f.due ? "due" : "remind"] }), sep()];
   }
@@ -158,13 +180,25 @@ function today(offset) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
+function newList(type, world) {
+  const block = mutate(() => {
+    const b = addBlock({ x: Math.round(world.x - 150), y: Math.round(world.y - 40), text: LIST_TYPES[type].title });
+    toList(b, type);
+    return b;
+  });
+  state.selection.clear();
+  state.selection.add(block.id);
+  emit("selection");
+  render();
+}
+
 export function duplicate(ids) {
   const fresh = [];
   mutate(() => {
     for (const id of ids) {
       const b = state.doc.blocks[id];
       if (b) {
-        const copy = addBlock({ ...b, id: undefined, x: b.x + 24, y: b.y + 24 });
+        const copy = addBlock({ ...structuredClone(b), id: undefined, x: b.x + 24, y: b.y + 24 });
         fresh.push(copy.id);
       }
       const z = state.doc.zones[id];

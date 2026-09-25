@@ -4,9 +4,13 @@
    est son équivalent souris. Les deux aboutissent à `setCategory`, pour qu'il
    n'existe qu'une seule définition du comportement. */
 
-import { state, begin, commit, mutate, categoryList, getCategory, emit } from "./store.js";
+import { state, begin, commit, mutate, categoryList, getCategory, removeItems, emit } from "./store.js";
 import { render, nodeFor } from "./render.js";
-import { el, fold } from "./util.js";
+import { el, fold, icon, ICON_PATHS } from "./util.js";
+import { toList, LIST_TYPES } from "./lists.js";
+import { createVariant } from "./variant.js";
+import { openProps } from "./props.js";
+import { askNotificationPermission } from "./reminders.js";
 
 let slashMenu = null;
 let slashRange = null;
@@ -59,9 +63,7 @@ export function stopEditing() {
       measure(block, node);
       // Un bloc resté vide n'a pas lieu d'encombrer le canvas.
       if (!text && block.kind === "text") {
-        delete state.doc.blocks[id];
-        state.doc.order = state.doc.order.filter((x) => x !== id);
-        state.selection.delete(id);
+        removeItems([id]);
       }
     } else if (zone) {
       zone.name = element.textContent.trim();
@@ -102,6 +104,9 @@ function onKeyDown(e) {
     }
     if (e.key === "Enter" || e.key === "Tab") {
       e.preventDefault();
+      // L'action peut refermer l'édition : Entrée ne doit pas alors remonter
+      // jusqu'au raccourci global, qui la rouvrirait aussitôt.
+      e.stopPropagation();
       active?.click();
       return;
     }
@@ -117,7 +122,8 @@ function onKeyDown(e) {
   // sélection.
   const finishes =
     e.key === "Escape" ||
-    (e.key === "Enter" && state.doc.zones[state.editing]) ||  // nom de zone : une ligne
+    // Nom de zone ou titre de liste : une seule ligne.
+    (e.key === "Enter" && (state.doc.zones[state.editing] || state.doc.blocks[state.editing]?.kind === "list")) ||
     (e.key === "Enter" && (e.metaKey || e.ctrlKey));
   if (finishes) {
     e.preventDefault();
@@ -187,41 +193,70 @@ function currentSlashQuery(element) {
   return { query: match[1], start: sel.focusOffset - match[1].length - 1, node };
 }
 
+/* Au-delà des catégories, la slash-commande crée des blocs spécialisés et
+   ajoute des champs. Chaque entrée a des alias : on tape le mot qui vient. */
+const SLASH_ACTIONS = [
+  { id: "reminder", label: "Rappel", cmd: "rappel", aliases: ["reminder", "alarme", "notif"], section: "Ajouter", icon: ICON_PATHS.remind },
+  { id: "due", label: "Échéance", cmd: "echeance", aliases: ["date", "due", "deadline"], section: "Ajouter", icon: ICON_PATHS.due },
+  { id: "tracks", label: "Tracklist", cmd: "tracklist", aliases: ["music", "musique", "playlist", "audio", "son"], section: "Bloc", icon: '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>' },
+  { id: "files", label: "Dossier", cmd: "folder", aliases: ["dossier", "fichiers", "files"], section: "Bloc", icon: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>' },
+  { id: "variant", label: "Variante", cmd: "variant", aliases: ["variante", "branche", "version", "v2"], section: "Bloc", icon: '<circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="8" r="2"/><path d="M6 7v10M18 10c0 5-8 3-11.5 7"/>' },
+];
+
+function slashMatches(q) {
+  const hit = (...words) => !q || words.some((w) => fold(w).startsWith(q));
+  const cats = categoryList().filter((cat) => hit(cat.cmd, cat.label))
+    .map((cat) => ({ section: "Catégorie", label: cat.label, cmd: cat.cmd, color: cat.color, run: (el) => applySlash(cat.id, el) }));
+  const block = state.doc.blocks[state.editing];
+  const actions = SLASH_ACTIONS
+    // Une liste ne redevient pas une liste ; un titre de liste garde les autres actions.
+    .filter((a) => !(block?.kind === "list" && (a.id === "tracks" || a.id === "files")))
+    .filter((a) => hit(a.cmd, a.label, ...a.aliases))
+    .map((a) => {
+      const alias = q && !fold(a.cmd).startsWith(q) ? a.aliases.find((w) => fold(w).startsWith(q)) : null;
+      return { section: a.section, label: a.label, cmd: alias || a.cmd, glyph: a.icon, run: (el) => applyAction(a.id, el) };
+    });
+  return [...cats, ...actions];
+}
+
 function updateSlashMenu(element) {
   const found = currentSlashQuery(element);
   if (!found) return closeSlashMenu();
 
   slashRange = found;
-  const q = fold(found.query);
-  const matches = categoryList().filter(
-    (cat) => !q || fold(cat.cmd).startsWith(q) || fold(cat.label).startsWith(q)
-  );
+  const matches = slashMatches(fold(found.query));
   if (!matches.length) return closeSlashMenu();
 
   if (!slashMenu) {
-    slashMenu = el("div", { class: "popup", role: "menu" });
+    slashMenu = el("div", { class: "popup slash", role: "menu" });
     document.body.append(slashMenu);
   }
 
-  slashMenu.replaceChildren(
-    el("div", { class: "label", text: "Transformer en" }),
-    ...matches.map((cat, i) =>
-      el("button", {
-        class: i === 0 ? "is-active" : "",
-        type: "button",
-        onmousedown: (ev) => ev.preventDefault(),
-        onclick: () => applySlash(cat.id, element),
-      },
-        el("span", { class: "dot", style: `--c:${cat.color}` }),
-        el("span", { text: cat.label }),
-        el("span", { class: "hint", text: "/" + cat.cmd })
-      )
-    )
-  );
+  let section = null;
+  const children = [];
+  matches.forEach((m, i) => {
+    if (m.section !== section) {
+      section = m.section;
+      children.push(el("div", { class: "label", text: section === "Catégorie" ? "Transformer en" : section }));
+    }
+    children.push(el("button", {
+      class: i === 0 ? "is-active" : "",
+      type: "button",
+      onmousedown: (ev) => ev.preventDefault(),
+      onclick: () => m.run(element),
+    },
+      m.color ? el("span", { class: "dot", style: `--c:${m.color}` }) : el("span", { class: "glyph" }, icon(m.glyph, 14)),
+      el("span", { text: m.label }),
+      el("span", { class: "hint", text: "/" + m.cmd })
+    ));
+  });
+  slashMenu.replaceChildren(...children);
 
   const rect = caretRect(element);
-  slashMenu.style.left = Math.min(rect.left, innerWidth - 210) + "px";
-  slashMenu.style.top = rect.bottom + 6 + "px";
+  slashMenu.style.left = Math.min(rect.left, innerWidth - 230) + "px";
+  const below = rect.bottom + 6;
+  const height = slashMenu.getBoundingClientRect().height;
+  slashMenu.style.top = (below + height > innerHeight - 12 ? Math.max(12, rect.top - height - 6) : below) + "px";
 }
 
 function caretRect(element) {
@@ -233,12 +268,14 @@ function caretRect(element) {
   return element.getBoundingClientRect();
 }
 
-function applySlash(category, element) {
-  // Retire le texte « /xxx » saisi, puis applique la catégorie.
+/** Retire le « /xxx » tapé, curseur laissé à sa place. */
+function stripSlash() {
   if (slashRange) {
     const { node, start, query } = slashRange;
     const text = node.textContent;
-    node.textContent = text.slice(0, start) + text.slice(start + query.length + 1);
+    const after = text.slice(start + query.length + 1);
+    // Commande tapée en fin de texte : on ne laisse pas l'espace qui la précédait.
+    node.textContent = (after ? text.slice(0, start) : text.slice(0, start).trimEnd()) + after;
     const range = document.createRange();
     range.setStart(node, Math.min(start, node.textContent.length));
     range.collapse(true);
@@ -247,6 +284,10 @@ function applySlash(category, element) {
     sel.addRange(range);
   }
   closeSlashMenu();
+}
+
+function applySlash(category, element) {
+  stripSlash();
   const block = state.doc.blocks[state.editing];
   if (block) {
     block.text = element.textContent;
@@ -255,6 +296,38 @@ function applySlash(category, element) {
   }
   render();
   element.focus();
+}
+
+function applyAction(action, element) {
+  stripSlash();
+  const id = state.editing;
+  const block = state.doc.blocks[id];
+  if (!block) return;
+
+  if (action === "tracks" || action === "files") {
+    // Le texte déjà écrit devient le titre ; l'édition se referme dans la
+    // même transaction, donc une seule annulation défait le tout.
+    element.textContent = element.textContent.trim() || LIST_TYPES[action].title;
+    toList(block, action);
+    stopEditing();
+    return;
+  }
+
+  if (action === "reminder" || action === "due") {
+    const field = action === "reminder" ? "remind" : "due";
+    // Un bloc vide devient un bloc rappel à part entière, qu'on relie ensuite.
+    if (!element.textContent.trim()) element.textContent = action === "reminder" ? "Rappel" : "Échéance";
+    block.fields = { ...block.fields, [field]: true };
+    if (field === "remind") askNotificationPermission();
+    stopEditing();
+    openProps(id);
+    return;
+  }
+
+  if (action === "variant") {
+    stopEditing();
+    if (state.doc.blocks[id]) createVariant(id);
+  }
 }
 
 function closeSlashMenu() {

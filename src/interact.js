@@ -5,9 +5,11 @@
    une fois un geste commencé, il se termine proprement même si le curseur sort
    de la fenêtre. */
 
-import { state, begin, commit, mutate, addBlock, addZone, raise, item, emit } from "./store.js";
+import { state, begin, commit, mutate, addBlock, addZone, addLink, linkBetween, raise, item, emit } from "./store.js";
 import { toWorld, panBy, zoomAt, viewCenter } from "./viewport.js";
-import { render, nodeFor } from "./render.js";
+import { render, nodeFor, curveTo } from "./render.js";
+import { moveItem, indexAt, renameItem } from "./lists.js";
+import { toast } from "./main.js";
 import { startEditing } from "./editor.js";
 import { openContextMenu } from "./menus.js";
 import { scheduleArchive, cancelArchive, unarchive } from "./archive.js";
@@ -74,7 +76,7 @@ function onPointerDown(e) {
   const target = e.target;
 
   // Case à cocher, champ de date ou de rappel : action immédiate, pas un glisser.
-  if (target.closest("[data-check]") || target.closest("[data-prop]")) return;
+  if (target.closest("[data-check]") || target.closest("[data-prop]") || target.closest("[data-action]")) return;
   // Nom de zone en cours d'édition : laisser le curseur texte travailler.
   if (isTyping(target)) return;
 
@@ -91,6 +93,25 @@ function onPointerDown(e) {
   if (state.tool === "draw") {
     gesture = { mode: "draw", points: [{ x: world.x, y: world.y }] };
     drawPreview(gesture.points);
+    return;
+  }
+
+  // Poignée de connexion : on tire un lien vers un autre bloc.
+  const connect = target.closest("[data-connect]");
+  if (connect) {
+    const from = connect.closest("[data-id]").dataset.id;
+    gesture = { mode: "connect", from };
+    drawLinkPreview(from, world);
+    return;
+  }
+
+  // Poignée d'un élément de liste : on le fait glisser à un autre rang.
+  const grip = target.closest("[data-item-grip]");
+  if (grip) {
+    const id = grip.closest("[data-id]").dataset.id;
+    begin();
+    gesture = { mode: "reorder", id, item: grip.closest("[data-item]").dataset.item };
+    nodeFor(id)?.classList.add("is-reordering");
     return;
   }
 
@@ -212,6 +233,16 @@ function onPointerMove(e) {
     return;
   }
 
+  if (gesture.mode === "connect") {
+    drawLinkPreview(gesture.from, world);
+    return;
+  }
+
+  if (gesture.mode === "reorder") {
+    if (moveItem(gesture.id, gesture.item, indexAt(gesture.id, e.clientY))) render();
+    return;
+  }
+
   if (gesture.mode === "resize") {
     const it = item(gesture.id);
     if (!it) return;
@@ -283,6 +314,12 @@ function onPointerUp(e) {
   if (g.mode === "draw") {
     ink.replaceChildren();
     commitStroke(g.points);
+  } else if (g.mode === "connect") {
+    ink.replaceChildren();
+    finishConnect(g.from, e);
+  } else if (g.mode === "reorder") {
+    nodeFor(g.id)?.classList.remove("is-reordering");
+    commit();
   } else if (g.mode === "drag") {
     commit();
     // Relâché sans avoir bougé : c'était un clic, pas un glisser.
@@ -350,12 +387,49 @@ function commitStroke(points) {
   return block;
 }
 
+/* ---------- Connexion ---------- */
+
+function drawLinkPreview(from, world) {
+  const a = state.doc.blocks[from];
+  if (!a) return;
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("d", curveTo(a, world));
+  path.setAttribute("class", "link-preview");
+  ink.replaceChildren(path);
+}
+
+/* Relâché sur un bloc : on les relie, ou on défait le lien s'il existait.
+   Relâché dans le vide : un nouveau bloc naît au bout du lien, prêt à écrire —
+   c'est la façon la plus rapide de dérouler une idée. */
+function finishConnect(from, e) {
+  const node = hitTarget(e).closest("[data-id]");
+  const to = node && state.doc.blocks[node.dataset.id] ? node.dataset.id : null;
+  if (to === from) return;
+
+  if (to) {
+    const existing = linkBetween(from, to);
+    mutate(() => existing ? delete state.doc.links[existing.id] : addLink(from, to));
+    render();
+    toast(existing ? "Lien retiré" : "Blocs reliés");
+    return;
+  }
+
+  const world = toWorld(e.clientX, e.clientY);
+  if (node) return; // relâché sur une zone : on ne crée rien
+  const block = createBlockAt(world.x + 110, world.y + 24);
+  // Le lien rejoint la transaction ouverte par l'édition du nouveau bloc :
+  // si le bloc reste vide, il disparaît avec son lien.
+  addLink(from, block.id);
+  render();
+}
+
 /* ---------- Pincement à deux doigts ---------- */
 
 function startPinch() {
   // Un geste à un doigt était peut-être commencé : on l'abandonne proprement.
   if (gesture) {
-    if (gesture.mode === "drag" || gesture.mode === "resize" || gesture.mode === "draw-zone") commit();
+    if (["drag", "resize", "draw-zone", "reorder"].includes(gesture.mode)) commit();
+    if (gesture.mode === "connect" || gesture.mode === "draw") ink.replaceChildren();
     gesture = null;
     marquee.hidden = true;
   }
@@ -441,6 +515,10 @@ function editItem(id, at) {
     startEditing(id, node.querySelector(".body"), at);
     return true;
   }
+  if (b && b.kind === "list") {
+    startEditing(id, node.querySelector(".list-title"), at);
+    return true;
+  }
   return false;
 }
 
@@ -450,6 +528,10 @@ function onDoubleClick(e) {
   if (node) {
     const id = node.dataset.id;
     const b = state.doc.blocks[id];
+    // Dans une liste, le double-clic renomme l'élément visé ; ailleurs, le titre.
+    const itemName = hitTarget(e).closest("[data-item-name]");
+    if (itemName) return renameItem(id, itemName.closest("[data-item]").dataset.item, itemName);
+    if (b && b.kind === "list" && hitTarget(e).closest(".items, [data-action]")) return;
     if (editItem(id, { x: e.clientX, y: e.clientY })) return;
     if (!b) return;
     if (b.kind === "link") return window.open(b.url, "_blank", "noopener");

@@ -8,6 +8,7 @@
 import { state, getCategory, fieldsOf } from "./store.js";
 import { el, icon, formatDate, isSoon, fold, ICON_PATHS } from "./util.js";
 import { assetURL as getAsset } from "./store.js";
+import { renderList } from "./lists.js";
 
 const nodes = new Map();
 const urls = new Map();
@@ -80,6 +81,8 @@ function buildBlock(block) {
   node.append(el("div", { class: "body", "data-placeholder": "Écris…" }));
   node.append(el("div", { class: "meta" }));
   node.append(el("div", { class: "resize", "data-resize": true }));
+  // Poignée de connexion : on la tire jusqu'à un autre bloc pour les relier.
+  node.append(el("div", { class: "connect", "data-connect": true, title: "Tirer pour relier" }));
   return node;
 }
 
@@ -87,7 +90,8 @@ function updateBlock(node, b) {
   node.style.left = b.x + "px";
   node.style.top = b.y + "px";
   node.style.width = b.w + "px";
-  node.style.height = b.kind === "text" ? "auto" : b.h + "px";
+  const grows = b.kind === "text" || b.kind === "list";
+  node.style.height = grows ? "auto" : b.h + "px";
   node.style.minHeight = b.kind === "text" ? b.h + "px" : "";
 
   node.className = "block kind-" + b.kind;
@@ -109,15 +113,20 @@ function updateBlock(node, b) {
   const body = node.querySelector(".body");
   renderBody(node, body, b);
   renderMeta(node, b);
+  // Une liste prend la hauteur de son contenu ; on la reporte dans le
+  // document pour que liens et rangement voient la vraie taille.
+  if (b.kind === "list") b.h = node.offsetHeight || b.h;
 }
 
 function renderBody(node, body, b) {
   if (b.kind === "text") {
     if (body.textContent !== b.text && state.editing !== b.id) body.textContent = b.text;
     const cat = getCategory(b.category);
-    body.dataset.placeholder = cat && cat.checkable ? "Quoi faire ?" : "Écris…";
+    body.dataset.placeholder = cat && cat.checkable ? "Quoi faire ?" : "Écris, ou tape /";
     return;
   }
+
+  if (b.kind === "list") return renderList(node, body, b);
 
   if (b.kind === "image") {
     let img = node.querySelector("img");
@@ -196,6 +205,7 @@ function renderMeta(node, b) {
   const cat = getCategory(b.category);
   const parts = [];
 
+  if (b.variant) parts.push(el("span", { class: "version", text: "v" + b.variant }));
   if (cat) parts.push(el("span", { class: "tag", text: cat.label.toLowerCase() }));
 
   // Les champs n'apparaissent que si la catégorie les prévoit.
@@ -279,8 +289,14 @@ function renderLinks() {
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     path.setAttribute("d", curve(a, b));
     if (state.selection.has(a.id) || state.selection.has(b.id)) path.classList.add("is-highlighted");
+    if (link.kind === "variant") path.classList.add("is-variant");
     linksRoot.append(path);
   }
+}
+
+/** Courbe d'un bloc vers un point libre — l'aperçu pendant qu'on tire un lien. */
+export function curveTo(a, p) {
+  return curve(a, { x: p.x, y: p.y, w: 0, h: 0 });
 }
 
 /* Courbe entre deux blocs : on part du bord le plus proche plutôt que du centre,
@@ -313,7 +329,8 @@ function isDimmed(b) {
   if (done === true && !b.done) return true;
   if (state.search.query) {
     const q = fold(state.search.query);
-    const hay = fold([b.text, b.name, b.url, b.category].filter(Boolean).join(" "));
+    const items = (b.items || []).map((it) => it.name);
+    const hay = fold([b.text, b.name, b.url, b.category, ...items].filter(Boolean).join(" "));
     if (!hay.includes(q)) return true;
   }
   return false;
