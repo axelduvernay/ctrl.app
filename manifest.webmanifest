@@ -1,0 +1,14 @@
+{
+  "name": "ctrl.app",
+  "short_name": "ctrl",
+  "description": "Un whiteboard infini pour ne plus perdre ses idées.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#141415",
+  "theme_color": "#141415",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

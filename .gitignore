@@ -1,0 +1,5 @@
+# Fichiers système
+.DS_Store
+
+# Réglages locaux de Claude Code, propres à chaque machine
+.claude/settings.local.json

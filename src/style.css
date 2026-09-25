@@ -1,0 +1,735 @@
+/* ctrl.app — charte issue de l'identité visuelle.
+   Les tokens vivent sur :root, redéfinis en sombre, avec surcharge manuelle
+   possible via data-theme sur <html>. */
+
+:root {
+  --bg: #E9ECEF;
+  --surface: #FFFFFF;
+  --surface-2: #F3F5F7;
+  --text: #1E1E20;
+  --text-2: #A39E96;
+  --accent: #E06D3B;
+  --accent-soft: rgba(224, 109, 59, 0.14);
+  --line: rgba(30, 30, 32, 0.10);
+  --line-strong: rgba(30, 30, 32, 0.20);
+  --grid: rgba(30, 30, 32, 0.07);
+  --shadow: 0 1px 2px rgba(20, 20, 21, 0.06), 0 8px 24px rgba(20, 20, 21, 0.08);
+
+  /* Catégories : teintes désaturées, l'orange reste au système. */
+  --cat-idea: #C9992B;
+  --cat-task: #4F8A72;
+  --cat-note: #6F81A8;
+  --cat-question: #8E6FA3;
+
+  --r-block: 14px;
+  --r-ui: 12px;
+  --r-pill: 999px;
+  --tap: 38px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141415;
+    --surface: #1E1E20;
+    --surface-2: #26262A;
+    --text: #F4F0EA;
+    --text-2: #A39E96;
+    --accent-soft: rgba(224, 109, 59, 0.20);
+    --line: rgba(244, 240, 234, 0.12);
+    --line-strong: rgba(244, 240, 234, 0.26);
+    --grid: rgba(244, 240, 234, 0.06);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 24px rgba(0, 0, 0, 0.35);
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #141415;
+  --surface: #1E1E20;
+  --surface-2: #26262A;
+  --text: #F4F0EA;
+  --text-2: #A39E96;
+  --accent-soft: rgba(224, 109, 59, 0.20);
+  --line: rgba(244, 240, 234, 0.12);
+  --line-strong: rgba(244, 240, 234, 0.26);
+  --grid: rgba(244, 240, 234, 0.06);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Satoshi", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button { font: inherit; color: inherit; }
+
+/* ---------- Canvas ---------- */
+
+#app { position: fixed; inset: 0; }
+
+#canvas {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  cursor: default;
+  touch-action: none;
+  background-color: var(--bg);
+  background-image: radial-gradient(circle, var(--grid) 1px, transparent 1px);
+  background-size: var(--grid-size, 32px) var(--grid-size, 32px);
+  background-position: var(--grid-x, 0) var(--grid-y, 0);
+}
+
+#canvas.is-panning { cursor: grabbing; }
+#canvas.tool-zone { cursor: crosshair; }
+
+#world {
+  position: absolute;
+  top: 0; left: 0;
+  width: 0; height: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+#links {
+  position: absolute;
+  overflow: visible;
+  pointer-events: none;
+  width: 1px; height: 1px;
+}
+
+#links path { fill: none; stroke: var(--line-strong); stroke-width: 2; }
+#links path.is-highlighted { stroke: var(--accent); }
+
+/* ---------- Blocs ---------- */
+
+.block {
+  position: absolute;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-block);
+  box-shadow: var(--shadow);
+  padding: 12px 14px;
+  overflow: hidden;
+  transition: box-shadow 0.15s ease, opacity 0.15s ease, border-color 0.15s ease;
+}
+
+.block.is-selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft), var(--shadow);
+}
+
+.block.is-dimmed { opacity: 0.28; }
+.block.is-animating { transition: left 0.35s cubic-bezier(0.22, 0.61, 0.36, 1), top 0.35s cubic-bezier(0.22, 0.61, 0.36, 1); }
+
+/* Hors édition, un bloc ne se sélectionne pas comme du texte : sans ça, un
+   shift+clic pour étendre la sélection surlignerait le contenu. */
+.block, .zone { user-select: none; -webkit-user-select: none; }
+.block.is-editing, .zone .zone-name[contenteditable="true"] { user-select: text; -webkit-user-select: text; }
+
+.block .body {
+  outline: none;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  min-height: 1.45em;
+  cursor: default;
+}
+
+.block .body:empty::before {
+  content: attr(data-placeholder);
+  color: var(--text-2);
+  pointer-events: none;
+}
+
+.block.is-editing .body { cursor: text; }
+
+/* Liseré de catégorie : discret, jamais une boîte lourde. */
+.block[data-category]::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--cat, var(--text-2));
+}
+
+/* La teinte est posée en ligne par le rendu, depuis la catégorie du document. */
+
+.block .meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.block .meta:empty { display: none; }
+
+.block .tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  text-transform: lowercase;
+  letter-spacing: 0.02em;
+}
+
+.block .tag::before {
+  content: "";
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--cat, var(--text-2));
+}
+
+/* Champs d'un bloc : échéance et rappel. Des puces cliquables, discrètes au
+   repos, orange quand l'échéance approche ou qu'un rappel a sonné. */
+.block .meta { flex-wrap: wrap; gap: 6px; }
+
+.block .prop {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 7px 1px 5px;
+  border: 1px solid transparent;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--text-2);
+  font-size: 12px;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.block .prop:hover { background: var(--surface-2); color: var(--text); }
+.block .prop svg { flex: none; }
+.block .prop.is-soon { color: var(--accent); }
+.block .prop.is-ringing { color: var(--accent); background: var(--accent-soft); }
+.block .prop.is-ghost { border: 1px dashed var(--line-strong); }
+.block .prop.is-ghost:hover { border-style: solid; }
+
+/* Tâches : case à cocher */
+.block .check {
+  position: absolute;
+  top: 12px; right: 12px;
+  width: 20px; height: 20px;
+  border: 1.5px solid var(--line-strong);
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  display: grid;
+  place-items: center;
+}
+
+.block .check svg { width: 13px; height: 13px; stroke: var(--surface); stroke-width: 3; fill: none; opacity: 0; }
+.block.is-done .check { background: var(--cat-task); border-color: var(--cat-task); }
+.block.is-done .check svg { opacity: 1; }
+.block.is-done .body { color: var(--text-2); text-decoration: line-through; text-decoration-color: var(--line-strong); }
+.block.has-check .body { padding-right: 26px; }
+
+/* Images, fichiers, liens */
+.block.kind-image { padding: 0; }
+.block.kind-image img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+.block.kind-file .file, .block.kind-link .link {
+  display: flex; align-items: center; gap: 10px;
+  text-decoration: none; color: inherit;
+}
+.block.kind-file .icon, .block.kind-link .favicon {
+  flex: none; width: 32px; height: 32px;
+  border-radius: 8px; background: var(--surface-2);
+  display: grid; place-items: center;
+  color: var(--text-2);
+}
+.block.kind-link .favicon img { width: 18px; height: 18px; border-radius: 4px; }
+.block .name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.block .sub { font-size: 12px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Poignée de redimensionnement */
+.block .resize {
+  position: absolute;
+  right: 0; bottom: 0;
+  width: 16px; height: 16px;
+  cursor: nwse-resize;
+  opacity: 0;
+}
+.block:hover .resize, .block.is-selected .resize { opacity: 1; }
+.block .resize::after {
+  content: "";
+  position: absolute; right: 4px; bottom: 4px;
+  width: 6px; height: 6px;
+  border-right: 1.5px solid var(--line-strong);
+  border-bottom: 1.5px solid var(--line-strong);
+}
+
+/* ---------- Dessin ---------- */
+
+/* Un tracé n'a ni fond ni cadre : c'est de l'encre posée sur la surface. */
+.block.kind-draw {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  padding: 0;
+  color: var(--text);
+  overflow: visible;
+}
+
+.block.kind-draw.is-selected {
+  border-color: var(--accent);
+  border-style: dashed;
+  box-shadow: none;
+}
+
+.block.kind-draw svg { display: block; width: 100%; height: 100%; overflow: visible; }
+
+.block.kind-draw path {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Le tracé en cours, avant d'être transformé en bloc. */
+#ink {
+  position: absolute;
+  overflow: visible;
+  pointer-events: none;
+  width: 1px; height: 1px;
+  color: var(--text);
+}
+
+#ink path {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+#canvas.tool-draw { cursor: crosshair; }
+
+/* ---------- Zones ---------- */
+
+.zone {
+  position: absolute;
+  border: 1.5px solid var(--line-strong);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--surface) 35%, transparent);
+}
+
+.zone.is-selected { border-color: var(--accent); }
+.zone.is-dimmed { opacity: 0.3; }
+
+/* L'archive se signale par un trait discontinu : présente, mais en retrait. */
+.zone.is-archive {
+  border-style: dashed;
+  border-color: var(--line);
+  background: transparent;
+}
+
+.zone.is-archive .zone-name { color: var(--text-2); }
+
+.zone .zone-name {
+  position: absolute;
+  top: -11px; left: 14px;
+  padding: 1px 8px;
+  background: var(--bg);
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: var(--r-pill);
+  outline: none;
+  white-space: nowrap;
+  cursor: text;
+}
+
+.zone .zone-name:hover { color: var(--text); }
+
+.zone .zone-name:empty::before { content: "Zone"; opacity: 0.6; }
+.zone .resize { position: absolute; right: 0; bottom: 0; width: 18px; height: 18px; cursor: nwse-resize; }
+
+/* ---------- Marquee ---------- */
+
+#marquee {
+  position: absolute;
+  border: 1px solid var(--accent);
+  background: var(--accent-soft);
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+/* ---------- Chrome flottant ---------- */
+
+#toolbar, #topright, #zoombar {
+  position: absolute;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  box-shadow: var(--shadow);
+}
+
+#toolbar { bottom: 20px; left: 50%; transform: translateX(-50%); }
+#topright { top: 18px; right: 18px; }
+#zoombar { bottom: 20px; right: 18px; font-size: 13px; }
+
+#toolbar button, #topright button, #zoombar button {
+  min-width: var(--tap);
+  height: var(--tap);
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  color: var(--text);
+}
+
+#toolbar button:hover, #topright button:hover, #zoombar button:hover { background: var(--surface-2); }
+#toolbar button.is-active { background: var(--accent); color: #fff; }
+
+#toolbar svg, #topright svg, #zoombar svg {
+  width: 19px; height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+#toolbar button[data-tool="select"] svg { fill: currentColor; stroke-width: 1; }
+#toolbar .sep { width: 1px; height: 22px; background: var(--line); margin: 0 4px; }
+#zoom-level { font-variant-numeric: tabular-nums; min-width: 56px; }
+
+/* ---------- Menus ---------- */
+
+.popup {
+  position: absolute;
+  z-index: 40;
+  min-width: 194px;
+  padding: 6px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-ui);
+  box-shadow: var(--shadow);
+}
+
+.popup button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.popup button:hover, .popup button.is-active { background: var(--surface-2); }
+.popup button[disabled] { opacity: 0.4; cursor: default; }
+.popup button[disabled]:hover { background: transparent; }
+.popup .hint { margin-left: auto; color: var(--text-2); font-size: 12px; }
+.popup .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c, var(--text-2)); flex: none; }
+.popup .sep { height: 1px; margin: 6px 4px; background: var(--line); }
+.popup .label { padding: 8px 10px 4px; color: var(--text-2); font-size: 12px; }
+
+/* ---------- Recherche ---------- */
+
+#search {
+  position: absolute;
+  top: 18px; left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px 6px 14px;
+  width: min(460px, calc(100vw - 36px));
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  box-shadow: var(--shadow);
+}
+
+#search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+}
+
+#search input::placeholder { color: var(--text-2); }
+#search input::-webkit-search-cancel-button,
+#search input::-webkit-search-decoration { -webkit-appearance: none; appearance: none; }
+#search .count { color: var(--text-2); font-size: 13px; font-variant-numeric: tabular-nums; }
+#search button {
+  width: 30px; height: 30px;
+  border: 0; border-radius: 50%;
+  background: transparent; cursor: pointer;
+  display: grid; place-items: center;
+}
+#search button:hover { background: var(--surface-2); }
+#search svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+
+.block.is-hit { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft), var(--shadow); }
+
+/* ---------- Filtres actifs ---------- */
+
+#filters {
+  position: absolute;
+  top: 18px; left: 18px;
+  z-index: 10;
+  display: flex;
+  gap: 6px;
+}
+
+#filters .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 8px 0 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  box-shadow: var(--shadow);
+  font-size: 13px;
+}
+
+#filters .chip button {
+  width: 20px; height: 20px;
+  border: 0; border-radius: 50%;
+  background: transparent; cursor: pointer;
+  color: var(--text-2);
+  display: grid; place-items: center;
+  font-size: 15px; line-height: 1;
+}
+#filters .chip button:hover { background: var(--surface-2); color: var(--text); }
+
+/* ---------- Statut ---------- */
+
+#status {
+  position: absolute;
+  bottom: 20px; left: 18px;
+  z-index: 10;
+  padding: 7px 13px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  box-shadow: var(--shadow);
+  font-size: 13px;
+  color: var(--text-2);
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
+}
+
+#status.is-visible { opacity: 1; transform: none; }
+
+/* ---------- Mobile : capture avant tout ---------- */
+
+@media (max-width: 767px) {
+  #toolbar { bottom: max(16px, env(safe-area-inset-bottom)); }
+  #zoombar { display: none; }
+  #topright { top: max(14px, env(safe-area-inset-top)); right: 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+/* ---------- Gestionnaire de catégories ---------- */
+
+/* Ces règles sont préfixées par .cat-manager : sans ça, les styles génériques
+   de .popup button reprendraient la main sur la taille et le survol. */
+
+.cat-manager { width: 372px; }
+
+.cat-manager .cat-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+}
+
+.cat-manager .cat-row .dot {
+  flex: none;
+  width: 16px; height: 16px;
+  min-width: 0;
+  padding: 0;
+  border: 0; border-radius: 50%;
+  background: var(--c, var(--text-2));
+  cursor: pointer;
+}
+
+.cat-manager .cat-row .dot:hover {
+  background: var(--c, var(--text-2));
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.cat-manager .cat-row input[type="text"] {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 7px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  outline: none;
+}
+
+.cat-manager .cat-row input[type="text"]:hover { border-color: var(--line); }
+.cat-manager .cat-row input[type="text"]:focus { border-color: var(--accent); background: var(--surface-2); }
+
+.cat-manager .toggle,
+.cat-manager .remove {
+  flex: none;
+  width: 26px; height: 26px;
+  min-width: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.cat-manager .toggle:hover,
+.cat-manager .remove:hover { background: var(--surface-2); color: var(--text); }
+
+.cat-manager .toggle.is-on,
+.cat-manager .toggle.is-on:hover {
+  background: var(--c, var(--accent));
+  border-color: transparent;
+  color: var(--surface);
+}
+
+.cat-manager .remove { border-color: transparent; }
+
+.cat-manager .swatches {
+  display: flex;
+  gap: 8px;
+  padding: 2px 10px 10px 32px;
+}
+
+.cat-manager .swatch {
+  flex: none;
+  width: 20px; height: 20px;
+  min-width: 0;
+  padding: 0;
+  border: 0; border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+
+.cat-manager .swatch:hover { transform: scale(1.15); }
+.cat-manager .swatch.is-current { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--text-2); }
+
+.cat-manager .add {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0; border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.cat-manager .add:hover { background: var(--surface-2); }
+.cat-manager .add svg { stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; }
+.cat-manager .label:last-child { padding-top: 8px; line-height: 1.35; }
+
+/* ---------- Panneau échéance et rappel ---------- */
+
+/* Préfixé .popup.props : les règles génériques de .popup button donneraient
+   sinon à chaque puce toute la largeur du panneau. */
+
+.popup.props { width: 312px; padding: 8px; }
+
+.popup.props .section { padding: 4px 4px 6px; }
+
+.popup.props .heading {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 2px 4px 8px;
+  font-weight: 500;
+}
+
+.popup.props .heading svg { color: var(--text-2); }
+.popup.props .heading .value { margin-left: auto; font-weight: 400; color: var(--text-2); font-size: 13px; }
+
+.popup.props .heading .clear {
+  flex: none;
+  width: 22px; height: 22px;
+  padding: 0;
+  border: 0; border-radius: 50%;
+  background: transparent;
+  color: var(--text-2);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.popup.props .heading .clear:hover { background: var(--surface-2); color: var(--text); }
+.popup.props .heading .clear[disabled] { visibility: hidden; }
+.popup.props .chip-btn[disabled] { opacity: 0.35; }
+
+.popup.props .chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 4px 8px; }
+
+.popup.props .chip-btn {
+  width: auto;
+  padding: 5px 11px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  background: transparent;
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.popup.props .chip-btn:hover { background: var(--surface-2); }
+.popup.props .chip-btn.is-on { border-color: var(--accent); background: var(--accent-soft); }
+
+.popup.props .inputs { display: flex; gap: 6px; padding: 0 4px; }
+
+.popup.props input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  color-scheme: light dark;
+}
+
+.popup.props input:focus { outline: none; border-color: var(--accent); }
+.popup.props input[type="time"] { flex: 0 0 96px; }
+.popup.props .hint { padding: 8px 4px 0; font-size: 12px; color: var(--text-2); }

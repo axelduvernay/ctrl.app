@@ -1,0 +1,14 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "ctrl.app",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "serve.py",
+        "4321"
+      ],
+      "port": 4321
+    }
+  ]
+}
