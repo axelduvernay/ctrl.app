@@ -6,7 +6,7 @@
    de la fenêtre. */
 
 import { state, begin, commit, mutate, addBlock, addZone, addLink, linkBetween, raise, item, emit,
-         childrenOf, adopt, zoneFor, zoneOf } from "./store.js";
+         childrenOf, childZones, adopt, zoneFor, zoneOf, parentOf, descendants, isContainer } from "./store.js";
 import { toWorld, panBy, zoomAt, viewCenter } from "./viewport.js";
 import { render, nodeFor, curveTo } from "./render.js";
 import { moveItem, indexAt, renameItem } from "./lists.js";
@@ -136,7 +136,8 @@ function onPointerDown(e) {
     if (it) {
       begin();
       nodeFor(it.id)?.classList.add("is-resizing");
-      gesture = { mode: "resize", id: it.id, ox: world.x, oy: world.y, x0: it.x, y0: it.y, w0: it.w, h0: it.h };
+      gesture = { mode: "resize", id: it.id, ox: world.x, oy: world.y, x0: it.x, y0: it.y, w0: it.w, h0: it.h,
+                  squeeze: isContainer(state.doc.zones[it.id]) ? squeezeSetup(it) : null };
     }
     return;
   }
@@ -210,7 +211,10 @@ function dragSet() {
   for (const id of state.selection) {
     const zone = state.doc.zones[id];
     if (!zone) continue;
-    for (const b of childrenOf(id)) ids.add(b.id);
+    // Une zone emporte tout ce qu'elle contient, sous-zones comprises.
+    const d = descendants(id);
+    for (const b of d.blocks) ids.add(b.id);
+    for (const z of d.zones) ids.add(z.id);
   }
   return [...ids].map((id) => {
     const it = item(id);
@@ -244,8 +248,7 @@ function onPointerMove(e) {
       it.x = Math.round(x0 + dx);
       it.y = Math.round(y0 + dy);
     }
-    if (state.doc.blocks[gesture.id]) liveZones(gesture);
-    else render();
+    liveZones(gesture);
     return;
   }
 
@@ -347,10 +350,16 @@ function onPointerUp(e) {
       z.w = 420; z.h = 300;
       z.x = g.ox; z.y = g.oy;
     }
-    // Une zone tracée autour de blocs libres les prend avec elle.
+    // Tracée dans une zone, elle en devient une sous-zone ; tracée autour de
+    // blocs ou de zones du même niveau, elle les prend avec elle.
     if (z) {
+      z.parent = zoneFor(z, z.id)?.id || null;
+      const level = z.parent || null;
       for (const b of Object.values(state.doc.blocks)) {
-        if (!b.zone && !b.archived && contains(z, b)) b.zone = z.id;
+        if ((b.zone || null) === level && !b.archived && contains(z, b)) b.zone = z.id;
+      }
+      for (const o of Object.values(state.doc.zones)) {
+        if (o !== z && isContainer(o) && (o.parent || null) === level && contains(z, o)) o.parent = z.id;
       }
     }
     commit();
@@ -429,12 +438,81 @@ function applyResize(mods) {
     if (h < 48) { h = 48; w = h * ratio; }
     if (w < 80) { w = 80; h = w / ratio; }
   }
+  if (g.squeeze) ({ w, h } = squeeze(g.squeeze, w, h));
   it.w = Math.round(w);
   it.h = Math.round(h);
   // Centre fixe avec Option ; sinon le coin haut-gauche reste en place.
   it.x = Math.round(mods.altKey ? g.x0 + (g.w0 - w) / 2 : g.x0);
   it.y = Math.round(mods.altKey ? g.y0 + (g.h0 - h) / 2 : g.y0);
+  if (g.squeeze) placeSqueezed(g.squeeze, it);
   render();
+}
+
+/* ---------- Réduire une zone ----------
+
+   Quand on réduit une zone, son contenu se resserre au lieu de déborder : les
+   écarts entre les éléments rétrécissent dans la même proportion, ce qui
+   garde la disposition choisie à la main. Le resserrement s'arrête juste
+   avant que deux éléments se touchent, et la zone refuse alors de rétrécir
+   davantage. Agrandir ne l'écarte jamais au-delà de l'original. */
+
+const MIN_GAP = 12; // écart minimal gardé entre deux éléments
+
+function squeezeSetup(z) {
+  const ox = z.x + ZONE_PAD;
+  const oy = z.y + ZONE_LABEL;
+  const items = [...childrenOf(z.id), ...childZones(z.id)].map((it) => ({
+    it, rx: it.x - ox, ry: it.y - oy, w: it.w, h: it.h,
+    // Une sous-zone emporte son contenu, qui garde sa place par rapport à elle.
+    carried: state.doc.zones[it.id]
+      ? [...descendants(it.id).zones, ...descendants(it.id).blocks].map((m) => ({ m, dx: m.x - it.x, dy: m.y - it.y }))
+      : [],
+  }));
+  // Facteur minimal sur chaque axe : pour deux éléments séparés sur cet axe,
+  // l'écart réduit ne doit pas descendre sous MIN_GAP (ou sous l'écart
+  // d'origine, s'il était déjà plus petit).
+  let sMin = 0;
+  let tMin = 0;
+  for (const a of items) {
+    for (const b of items) {
+      if (a === b) continue;
+      if (a.rx + a.w <= b.rx) {
+        const gap = Math.min(MIN_GAP, b.rx - a.rx - a.w);
+        sMin = Math.max(sMin, (a.w + gap) / (b.rx - a.rx));
+      }
+      if (a.ry + a.h <= b.ry) {
+        const gap = Math.min(MIN_GAP, b.ry - a.ry - a.h);
+        tMin = Math.max(tMin, (a.h + gap) / (b.ry - a.ry));
+      }
+    }
+  }
+  return { items, sMin, tMin, s: 1, t: 1 };
+}
+
+/** Facteur de resserrement pour une taille donnée, et la taille retenue. */
+function squeeze(S, w, h) {
+  if (!S.items.length) return { w, h };
+  const factor = (inner, pos, size, min) => {
+    let f = 1;
+    for (const i of S.items) if (i[pos] > 0) f = Math.min(f, (inner - i[size]) / i[pos]);
+    return Math.max(f, min);
+  };
+  S.s = factor(w - ZONE_PAD * 2, "rx", "w", S.sMin);
+  S.t = factor(h - ZONE_LABEL - ZONE_PAD, "ry", "h", S.tMin);
+  // Plus petit que ce que le contenu resserré occupe : la zone ne suit pas.
+  const needW = Math.max(...S.items.map((i) => i.rx * S.s + i.w)) + ZONE_PAD * 2;
+  const needH = Math.max(...S.items.map((i) => i.ry * S.t + i.h)) + ZONE_LABEL + ZONE_PAD;
+  return { w: Math.max(w, needW), h: Math.max(h, needH) };
+}
+
+function placeSqueezed(S, z) {
+  const ox = z.x + ZONE_PAD;
+  const oy = z.y + ZONE_LABEL;
+  for (const i of S.items) {
+    i.it.x = Math.round(ox + i.rx * S.s);
+    i.it.y = Math.round(oy + i.ry * S.t);
+    for (const c of i.carried) { c.m.x = i.it.x + c.dx; c.m.y = i.it.y + c.dy; }
+  }
 }
 
 function onModifier(e) {
@@ -456,11 +534,12 @@ const ZONE_LABEL = 48;
 const SNAP = 16;        // portée de l'aimant, en unités du monde
 const GAP_SNAP = 28;    // l'écart entre deux blocs voisins, comme au rangement
 
-/** Appelé à chaque mouvement d'un glisser de bloc. */
+/** Appelé à chaque mouvement d'un glisser de bloc ou de zone. */
 function liveZones(g) {
-  const b = state.doc.blocks[g.id];
-  if (!b) return;
-  g.movedIds ??= new Set(g.items.map((it) => it.id));
+  const it = item(g.id);
+  const isZone = !!state.doc.zones[g.id];
+  if (!it || (isZone && !isContainer(it))) return render();
+  g.movedIds ??= new Set(g.items.map((m) => m.id));
   g.zoneSizes ??= new Map();
   // Les zones étirées reprennent d'abord leur taille d'avant : c'est sur
   // elle qu'on juge si le bloc est dedans, sinon la zone, en suivant le bloc,
@@ -468,31 +547,45 @@ function liveZones(g) {
   for (const [id, size] of g.zoneSizes) {
     if (state.doc.zones[id]) Object.assign(state.doc.zones[id], size);
   }
-  // Un bloc qui voyage avec sa zone ne cherche pas de nouvelle zone.
-  const z = b.zone && g.movedIds.has(b.zone) ? null : zoneFor(b);
+  // Ce qui voyage avec sa zone ne cherche pas de nouvelle zone.
+  const home = isZone ? it.parent : it.zone;
+  const z = home && g.movedIds.has(home) ? null : zoneFor(it, isZone ? it.id : undefined);
 
   let guides = [];
   if (z) {
-    // L'aimant déplace tout le groupe glissé du même écart que le bloc visé.
-    const snap = snapIn(b, z, g.movedIds);
-    const dx = snap.x - b.x;
-    const dy = snap.y - b.y;
-    if (dx || dy) {
-      for (const { id } of g.items) {
-        const it = item(id);
-        if (it) { it.x += dx; it.y += dy; }
+    if (!isZone) {
+      // L'aimant déplace tout le groupe glissé du même écart que le bloc visé.
+      const snap = snapIn(it, z, g.movedIds);
+      const dx = snap.x - it.x;
+      const dy = snap.y - it.y;
+      if (dx || dy) {
+        for (const { id } of g.items) {
+          const m = item(id);
+          if (m) { m.x += dx; m.y += dy; }
+        }
       }
+      guides = snap.guides;
     }
-    guides = snap.guides;
-    if (!g.zoneSizes.has(z.id)) g.zoneSizes.set(z.id, { w: z.w, h: z.h });
-    const was = g.zoneSizes.get(z.id);
-    z.w = Math.max(was.w, b.x + b.w + ZONE_PAD - z.x);
-    z.h = Math.max(was.h, b.y + b.h + ZONE_PAD - z.y);
+    growChain(z, it, g.zoneSizes);
   }
 
   render();
   setDropZone(z ? z.id : null, g.id);
   drawGuides(guides);
+}
+
+/* Une zone s'étire pour contenir `rect`, et ses zones parentes à leur tour
+   pour la contenir. Avec `record`, la taille d'avant est notée une fois et
+   sert de base : l'étirement reste un aperçu qu'on peut défaire. */
+function growChain(z, rect, record) {
+  let r = rect;
+  for (let cur = z; cur; cur = parentOf(cur)) {
+    if (record && !record.has(cur.id)) record.set(cur.id, { w: cur.w, h: cur.h });
+    const base = record ? record.get(cur.id) : cur;
+    cur.w = Math.max(base.w, r.x + r.w + ZONE_PAD - cur.x);
+    cur.h = Math.max(base.h, r.y + r.h + ZONE_PAD - cur.y);
+    r = cur;
+  }
 }
 
 /** Position aimantée d'un bloc dans une zone, et les guides à tracer. */
@@ -553,17 +646,25 @@ function settleInZones(items) {
   const moved = new Set(items.map((it) => it.id));
   const touched = new Set();
   for (const { id } of items) {
-    const b = state.doc.blocks[id];
-    if (!b || (b.zone && moved.has(b.zone))) continue;
-    adopt(b);
-    const z = zoneOf(b);
+    const it = item(id);
+    if (!it) continue;
+    const isZone = !!state.doc.zones[id];
+    const home = isZone ? it.parent : it.zone;
+    if (home && moved.has(home)) continue; // voyage avec sa zone
+    if (isZone && !isContainer(it)) continue;
+    adopt(it);
+    const z = isZone ? parentOf(it) : zoneOf(it);
     if (!z) continue;
-    b.x = Math.max(b.x, z.x + ZONE_PAD);
-    b.y = Math.max(b.y, z.y + ZONE_LABEL);
-    z.w = Math.max(z.w, b.x + b.w + ZONE_PAD - z.x);
-    z.h = Math.max(z.h, b.y + b.h + ZONE_PAD - z.y);
+    // Ce qui déborde en haut ou à gauche est attiré dedans, avec son contenu.
+    const dx = Math.max(0, z.x + ZONE_PAD - it.x);
+    const dy = Math.max(0, z.y + ZONE_LABEL - it.y);
+    if (dx || dy) {
+      const group = isZone ? [it, ...descendants(it.id).zones, ...descendants(it.id).blocks] : [it];
+      for (const m of group) { m.x += dx; m.y += dy; touched.add(m.id); }
+    }
+    growChain(z, it);
     touched.add(id);
-    touched.add(z.id);
+    for (let p = z; p; p = parentOf(p)) touched.add(p.id);
   }
   const nodes = [...touched].map((id) => nodeFor(id)).filter(Boolean);
   nodes.forEach((n) => n.classList.add("is-animating", "is-settled"));

@@ -5,7 +5,7 @@
    existants plutôt que de reconstruire, pour ne pas casser une édition en cours
    ni la sélection du texte. */
 
-import { state, getCategory, fieldsOf } from "./store.js";
+import { state, getCategory, fieldsOf, depthOf } from "./store.js";
 import { el, icon, formatDate, isSoon, fold, ICON_PATHS } from "./util.js";
 import { assetURL as getAsset } from "./store.js";
 import { renderList } from "./lists.js";
@@ -282,6 +282,8 @@ function updateZone(node, z) {
   node.style.top = z.y + "px";
   node.style.width = z.w + "px";
   node.style.height = z.h + "px";
+  // Une sous-zone passe devant sa zone parente, sinon on ne pourrait pas la viser.
+  node.style.zIndex = depthOf(z);
   node.classList.toggle("is-selected", state.selection.has(z.id));
   node.classList.toggle("is-archive", !!z.archive);
   node.classList.toggle("is-dimmed", state.filters.categories.size > 0 || !!state.search.query);

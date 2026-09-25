@@ -6,7 +6,7 @@
    rattache la variante à son original. Chaque bloc porte son numéro de
    version, et toutes les versions d'un même ensemble partagent une lignée. */
 
-import { state, mutate, addBlock, addZone, addLink, emit, childrenOf } from "./store.js";
+import { state, mutate, addBlock, addZone, addLink, emit, descendants } from "./store.js";
 import { render } from "./render.js";
 import { centerOn } from "./viewport.js";
 import { bounds, uid } from "./util.js";
@@ -31,11 +31,14 @@ function groupFor(id) {
   const ids = state.selection.size > 1 && state.selection.has(id) ? [...state.selection] : connected(id);
   const zones = ids.filter((x) => state.doc.zones[x]);
   const blocks = new Set(ids.filter((x) => state.doc.blocks[x]));
-  // Une zone sélectionnée emporte son contenu.
+  // Une zone sélectionnée emporte son contenu, sous-zones comprises.
+  const allZones = new Set(zones);
   for (const zid of zones) {
-    for (const b of childrenOf(zid)) blocks.add(b.id);
+    const d = descendants(zid);
+    for (const b of d.blocks) blocks.add(b.id);
+    for (const z of d.zones) allZones.add(z.id);
   }
-  return { blocks: [...blocks], zones };
+  return { blocks: [...blocks], zones: [...allZones] };
 }
 
 export function createVariant(id) {
@@ -57,6 +60,10 @@ export function createVariant(id) {
       const z = state.doc.zones[zid];
       const copy = addZone({ ...z, id: undefined, archive: false, x: z.x + dx, name: `${z.name || "Zone"} v${version}` });
       zoneCopies.set(zid, copy.id);
+    }
+    // Une sous-zone copiée reste dans la copie de sa zone parente.
+    for (const [zid, cid] of zoneCopies) {
+      state.doc.zones[cid].parent = zoneCopies.get(state.doc.zones[zid].parent) || null;
     }
 
     for (const b of originals) {

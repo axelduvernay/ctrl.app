@@ -217,8 +217,10 @@ export function addBlock(props) {
 
 export function addZone(props) {
   const id = uid();
-  state.doc.zones[id] = { x: 0, y: 0, w: 400, h: 300, name: "", ...props, id };
-  return state.doc.zones[id];
+  const zone = (state.doc.zones[id] = { x: 0, y: 0, w: 400, h: 300, name: "", ...props, id });
+  // Posée dans une zone, elle en devient une sous-zone — sauf si on a dit où.
+  if (props.parent === undefined) zone.parent = isContainer(zone) ? zoneFor(zone, id)?.id || null : null;
+  return zone;
 }
 
 export function addLink(from, to, kind) {
@@ -245,6 +247,39 @@ export function addLink(from, to, kind) {
 
 export const isContainer = (z) => !!z && !z.archive && !z.auto;
 
+/* Les zones s'imbriquent : une zone porte sa zone parente dans `zone.parent`,
+   comme un bloc porte la sienne. On en tire la profondeur (pour l'ordre
+   d'affichage) et la descendance (ce qui suit une zone qu'on déplace). */
+
+export const parentOf = (z) => (z && z.parent && isContainer(state.doc.zones[z.parent]) ? state.doc.zones[z.parent] : null);
+
+/** Vrai si la zone `id` est `ancestor` ou se trouve quelque part dedans. */
+export function isWithin(id, ancestor) {
+  for (let z = state.doc.zones[id]; z; z = parentOf(z)) if (z.id === ancestor) return true;
+  return false;
+}
+
+export function depthOf(z) {
+  let d = 0;
+  for (let p = parentOf(z); p && d < 50; p = parentOf(p)) d++;
+  return d;
+}
+
+export const childZones = (id) => Object.values(state.doc.zones).filter((z) => z.parent === id && isContainer(z));
+
+/** Tout ce que contient une zone, sous-zones comprises, à toute profondeur. */
+export function descendants(id) {
+  const zones = [];
+  const blocks = [...childrenOf(id)];
+  for (const sub of childZones(id)) {
+    zones.push(sub);
+    const d = descendants(sub.id);
+    zones.push(...d.zones);
+    blocks.push(...d.blocks);
+  }
+  return { zones, blocks };
+}
+
 /** La plus petite zone conteneur sous ce point, s'il y en a une. */
 export function zoneAt(x, y, except) {
   let best = null;
@@ -260,18 +295,21 @@ export function zoneAt(x, y, except) {
    lâché à cheval sur le bord, le bloc est attiré dedans. */
 const JOIN_SHARE = 0.3;
 
-/** La zone qui recouvre le plus un bloc, si elle en recouvre assez. */
-export function zoneFor(b) {
+/** La zone qui recouvre le plus un bloc (ou une zone), si elle en recouvre
+    assez. `except` écarte une zone et tout ce qu'elle contient : une zone ne
+    peut pas entrer dans elle-même. À recouvrement égal, la plus petite gagne —
+    c'est la plus profonde. */
+export function zoneFor(b, except) {
   const area = Math.max(1, b.w * b.h);
   let best = null;
   let bestShare = JOIN_SHARE;
   for (const z of Object.values(state.doc.zones)) {
-    if (!isContainer(z)) continue;
+    if (!isContainer(z) || (except && isWithin(z.id, except))) continue;
     const w = Math.min(b.x + b.w, z.x + z.w) - Math.max(b.x, z.x);
     const h = Math.min(b.y + b.h, z.y + z.h) - Math.max(b.y, z.y);
     if (w <= 0 || h <= 0) continue;
     const share = (w * h) / area;
-    if (share > bestShare || (share === bestShare && best && z.w * z.h < best.w * best.h)) {
+    if (share > bestShare + 1e-6 || (Math.abs(share - bestShare) <= 1e-6 && best && z.w * z.h < best.w * best.h)) {
       best = z;
       bestShare = share;
     }
@@ -292,10 +330,15 @@ export function childrenOf(zoneId) {
   return isContainer(z) ? blocks.filter((b) => b.zone === zoneId && !b.archived) : blocks.filter((b) => contains(z, b));
 }
 
-/** Recalcule la zone d'un bloc d'après sa position — après un glisser. */
-export function adopt(b) {
-  if (b.archived) return;
-  b.zone = zoneFor(b)?.id || null;
+/** Recalcule la zone d'un bloc, ou la zone parente d'une zone, d'après sa
+    position — après un glisser. */
+export function adopt(it) {
+  if (state.doc.zones[it.id]) {
+    if (isContainer(it)) it.parent = zoneFor(it, it.id)?.id || null;
+    return;
+  }
+  if (it.archived) return;
+  it.zone = zoneFor(it)?.id || null;
 }
 
 /** Le lien entre deux blocs, dans un sens ou dans l'autre. */
@@ -305,10 +348,14 @@ export const linkBetween = (a, b) =>
 export function removeItems(ids) {
   for (const id of ids) {
     delete state.doc.blocks[id];
-    delete state.doc.zones[id];
     delete state.doc.links[id];
-    // Une zone supprimée libère ses blocs, elle ne les emporte pas.
-    for (const b of Object.values(state.doc.blocks)) if (b.zone === id) b.zone = null;
+    // Une zone supprimée n'emporte rien : ses blocs et ses sous-zones
+    // remontent d'un cran, dans sa zone parente s'il y en a une.
+    const gone = state.doc.zones[id];
+    const up = gone ? gone.parent || null : null;
+    for (const b of Object.values(state.doc.blocks)) if (b.zone === id) b.zone = up;
+    for (const z of Object.values(state.doc.zones)) if (z.parent === id) z.parent = up;
+    delete state.doc.zones[id];
     state.doc.order = state.doc.order.filter((x) => x !== id);
     for (const [lid, link] of Object.entries(state.doc.links)) {
       if (link.from === id || link.to === id) delete state.doc.links[lid];

@@ -107,6 +107,10 @@ button { font: inherit; color: inherit; }
    redessine le texte net à la bonne échelle. */
 #world.is-moving { will-change: transform; }
 
+/* Les zones forment leur propre pile : leur ordre (sous-zone devant sa
+   parente) ne doit jamais les faire passer devant les blocs. */
+#zones { position: absolute; top: 0; left: 0; z-index: 0; }
+
 #links {
   position: absolute;
   overflow: visible;
@@ -394,6 +398,7 @@ button { font: inherit; color: inherit; }
 }
 
 /* Le bloc au-dessus d'une zone prend un halo, puis se pose avec un rebond. */
+.zone.is-magnet { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 .block.is-magnet { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft), 0 14px 32px rgba(224, 109, 59, 0.22); }
 .block.is-settled { animation: block-settle 0.36s cubic-bezier(0.3, 1.6, 0.5, 1); }
 @keyframes block-settle { 0% { transform: scale(1.045); } 100% { transform: scale(1); } }

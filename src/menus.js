@@ -1,6 +1,6 @@
 /* Menus : clic droit sur le canvas, et menu du compte en haut à droite. */
 
-import { state, isContainer, categoryList, getCategory, addCategory, updateCategory, removeCategory, PALETTE, fieldsOf,
+import { state, isContainer, zoneFor, categoryList, getCategory, addCategory, updateCategory, removeCategory, PALETTE, fieldsOf,
          mutate, addZone, addLink, removeItems, addBlock, storageUsed, emit } from "./store.js";
 import { el, icon, bounds, uid, ICON_PATHS } from "./util.js";
 import { openProps } from "./props.js";
@@ -126,7 +126,14 @@ export function openContextMenu(x, y, { onEmpty, world }) {
           const b = bounds(items);
           if (!b) return;
           mutate(() => {
-            const zone = addZone({ x: b.x - 28, y: b.y - 44, w: b.w + 56, h: b.h + 72 });
+            // La nouvelle zone prend la place de ce qu'elle regroupe : même
+            // zone parente, et les éléments regroupés deviennent ses enfants.
+            const zone = addZone({ x: b.x - 28, y: b.y - 44, w: b.w + 56, h: b.h + 72, parent: null });
+            for (const id of ids) {
+              const z = state.doc.zones[id];
+              if (z && isContainer(z)) z.parent = zone.id;
+            }
+            zone.parent = zoneFor(zone, zone.id)?.id || null;
             for (const id of blockIds) if (!state.doc.blocks[id].archived) state.doc.blocks[id].zone = zone.id;
           });
           render();
