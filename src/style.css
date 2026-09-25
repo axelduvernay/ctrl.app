@@ -12,6 +12,7 @@
   --accent-soft: rgba(224, 109, 59, 0.14);
   --line: rgba(30, 30, 32, 0.10);
   --line-strong: rgba(30, 30, 32, 0.20);
+  --zone-tint: 11%;
   --grid: rgba(30, 30, 32, 0.07);
   --shadow: 0 1px 2px rgba(20, 20, 21, 0.06), 0 8px 24px rgba(20, 20, 21, 0.08);
 
@@ -37,6 +38,7 @@
     --accent-soft: rgba(224, 109, 59, 0.20);
     --line: rgba(244, 240, 234, 0.12);
     --line-strong: rgba(244, 240, 234, 0.26);
+    --zone-tint: 17%;
     --grid: rgba(244, 240, 234, 0.06);
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 24px rgba(0, 0, 0, 0.35);
   }
@@ -51,6 +53,7 @@
   --accent-soft: rgba(224, 109, 59, 0.20);
   --line: rgba(244, 240, 234, 0.12);
   --line-strong: rgba(244, 240, 234, 0.26);
+  --zone-tint: 17%;
   --grid: rgba(244, 240, 234, 0.06);
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 24px rgba(0, 0, 0, 0.35);
 }
@@ -382,6 +385,32 @@ button { font: inherit; color: inherit; }
 }
 
 .zone.is-selected { border-color: var(--accent); }
+
+/* Zone colorée : un voile léger de la teinte, un bord à peine teinté. */
+.zone.has-color {
+  background: color-mix(in srgb, var(--zc) var(--zone-tint), transparent);
+  border-color: color-mix(in srgb, var(--zc) 40%, var(--line-strong));
+}
+.zone.has-color.is-selected { border-color: var(--accent); }
+
+.popup .zone-colors { display: flex; gap: 8px; padding: 4px 10px 8px; }
+.popup .zone-colors .swatch {
+  flex: none;
+  width: 20px; height: 20px;
+  padding: 0;
+  border: 0; border-radius: 50%;
+  background: color-mix(in srgb, var(--c) 55%, var(--surface));
+  box-shadow: inset 0 0 0 1.5px var(--c);
+  transition: transform 0.12s ease;
+}
+.popup .zone-colors .swatch:hover { transform: scale(1.15); background: color-mix(in srgb, var(--c) 55%, var(--surface)); }
+.popup .zone-colors .swatch.is-current { box-shadow: inset 0 0 0 1.5px var(--c), 0 0 0 2px var(--surface), 0 0 0 3.5px var(--text-2); }
+/* « Aucune » : une pastille vide barrée. */
+.popup .zone-colors .swatch.is-none {
+  --c: var(--line-strong);
+  background: linear-gradient(135deg, transparent 45%, var(--text-2) 45%, var(--text-2) 55%, transparent 55%);
+}
+.popup .zone-colors .swatch.is-none:hover { background: linear-gradient(135deg, transparent 45%, var(--text-2) 45%, var(--text-2) 55%, transparent 55%); }
 /* Zone qui va accueillir le bloc qu'on glisse. */
 .zone.is-target {
   border-color: var(--accent);

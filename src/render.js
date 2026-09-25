@@ -286,6 +286,9 @@ function updateZone(node, z) {
   node.style.zIndex = depthOf(z);
   node.classList.toggle("is-selected", state.selection.has(z.id));
   node.classList.toggle("is-archive", !!z.archive);
+  node.classList.toggle("has-color", !!z.color);
+  if (z.color) node.style.setProperty("--zc", z.color);
+  else node.style.removeProperty("--zc");
   node.classList.toggle("is-dimmed", state.filters.categories.size > 0 || !!state.search.query);
   const name = node.querySelector(".zone-name");
   if (name.textContent !== z.name && state.editing !== z.id) name.textContent = z.name;

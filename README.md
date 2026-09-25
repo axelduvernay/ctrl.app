@@ -42,6 +42,9 @@ du code peut passer inaperçue au rechargement.
 | Glisser sur le fond | Sélection au lasso |
 | Maj ou ⌘ + clic | Ajouter ou retirer de la sélection |
 | Clic droit | Catégorie, échéance et rappel, liens, variante, zone, suppression |
+| Clic droit dans une zone → Couleur du fond | Un voile léger d'une teinte de la charte |
+| Glisser une zone dans une autre | En fait une sous-zone, qui suit sa parente |
+| Réduire une zone | Son contenu se resserre ; elle s'arrête avant que deux blocs se touchent |
 | Clic droit dans une zone → Réorganiser la zone | Range ses blocs sur place : une colonne par catégorie, tâches à faire d'abord et par échéance |
 | Tirer le point du bord droit d'un bloc | Le relier à un autre bloc (relâché sur un bloc déjà relié : retire le lien ; dans le vide : crée un bloc relié) |
 | Clic sur un trait de liaison | Le sélectionner ; `Suppr` l'efface |

@@ -92,6 +92,7 @@ export function openContextMenu(x, y, { onEmpty, world }) {
   const linkIds = Object.values(state.doc.links)
     .filter((l) => blockIds.includes(l.from) || blockIds.includes(l.to)).map((l) => l.id);
   return openPopup(x, y, [
+    ...zoneColorItems(ids),
     zoneId ? action("Réorganiser la zone", () => arrangeZone(zoneId), { iconPath: '<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>' }) : null,
     zoneId ? sep() : null,
     blockIds.length ? label("Catégorie") : null,
@@ -148,6 +149,33 @@ export function openContextMenu(x, y, { onEmpty, world }) {
         }, { hint: "suppr" })
       : null,
   ]);
+}
+
+/* Couleur de fond d'une zone : les teintes de la charte, posées en voile
+   léger. La pastille barrée rend la zone neutre. */
+function zoneColorItems(ids) {
+  const zones = ids.map((id) => state.doc.zones[id]).filter((z) => z && !z.archive);
+  if (!zones.length) return [];
+  const current = zones[0].color || null;
+  const pick = (color) => {
+    closeMenus();
+    mutate(() => { for (const z of zones) z.color = color; });
+    render();
+  };
+  return [
+    label(zones.length > 1 ? `Couleur du fond (${zones.length})` : "Couleur du fond"),
+    el("div", { class: "zone-colors" },
+      el("button", {
+        type: "button", class: "swatch is-none" + (!current ? " is-current" : ""),
+        title: "Aucune", "aria-label": "Aucune couleur", onclick: () => pick(null),
+      }),
+      ...PALETTE.map((color) => el("button", {
+        type: "button", class: "swatch" + (current === color ? " is-current" : ""),
+        style: `--c:${color}`, "aria-label": color, onclick: () => pick(color),
+      }))
+    ),
+    sep(),
+  ];
 }
 
 /* Échéance et rappel dépendent de la catégorie : un bloc seul ouvre son

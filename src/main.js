@@ -17,7 +17,7 @@ import { save } from "./store.js";
 
 /* Affichée dans le menu : permet de vérifier qu'une mise à jour est arrivée.
    À changer à chaque livraison. */
-export const VERSION = "25.09 · 13";
+export const VERSION = "25.09 · 14";
 
 async function boot() {
   applyTheme();
