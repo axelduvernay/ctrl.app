@@ -15,6 +15,10 @@ import { seedWelcome } from "./welcome.js";
 import { overlaps } from "./util.js";
 import { save } from "./store.js";
 
+/* Affichée dans le menu : permet de vérifier qu'une mise à jour est arrivée.
+   À changer à chaque livraison. */
+export const VERSION = "25.09 · 3";
+
 async function boot() {
   applyTheme();
   await load();

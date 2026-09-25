@@ -4,7 +4,7 @@
    toujours la dernière version du code, et sans réseau l'app démarre quand même.
    Les données, elles, ne passent jamais par ici — elles vivent dans IndexedDB. */
 
-const CACHE = "ctrl-app-v2";
+const CACHE = "ctrl-app-v3";
 
 const SHELL = [
   "./",
@@ -51,7 +51,10 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET") return;
 
   event.respondWith(
-    fetch(request)
+    // `no-cache` : on revalide auprès du serveur plutôt que de servir la copie
+    // du navigateur. GitHub Pages autorise dix minutes de cache, pendant
+    // lesquelles une mise à jour resterait invisible.
+    fetch(request, { cache: "no-cache" })
       .then((response) => {
         // On ne met en cache que ce qui a abouti, et jamais les réponses opaques
         // partielles qui rendraient l'app cassée hors-ligne.

@@ -10,7 +10,7 @@ import { arrange } from "./arrange.js";
 import { fitAll } from "./viewport.js";
 import { exportBoard, importBoard } from "./io.js";
 import { toggleFilter, toggleDoneFilter, clearFilters } from "./search.js";
-import { toast } from "./main.js";
+import { toast, VERSION } from "./main.js";
 import { createVariant } from "./variant.js";
 import { toList, LIST_TYPES } from "./lists.js";
 
@@ -258,7 +258,7 @@ export function openMainMenu(anchor) {
     action("Exporter le board", () => exportBoard()),
     action("Importer un board…", () => importBoard()),
     sep(),
-    el("div", { class: "label", text: `${describeSize(storageUsed())} · ${Object.keys(state.doc.blocks).length} blocs` }),
+    el("div", { class: "label", text: `${describeSize(storageUsed())} · ${Object.keys(state.doc.blocks).length} blocs · v${VERSION}` }),
   ]);
   menu.style.minWidth = "212px";
 }
