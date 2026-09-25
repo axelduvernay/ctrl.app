@@ -259,8 +259,19 @@ function onPointerMove(e) {
   if (gesture.mode === "resize") {
     const it = item(gesture.id);
     if (!it) return;
-    it.w = Math.max(80, Math.round(gesture.w0 + world.x - gesture.ox));
-    it.h = Math.max(48, Math.round(gesture.h0 + world.y - gesture.oy));
+    let w = Math.max(80, gesture.w0 + world.x - gesture.ox);
+    let h = Math.max(48, gesture.h0 + world.y - gesture.oy);
+    // Maj enfoncée : les proportions de départ sont gardées. On suit l'axe où
+    // le pointeur est allé le plus loin, l'autre s'en déduit.
+    if (e.shiftKey && gesture.w0 && gesture.h0) {
+      const ratio = gesture.w0 / gesture.h0;
+      if (w / gesture.w0 >= h / gesture.h0) h = w / ratio;
+      else w = h * ratio;
+      if (h < 48) { h = 48; w = h * ratio; }
+      if (w < 80) { w = 80; h = w / ratio; }
+    }
+    it.w = Math.round(w);
+    it.h = Math.round(h);
     render();
     return;
   }
