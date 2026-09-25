@@ -1,12 +1,12 @@
 /* Menus : clic droit sur le canvas, et menu du compte en haut à droite. */
 
-import { state, categoryList, getCategory, addCategory, updateCategory, removeCategory, PALETTE, fieldsOf,
+import { state, isContainer, categoryList, getCategory, addCategory, updateCategory, removeCategory, PALETTE, fieldsOf,
          mutate, addZone, addLink, removeItems, addBlock, storageUsed, emit } from "./store.js";
 import { el, icon, bounds, uid, ICON_PATHS } from "./util.js";
 import { openProps } from "./props.js";
 import { render } from "./render.js";
 import { setCategory, setDue, stopEditing } from "./editor.js";
-import { arrange } from "./arrange.js";
+import { arrange, arrangeZone } from "./arrange.js";
 import { fitAll } from "./viewport.js";
 import { exportBoard, importBoard } from "./io.js";
 import { toggleFilter, toggleDoneFilter, clearFilters } from "./search.js";
@@ -87,9 +87,13 @@ export function openContextMenu(x, y, { onEmpty, world }) {
   }
 
   const many = ids.length > 1;
+  // Clic droit dans une zone conteneur : la ranger de l'intérieur.
+  const zoneId = ids.length === 1 && isContainer(state.doc.zones[ids[0]]) ? ids[0] : null;
   const linkIds = Object.values(state.doc.links)
     .filter((l) => blockIds.includes(l.from) || blockIds.includes(l.to)).map((l) => l.id);
   return openPopup(x, y, [
+    zoneId ? action("Réorganiser la zone", () => arrangeZone(zoneId), { iconPath: '<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>' }) : null,
+    zoneId ? sep() : null,
     blockIds.length ? label("Catégorie") : null,
     ...(blockIds.length
       ? categoryList().map((cat) =>

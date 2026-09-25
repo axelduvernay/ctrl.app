@@ -33,7 +33,7 @@ du code peut passer inaperçue au rechargement.
 | Double-clic sur le fond | Nouveau bloc, prêt à écrire — dans une zone, le bloc lui appartient |
 | Maj en redimensionnant | Garde les proportions (images, dessins) |
 | Option en redimensionnant | Grandit ou rétrécit autour du centre (combinable avec Maj) |
-| Glisser un bloc dans ou hors d'une zone | L'y range, ou l'en sort ; l'aimant l'aligne sur ses voisins et la zone s'agrandit pour le contenir |
+| Glisser un bloc dans ou hors d'une zone | L'y range, ou l'en sort ; en direct, la zone s'allume, s'étire pour le contenir, et l'aimant l'aligne sur ses voisins |
 | Clic sur un bloc sélectionné, ou double-clic | Modifier son texte, curseur au point cliqué |
 | Clic sur le nom d'une zone | La renommer (`Entrée` pour valider) |
 | Deux doigts | Déplacer la vue |
@@ -42,6 +42,7 @@ du code peut passer inaperçue au rechargement.
 | Glisser sur le fond | Sélection au lasso |
 | Maj ou ⌘ + clic | Ajouter ou retirer de la sélection |
 | Clic droit | Catégorie, échéance et rappel, liens, variante, zone, suppression |
+| Clic droit dans une zone → Réorganiser la zone | Range ses blocs sur place : une colonne par catégorie, tâches à faire d'abord et par échéance |
 | Tirer le point du bord droit d'un bloc | Le relier à un autre bloc (relâché sur un bloc déjà relié : retire le lien ; dans le vide : crée un bloc relié) |
 | Clic sur un trait de liaison | Le sélectionner ; `Suppr` l'efface |
 | `/idea` `/task` … | Catégoriser depuis le clavier |

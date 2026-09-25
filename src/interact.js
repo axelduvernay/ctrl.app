@@ -243,8 +243,8 @@ function onPointerMove(e) {
       it.x = Math.round(x0 + dx);
       it.y = Math.round(y0 + dy);
     }
-    render();
-    showDropZone(gesture.id);
+    if (state.doc.blocks[gesture.id]) liveZones(gesture);
+    else render();
     return;
   }
 
@@ -442,64 +442,129 @@ function onModifier(e) {
   }
 }
 
-/* ---------- Entrer et sortir d'une zone ---------- */
+/* ---------- Entrer et sortir d'une zone ----------
 
-/* Un bloc lâché dans une zone en devient l'enfant ; lâché dehors, il redevient
-   libre. Les enfants d'une zone qu'on déplace avec elle ne changent rien. */
+   Tout se voit pendant le glisser, pas seulement au lâcher : la zone visée
+   s'allume et pulse à l'entrée du bloc, l'aimant cale le bloc sur ses voisins
+   en traçant un guide, et la zone s'étire pour le contenir. Sortir le bloc
+   rend à la zone sa taille d'avant. */
+
+const ZONE_PAD = 24;    // mêmes marges que le rangement automatique
+const ZONE_LABEL = 48;
+const SNAP = 16;        // portée de l'aimant, en unités du monde
+const GAP_SNAP = 28;    // l'écart entre deux blocs voisins, comme au rangement
+
+/** Appelé à chaque mouvement d'un glisser de bloc. */
+function liveZones(g) {
+  const b = state.doc.blocks[g.id];
+  if (!b) return;
+  g.movedIds ??= new Set(g.items.map((it) => it.id));
+  g.zoneSizes ??= new Map();
+  // Les zones étirées reprennent d'abord leur taille d'avant : c'est sur
+  // elle qu'on juge si le bloc est dedans, sinon la zone, en suivant le bloc,
+  // ne le laisserait jamais sortir.
+  for (const [id, size] of g.zoneSizes) {
+    if (state.doc.zones[id]) Object.assign(state.doc.zones[id], size);
+  }
+  // Un bloc qui voyage avec sa zone ne cherche pas de nouvelle zone.
+  const z = b.zone && g.movedIds.has(b.zone) ? null : zoneAt(b.x + b.w / 2, b.y + Math.min(b.h, 60) / 2);
+
+  let guides = [];
+  if (z) {
+    // L'aimant déplace tout le groupe glissé du même écart que le bloc visé.
+    const snap = snapIn(b, z, g.movedIds);
+    const dx = snap.x - b.x;
+    const dy = snap.y - b.y;
+    if (dx || dy) {
+      for (const { id } of g.items) {
+        const it = item(id);
+        if (it) { it.x += dx; it.y += dy; }
+      }
+    }
+    guides = snap.guides;
+    if (!g.zoneSizes.has(z.id)) g.zoneSizes.set(z.id, { w: z.w, h: z.h });
+    const was = g.zoneSizes.get(z.id);
+    z.w = Math.max(was.w, b.x + b.w + ZONE_PAD - z.x);
+    z.h = Math.max(was.h, b.y + b.h + ZONE_PAD - z.y);
+  }
+
+  render();
+  setDropZone(z ? z.id : null, g.id);
+  drawGuides(guides);
+}
+
+/** Position aimantée d'un bloc dans une zone, et les guides à tracer. */
+function snapIn(b, z, moved) {
+  const siblings = childrenOf(z.id).filter((s) => s !== b && !moved.has(s.id));
+  const near = (value, candidates) => {
+    let best = null;
+    for (const c of candidates) {
+      if (Math.abs(c - value) <= SNAP && (best === null || Math.abs(c - value) < Math.abs(best - value))) best = c;
+    }
+    return best;
+  };
+  const x = near(b.x, [z.x + ZONE_PAD, ...siblings.flatMap((s) => [s.x, s.x + s.w + GAP_SNAP])]);
+  const y = near(b.y, [z.y + ZONE_LABEL, ...siblings.flatMap((s) => [s.y, s.y + s.h + GAP_SNAP])]);
+  const guides = [];
+  if (x !== null) guides.push({ x1: x, y1: z.y, x2: x, y2: z.y + Math.max(z.h, b.y + b.h + ZONE_PAD - z.y) });
+  if (y !== null) guides.push({ x1: z.x, y1: y, x2: z.x + Math.max(z.w, b.x + b.w + ZONE_PAD - z.x), y2: y });
+  return { x: x ?? b.x, y: y ?? b.y, guides };
+}
+
+function drawGuides(guides) {
+  ink.replaceChildren(...guides.map((l) => {
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    for (const [k, v] of Object.entries(l)) line.setAttribute(k, v);
+    line.setAttribute("class", "guide");
+    return line;
+  }));
+}
+
+/* La zone visée s'éclaire ; à l'entrée elle pulse une fois, et le bloc
+   prend un halo tant qu'il est au-dessus d'elle. */
+let dropZone = null;
+let dropBlock = null;
+function setDropZone(zoneId, blockId) {
+  if (dropBlock && (dropBlock !== blockId || !zoneId)) nodeFor(dropBlock)?.classList.remove("is-magnet");
+  dropBlock = zoneId ? blockId : null;
+  if (dropBlock) nodeFor(dropBlock)?.classList.add("is-magnet");
+  if (zoneId === dropZone) return;
+  if (dropZone) nodeFor(dropZone)?.classList.remove("is-target", "is-joined");
+  if (zoneId) {
+    const node = nodeFor(zoneId);
+    node?.classList.add("is-target");
+    // Relancer l'animation : la retirer, forcer un calcul, la remettre.
+    node?.classList.remove("is-joined");
+    void node?.offsetWidth;
+    node?.classList.add("is-joined");
+  }
+  dropZone = zoneId;
+}
+
+/* Au lâcher : un bloc dans une zone en devient l'enfant, dehors il redevient
+   libre. Il rentre sous le nom de la zone s'il débordait en haut ou à gauche,
+   puis se pose avec un léger rebond. */
 function settleInZones(items) {
-  showDropZone(null);
+  setDropZone(null);
+  drawGuides([]);
   const moved = new Set(items.map((it) => it.id));
-  const grown = new Set();
+  const touched = new Set();
   for (const { id } of items) {
     const b = state.doc.blocks[id];
     if (!b || (b.zone && moved.has(b.zone))) continue;
     adopt(b);
     const z = zoneOf(b);
-    if (z) { magnet(b, z, moved); grown.add(z.id); }
+    if (!z) continue;
+    b.x = Math.max(b.x, z.x + ZONE_PAD);
+    b.y = Math.max(b.y, z.y + ZONE_LABEL);
+    z.w = Math.max(z.w, b.x + b.w + ZONE_PAD - z.x);
+    z.h = Math.max(z.h, b.y + b.h + ZONE_PAD - z.y);
+    touched.add(id);
+    touched.add(z.id);
   }
-  // Le bloc qui se cale et la zone qui s'élargit glissent au lieu de sauter.
-  const animated = [...moved, ...grown].map((id) => nodeFor(id)).filter(Boolean);
-  animated.forEach((n) => n.classList.add("is-animating"));
-  setTimeout(() => animated.forEach((n) => n.classList.remove("is-animating")), 380);
-}
-
-const ZONE_PAD = 24;    // mêmes marges que le rangement automatique
-const ZONE_LABEL = 48;
-const SNAP = 16;        // portée de l'aimant, en unités du monde
-
-/* L'aimant : un bloc lâché dans une zone se cale sur le bord d'un voisin s'il
-   en est tout proche, rentre sous le nom de la zone s'il débordait en haut ou
-   à gauche, et la zone s'agrandit pour le contenir en entier. */
-function magnet(b, z, moved) {
-  const siblings = childrenOf(z.id).filter((s) => s !== b && !moved.has(s.id));
-  const near = (value, candidates) => {
-    let best = null;
-    for (const c of candidates) if (Math.abs(c - value) <= SNAP && (best === null || Math.abs(c - value) < Math.abs(best - value))) best = c;
-    return best;
-  };
-  const x = near(b.x, [z.x + ZONE_PAD, ...siblings.map((s) => s.x), ...siblings.map((s) => s.x + s.w + GAP_SNAP)]);
-  const y = near(b.y, [z.y + ZONE_LABEL, ...siblings.map((s) => s.y), ...siblings.map((s) => s.y + s.h + GAP_SNAP)]);
-  if (x !== null) b.x = x;
-  if (y !== null) b.y = y;
-
-  b.x = Math.max(b.x, z.x + ZONE_PAD);
-  b.y = Math.max(b.y, z.y + ZONE_LABEL);
-  z.w = Math.max(z.w, b.x + b.w + ZONE_PAD - z.x);
-  z.h = Math.max(z.h, b.y + b.h + ZONE_PAD - z.y);
-}
-
-const GAP_SNAP = 28; // l'écart entre deux blocs voisins, comme au rangement
-
-/* Pendant le glisser, la zone qui va recevoir le bloc s'éclaire. */
-let dropZone = null;
-function showDropZone(id) {
-  const b = id && state.doc.blocks[id];
-  const z = b && !(b.zone && state.selection.has(b.zone)) ? zoneAt(b.x + b.w / 2, b.y + Math.min(b.h, 60) / 2) : null;
-  const next = z ? z.id : null;
-  if (next === dropZone) return;
-  if (dropZone) nodeFor(dropZone)?.classList.remove("is-target");
-  if (next) nodeFor(next)?.classList.add("is-target");
-  dropZone = next;
+  const nodes = [...touched].map((id) => nodeFor(id)).filter(Boolean);
+  nodes.forEach((n) => n.classList.add("is-animating", "is-settled"));
+  setTimeout(() => nodes.forEach((n) => n.classList.remove("is-animating", "is-settled")), 420);
 }
 
 /* ---------- Connexion ---------- */

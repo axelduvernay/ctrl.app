@@ -86,6 +86,60 @@ export function arrange(mode) {
   animate(blockTargets, zoneTargets, autoZones, mode);
 }
 
+/* Réorganiser une seule zone, sur place : une colonne par catégorie, les
+   tâches à faire en tête et par échéance, et les blocs sans catégorie
+   regroupés par nature (textes, puis listes, fichiers, liens, images). La
+   zone ne bouge pas, elle s'ajuste à son contenu. */
+export function arrangeZone(zoneId) {
+  const z = state.doc.zones[zoneId];
+  const kids = childrenOf(zoneId).filter(movable);
+  if (!z || !kids.length) return toast("Rien à ranger dans cette zone");
+
+  const origin = { x: z.x + PAD, y: z.y + LABEL };
+  const byNature = (b) => ["text", "list", "file", "link", "image"].indexOf(b.kind);
+  const groups = new Map();
+  for (const b of kids) {
+    const key = getCategory(b.category) ? b.category : "kind:" + (b.kind === "text" ? "text" : "media");
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(b);
+  }
+  const order = [...categoryList().map((c) => c.id), "kind:text", "kind:media"].filter((k) => groups.has(k));
+
+  const targets = new Map();
+  let x = origin.x;
+  let bottom = origin.y;
+  const oneColumn = order.length === 1;
+  for (const key of order) {
+    const group = groups.get(key).sort((a, b) =>
+      (a.done - b.done)                                   // à faire d'abord
+      || ((a.due || "~").localeCompare(b.due || "~"))     // échéance la plus proche
+      || (byNature(a) - byNature(b))
+      || ((b.updatedAt || 0) - (a.updatedAt || 0)));
+    if (oneColumn) {
+      // Une seule famille : une grille plutôt qu'une longue colonne.
+      const width = Math.max(z.w - PAD * 2, 480);
+      for (const t of flow(group, origin, width)) targets.set(t.item.id, t);
+      break;
+    }
+    const width = Math.max(...group.map((b) => b.w));
+    let y = origin.y;
+    for (const b of group) {
+      targets.set(b.id, { x, y });
+      y += b.h + GAP;
+    }
+    bottom = Math.max(bottom, y - GAP);
+    x += width + GAP * 1.5;
+  }
+
+  const box = bounds([...targets].map(([id, t]) => ({ x: t.x, y: t.y, w: state.doc.blocks[id].w, h: state.doc.blocks[id].h })));
+  const size = {
+    x: z.x, y: z.y,
+    w: Math.max(240, box.x + box.w + PAD - z.x),
+    h: box.y + box.h + PAD - z.y,
+  };
+  animate(targets, new Map([[zoneId, size]]), null, "zone");
+}
+
 /** Une zone vue comme un élément à placer, avec la date de son bloc le plus récent. */
 function asItem(unit) {
   const kids = childrenOf(unit.zone.id);
@@ -185,17 +239,20 @@ function animate(blockTargets, zoneTargets, autoZones, mode) {
       Object.assign(z, { x: Math.round(t.x), y: Math.round(t.y), w: Math.round(t.w), h: Math.round(t.h) });
     }
     // Les étiquettes du rangement précédent sont remplacées, ou retirées
-    // quand le nouveau rangement n'en pose pas.
-    for (const [id, zone] of Object.entries(state.doc.zones)) {
-      if (zone.auto && !zone.archive) delete state.doc.zones[id];
+    // quand le nouveau rangement n'en pose pas. Réorganiser une seule zone
+    // (autoZones nul) n'y touche pas.
+    if (autoZones) {
+      for (const [id, zone] of Object.entries(state.doc.zones)) {
+        if (zone.auto && !zone.archive) delete state.doc.zones[id];
+      }
+      for (const spec of autoZones) addZone({ ...spec, auto: true });
     }
-    for (const spec of autoZones) addZone({ ...spec, auto: true });
   });
   render();
 
   setTimeout(() => ids.forEach((id) => nodeFor(id)?.classList.remove("is-animating")), 420);
 
-  const labels = { category: "Rangé par catégorie", date: "Rangé par date", tidy: "Aligné" };
+  const labels = { category: "Rangé par catégorie", date: "Rangé par date", tidy: "Aligné", zone: "Zone réorganisée" };
   toast(labels[mode] + " · ⌘Z pour annuler");
-  setTimeout(fitAll, 120);
+  if (mode !== "zone") setTimeout(fitAll, 120);
 }

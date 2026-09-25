@@ -94,11 +94,11 @@ function updateBlock(node, b) {
   node.style.height = grows ? "auto" : b.h + "px";
   node.style.minHeight = b.kind === "text" ? b.h + "px" : "";
 
-  // La classe d'animation est posée de l'extérieur (rangement, aimant) : on la
-  // garde, sinon le rendu qui suit l'effacerait avant la transition.
-  const animating = node.classList.contains("is-animating");
+  // Les classes d'effet sont posées de l'extérieur (rangement, aimant) : on
+  // les garde, sinon le rendu qui suit les effacerait avant la transition.
+  const kept = ["is-animating", "is-magnet", "is-settled"].filter((c) => node.classList.contains(c));
   node.className = "block kind-" + b.kind;
-  if (animating) node.classList.add("is-animating");
+  node.classList.add(...kept);
   if (state.selection.has(b.id)) node.classList.add("is-selected");
   if (b.done) node.classList.add("is-done");
   if (state.editing === b.id) node.classList.add("is-editing");

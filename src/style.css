@@ -335,7 +335,26 @@ button { font: inherit; color: inherit; }
 
 .zone.is-selected { border-color: var(--accent); }
 /* Zone qui va accueillir le bloc qu'on glisse. */
-.zone.is-target { border-color: var(--accent); background: var(--accent-soft); }
+.zone.is-target {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  /* La zone s'étire en douceur sous le bloc qu'on approche. */
+  transition: width 0.16s ease-out, height 0.16s ease-out, background 0.15s ease, border-color 0.15s ease;
+}
+/* Une pulsation à l'entrée du bloc : « c'est pris ». */
+.zone.is-joined { animation: zone-join 0.5s ease-out; }
+@keyframes zone-join {
+  0% { box-shadow: 0 0 0 0 var(--accent-soft); }
+  35% { box-shadow: 0 0 0 12px var(--accent-soft); }
+  100% { box-shadow: 0 0 0 18px transparent; }
+}
+
+/* Le bloc au-dessus d'une zone prend un halo, puis se pose avec un rebond. */
+.block.is-magnet { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft), 0 14px 32px rgba(224, 109, 59, 0.22); }
+.block.is-settled { animation: block-settle 0.36s cubic-bezier(0.3, 1.6, 0.5, 1); }
+@keyframes block-settle { 0% { transform: scale(1.045); } 100% { transform: scale(1); } }
+
+#ink .guide { stroke: var(--accent); stroke-width: 1; stroke-dasharray: 4 4; vector-effect: non-scaling-stroke; }
 .zone.is-animating { transition: left 0.35s cubic-bezier(0.22, 0.61, 0.36, 1), top 0.35s cubic-bezier(0.22, 0.61, 0.36, 1), width 0.35s cubic-bezier(0.22, 0.61, 0.36, 1), height 0.35s cubic-bezier(0.22, 0.61, 0.36, 1); }
 .zone.is-dimmed { opacity: 0.3; }
 
