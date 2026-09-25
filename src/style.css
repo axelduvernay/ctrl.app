@@ -334,6 +334,9 @@ button { font: inherit; color: inherit; }
 }
 
 .zone.is-selected { border-color: var(--accent); }
+/* Zone qui va accueillir le bloc qu'on glisse. */
+.zone.is-target { border-color: var(--accent); background: var(--accent-soft); }
+.zone.is-animating { transition: left 0.35s cubic-bezier(0.22, 0.61, 0.36, 1), top 0.35s cubic-bezier(0.22, 0.61, 0.36, 1), width 0.35s cubic-bezier(0.22, 0.61, 0.36, 1), height 0.35s cubic-bezier(0.22, 0.61, 0.36, 1); }
 .zone.is-dimmed { opacity: 0.3; }
 
 /* L'archive se signale par un trait discontinu : présente, mais en retrait. */

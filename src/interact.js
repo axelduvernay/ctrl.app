@@ -5,7 +5,8 @@
    une fois un geste commencé, il se termine proprement même si le curseur sort
    de la fenêtre. */
 
-import { state, begin, commit, mutate, addBlock, addZone, addLink, linkBetween, raise, item, emit } from "./store.js";
+import { state, begin, commit, mutate, addBlock, addZone, addLink, linkBetween, raise, item, emit,
+         childrenOf, adopt, zoneAt } from "./store.js";
 import { toWorld, panBy, zoomAt, viewCenter } from "./viewport.js";
 import { render, nodeFor, curveTo } from "./render.js";
 import { moveItem, indexAt, renameItem } from "./lists.js";
@@ -166,7 +167,9 @@ function onPointerDown(e) {
       moved: false,
       id,
       additive,
-      editOnRelease: !additive && (onZoneName || wasSoleSelection),
+      // Une zone ne se renomme que par son nom : cliquer dans son fond sert à
+      // la sélectionner, et le double-clic y crée un bloc.
+      editOnRelease: !additive && (onZoneName || (wasSoleSelection && !state.doc.zones[id])),
       at: { x: e.clientX, y: e.clientY },
       items: dragSet(),
     };
@@ -204,9 +207,7 @@ function dragSet() {
   for (const id of state.selection) {
     const zone = state.doc.zones[id];
     if (!zone) continue;
-    for (const b of Object.values(state.doc.blocks)) {
-      if (contains(zone, b)) ids.add(b.id);
-    }
+    for (const b of childrenOf(id)) ids.add(b.id);
   }
   return [...ids].map((id) => {
     const it = item(id);
@@ -241,6 +242,7 @@ function onPointerMove(e) {
       it.y = Math.round(y0 + dy);
     }
     render();
+    showDropZone(gesture.id);
     return;
   }
 
@@ -332,6 +334,7 @@ function onPointerUp(e) {
     nodeFor(g.id)?.classList.remove("is-reordering");
     commit();
   } else if (g.mode === "drag") {
+    if (g.moved) settleInZones(g.items);
     commit();
     // Relâché sans avoir bougé : c'était un clic, pas un glisser.
     if (!g.moved && g.editOnRelease) editItem(g.id, g.at);
@@ -343,6 +346,12 @@ function onPointerUp(e) {
       // Un simple clic avec l'outil zone : une zone de taille confortable.
       z.w = 420; z.h = 300;
       z.x = g.ox; z.y = g.oy;
+    }
+    // Une zone tracée autour de blocs libres les prend avec elle.
+    if (z) {
+      for (const b of Object.values(state.doc.blocks)) {
+        if (!b.zone && !b.archived && contains(z, b)) b.zone = z.id;
+      }
     }
     commit();
     state.tool = "select";
@@ -396,6 +405,32 @@ function commitStroke(points) {
   emit("selection");
   render();
   return block;
+}
+
+/* ---------- Entrer et sortir d'une zone ---------- */
+
+/* Un bloc lâché dans une zone en devient l'enfant ; lâché dehors, il redevient
+   libre. Les enfants d'une zone qu'on déplace avec elle ne changent rien. */
+function settleInZones(items) {
+  showDropZone(null);
+  const moved = new Set(items.map((it) => it.id));
+  for (const { id } of items) {
+    const b = state.doc.blocks[id];
+    if (!b || (b.zone && moved.has(b.zone))) continue;
+    adopt(b);
+  }
+}
+
+/* Pendant le glisser, la zone qui va recevoir le bloc s'éclaire. */
+let dropZone = null;
+function showDropZone(id) {
+  const b = id && state.doc.blocks[id];
+  const z = b && !(b.zone && state.selection.has(b.zone)) ? zoneAt(b.x + b.w / 2, b.y + Math.min(b.h, 60) / 2) : null;
+  const next = z ? z.id : null;
+  if (next === dropZone) return;
+  if (dropZone) nodeFor(dropZone)?.classList.remove("is-target");
+  if (next) nodeFor(next)?.classList.add("is-target");
+  dropZone = next;
 }
 
 /* ---------- Connexion ---------- */
@@ -535,6 +570,12 @@ function editItem(id, at) {
 
 function onDoubleClick(e) {
   const node = hitTarget(e).closest("[data-id]");
+
+  // Double-clic dans le fond d'une zone : un bloc naît dedans, comme sur le board.
+  if (node && state.doc.zones[node.dataset.id] && !hitTarget(e).closest("[data-zone-name]")) {
+    const world = toWorld(e.clientX, e.clientY);
+    return createBlockAt(world.x, world.y);
+  }
 
   if (node) {
     const id = node.dataset.id;

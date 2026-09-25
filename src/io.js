@@ -3,7 +3,7 @@
    Les images et fichiers ne sont jamais écrits dans le document : ils partent
    dans le magasin d'assets et le bloc n'en garde que la clé. */
 
-import { state, mutate, addBlock, putAsset, emptyDoc, save, emit } from "./store.js";
+import { state, mutate, addBlock, putAsset, emptyDoc, save, emit, migrate } from "./store.js";
 import { toWorld, viewCenter } from "./viewport.js";
 import { render } from "./render.js";
 import { toast } from "./main.js";
@@ -156,6 +156,7 @@ export function importBoard() {
         await putAsset(blob);
       }
       state.doc = { ...emptyDoc(), ...payload.doc };
+      migrate();
       state.selection.clear();
       save();
       render();

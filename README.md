@@ -30,7 +30,8 @@ du code peut passer inaperçue au rechargement.
 
 | Geste | Effet |
 | --- | --- |
-| Double-clic sur le fond | Nouveau bloc, prêt à écrire |
+| Double-clic sur le fond | Nouveau bloc, prêt à écrire — dans une zone, le bloc lui appartient |
+| Glisser un bloc dans ou hors d'une zone | L'y range, ou l'en sort |
 | Clic sur un bloc sélectionné, ou double-clic | Modifier son texte, curseur au point cliqué |
 | Clic sur le nom d'une zone | La renommer (`Entrée` pour valider) |
 | Deux doigts | Déplacer la vue |
@@ -148,6 +149,14 @@ copiés, pour qu'une même alarme ne sonne pas deux fois.
 notification du système si elle est autorisée, message dans l'app sinon.
 Application fermée, rien ne sonne — il faudra pour ça un serveur qui envoie les
 notifications, prévu avec la synchronisation.
+
+**Les zones sont des conteneurs.** Chaque bloc porte l'identifiant de sa
+zone (`block.zone`) : c'est l'appartenance qui compte, pas la position. Un bloc
+créé ou lâché dans une zone en devient l'enfant ; il n'en sort que si on l'en
+fait glisser. Le rangement automatique range chaque zone de l'intérieur, puis
+déplace les zones d'un seul tenant : les notes, tâches et rappels d'un projet
+restent ensemble. Les zones posées par le rangement par catégorie, elles, ne
+sont que des étiquettes recalculées à chaque fois.
 
 **Les tâches cochées rejoignent la zone « Fait ».** Elles ne disparaissent pas
 et n'encombrent plus. L'appartenance à l'archive est portée par le bloc, pas

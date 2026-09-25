@@ -7,7 +7,7 @@
    Cette séparation garde l'annulation instantanée même sur un board rempli d'images,
    et prépare la synchronisation : seul `doc` aura besoin de fusionner. */
 
-import { uid, debounce } from "./util.js";
+import { uid, debounce, contains } from "./util.js";
 
 const DB_NAME = "ctrl-app";
 const DB_VERSION = 1;
@@ -208,6 +208,8 @@ export function addBlock(props) {
     ...props,
     id, // après les props : une copie passe `id: undefined`
   };
+  // Né dans une zone, un bloc en devient l'enfant — sauf si on a dit laquelle.
+  if (props.zone === undefined) block.zone = zoneAt(block.x + block.w / 2, block.y + Math.min(block.h, 60) / 2)?.id || null;
   state.doc.blocks[id] = block;
   state.doc.order.push(id);
   return block;
@@ -230,6 +232,49 @@ export function addLink(from, to, kind) {
   return state.doc.links[id];
 }
 
+/* ---------- Zones conteneurs ----------
+
+   Une zone range des blocs : chaque bloc porte l'identifiant de sa zone dans
+   `block.zone`. C'est l'appartenance qui compte, pas la géométrie : le
+   rangement automatique déplace un bloc, il ne le fait jamais changer de
+   zone. Seul un glisser à la main l'y fait entrer ou sortir.
+
+   Deux sortes de zones ne rangent rien : l'archive « Fait », qui a sa propre
+   logique, et les zones posées par le rangement par catégorie, simples
+   étiquettes recalculées à chaque fois. */
+
+export const isContainer = (z) => !!z && !z.archive && !z.auto;
+
+/** La plus petite zone conteneur sous ce point, s'il y en a une. */
+export function zoneAt(x, y, except) {
+  let best = null;
+  for (const z of Object.values(state.doc.zones)) {
+    if (!isContainer(z) || z.id === except) continue;
+    if (x < z.x || y < z.y || x > z.x + z.w || y > z.y + z.h) continue;
+    if (!best || z.w * z.h < best.w * best.h) best = z;
+  }
+  return best;
+}
+
+/** La zone d'un bloc, si elle existe encore. */
+export const zoneOf = (b) => (b && b.zone && isContainer(state.doc.zones[b.zone]) ? state.doc.zones[b.zone] : null);
+
+/** Ce que contient une zone : ses enfants, ou pour une étiquette ce qu'elle recouvre. */
+export function childrenOf(zoneId) {
+  const z = state.doc.zones[zoneId];
+  if (!z) return [];
+  const blocks = Object.values(state.doc.blocks);
+  // Une tâche archivée garde sa zone d'origine pour y revenir, mais vit dans
+  // « Fait » : elle ne suit pas les déplacements de sa zone.
+  return isContainer(z) ? blocks.filter((b) => b.zone === zoneId && !b.archived) : blocks.filter((b) => contains(z, b));
+}
+
+/** Recalcule la zone d'un bloc d'après sa position — après un glisser. */
+export function adopt(b) {
+  if (b.archived) return;
+  b.zone = zoneAt(b.x + b.w / 2, b.y + Math.min(b.h, 60) / 2)?.id || null;
+}
+
 /** Le lien entre deux blocs, dans un sens ou dans l'autre. */
 export const linkBetween = (a, b) =>
   Object.values(state.doc.links).find((l) => (l.from === a && l.to === b) || (l.from === b && l.to === a)) || null;
@@ -239,6 +284,8 @@ export function removeItems(ids) {
     delete state.doc.blocks[id];
     delete state.doc.zones[id];
     delete state.doc.links[id];
+    // Une zone supprimée libère ses blocs, elle ne les emporte pas.
+    for (const b of Object.values(state.doc.blocks)) if (b.zone === id) b.zone = null;
     state.doc.order = state.doc.order.filter((x) => x !== id);
     for (const [lid, link] of Object.entries(state.doc.links)) {
       if (link.from === id || link.to === id) delete state.doc.links[lid];
@@ -302,19 +349,32 @@ export function saveView() {
   } catch {}
 }
 
+/** Met à niveau un board venu d'une version antérieure — au chargement comme à l'import. */
+export function migrate() {
+  // Board créé avant les catégories modifiables : on installe celles d'origine.
+  if (!state.doc.categories || !Object.keys(state.doc.categories).length) {
+    state.doc.categories = seedCategories();
+  }
+  // Catégories antérieures aux champs : les catégories cochables reçoivent
+  // échéance et rappel, comme la Tâche d'origine.
+  for (const cat of Object.values(state.doc.categories)) {
+    if (!cat.fields) cat.fields = cat.checkable ? { ...ALL_FIELDS } : { ...NO_FIELDS };
+  }
+  // Board antérieur aux zones conteneurs : un bloc entièrement dans une zone
+  // en devient l'enfant.
+  for (const b of Object.values(state.doc.blocks)) {
+    if (b.zone !== undefined || b.archived) continue;
+    const home = Object.values(state.doc.zones).filter((z) => isContainer(z) && contains(z, b))
+      .sort((a, c) => a.w * a.h - c.w * c.h)[0];
+    b.zone = home ? home.id : null;
+  }
+}
+
 export async function load() {
   try {
     const doc = await tx("state", "readonly", (s) => s.get(DOC_KEY));
     if (doc && doc.blocks) state.doc = { ...emptyDoc(), ...doc };
-    // Board créé avant les catégories modifiables : on installe celles d'origine.
-    if (!state.doc.categories || !Object.keys(state.doc.categories).length) {
-      state.doc.categories = seedCategories();
-    }
-    // Catégories antérieures aux champs : les catégories cochables reçoivent
-    // échéance et rappel, comme la Tâche d'origine.
-    for (const cat of Object.values(state.doc.categories)) {
-      if (!cat.fields) cat.fields = cat.checkable ? { ...ALL_FIELDS } : { ...NO_FIELDS };
-    }
+    migrate();
     const assets = await tx("assets", "readonly", (s) => s.getAll());
     const keys = await tx("assets", "readonly", (s) => s.getAllKeys());
     keys.forEach((k, i) => state.assets.set(k, assets[i]));

@@ -121,7 +121,10 @@ export function openContextMenu(x, y, { onEmpty, world }) {
           const items = ids.map((id) => state.doc.blocks[id] || state.doc.zones[id]).filter(Boolean);
           const b = bounds(items);
           if (!b) return;
-          mutate(() => addZone({ x: b.x - 28, y: b.y - 40, w: b.w + 56, h: b.h + 68 }));
+          mutate(() => {
+            const zone = addZone({ x: b.x - 28, y: b.y - 44, w: b.w + 56, h: b.h + 72 });
+            for (const id of blockIds) if (!state.doc.blocks[id].archived) state.doc.blocks[id].zone = zone.id;
+          });
           render();
         })
       : null,

@@ -6,10 +6,10 @@
    rattache la variante à son original. Chaque bloc porte son numéro de
    version, et toutes les versions d'un même ensemble partagent une lignée. */
 
-import { state, mutate, addBlock, addZone, addLink, emit } from "./store.js";
+import { state, mutate, addBlock, addZone, addLink, emit, childrenOf } from "./store.js";
 import { render } from "./render.js";
 import { centerOn } from "./viewport.js";
-import { bounds, contains, uid } from "./util.js";
+import { bounds, uid } from "./util.js";
 import { toast } from "./main.js";
 
 /** Blocs reliés à `id`, de proche en proche. */
@@ -33,7 +33,7 @@ function groupFor(id) {
   const blocks = new Set(ids.filter((x) => state.doc.blocks[x]));
   // Une zone sélectionnée emporte son contenu.
   for (const zid of zones) {
-    for (const b of Object.values(state.doc.blocks)) if (contains(state.doc.zones[zid], b)) blocks.add(b.id);
+    for (const b of childrenOf(zid)) blocks.add(b.id);
   }
   return { blocks: [...blocks], zones };
 }
@@ -51,6 +51,14 @@ export function createVariant(id) {
     const version = 1 + Math.max(1, ...Object.values(state.doc.blocks)
       .filter((b) => b.lineage === lineage).map((b) => b.variant || 1));
 
+    // Les zones d'abord : les copies de blocs y retrouvent leur place.
+    const zoneCopies = new Map();
+    for (const zid of zones) {
+      const z = state.doc.zones[zid];
+      const copy = addZone({ ...z, id: undefined, archive: false, x: z.x + dx, name: `${z.name || "Zone"} v${version}` });
+      zoneCopies.set(zid, copy.id);
+    }
+
     for (const b of originals) {
       b.lineage = lineage;
       b.variant = b.variant || 1;
@@ -59,12 +67,9 @@ export function createVariant(id) {
         // Une variante garde les échéances mais pas les rappels : la même
         // alarme ne doit pas sonner deux fois.
         variant: version, remind: null, reminded: false, createdAt: Date.now(), updatedAt: Date.now(),
+        zone: zoneCopies.get(b.zone) || null,
       });
       copies.set(b.id, copy.id);
-    }
-    for (const zid of zones) {
-      const z = state.doc.zones[zid];
-      addZone({ ...z, id: undefined, archive: false, x: z.x + dx, name: `${z.name || "Zone"} v${version}` });
     }
     for (const l of Object.values(state.doc.links)) {
       if (copies.has(l.from) && copies.has(l.to)) addLink(copies.get(l.from), copies.get(l.to));

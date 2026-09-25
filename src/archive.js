@@ -7,7 +7,7 @@
    L'appartenance à l'archive est portée par `block.archived`, pas déduite de la
    géométrie : déplacer la zone à la main ne doit pas désarchiver son contenu. */
 
-import { state, mutate, addZone } from "./store.js";
+import { state, mutate, addZone, zoneOf, childrenOf } from "./store.js";
 import { render, nodeFor } from "./render.js";
 import { bounds } from "./util.js";
 
@@ -83,10 +83,18 @@ export function unarchive(id) {
   const block = state.doc.blocks[id];
   if (!block || !block.archived) return;
   const zone = findZone();
+  const home = zoneOf(block);
   markAnimating();
   mutate(() => {
     block.archived = false;
-    if (zone) {
+    if (home) {
+      // Retour dans sa zone d'origine, sous ses frères, et la zone s'agrandit.
+      const siblings = childrenOf(home.id).filter((b) => b !== block && !b.archived);
+      const bottom = Math.max(home.y + 44 - GAP, ...siblings.map((b) => b.y + b.h));
+      block.x = home.x + PAD;
+      block.y = bottom + GAP;
+      home.h = Math.max(home.h, block.y + block.h + PAD - home.y);
+    } else if (zone) {
       block.x = zone.x;
       block.y = zone.y - block.h - 40;
     }
