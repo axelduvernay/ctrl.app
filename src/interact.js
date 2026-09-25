@@ -6,7 +6,7 @@
    de la fenêtre. */
 
 import { state, begin, commit, mutate, addBlock, addZone, addLink, linkBetween, raise, item, emit,
-         childrenOf, adopt, zoneAt } from "./store.js";
+         childrenOf, adopt, zoneAt, zoneOf } from "./store.js";
 import { toWorld, panBy, zoomAt, viewCenter } from "./viewport.js";
 import { render, nodeFor, curveTo } from "./render.js";
 import { moveItem, indexAt, renameItem } from "./lists.js";
@@ -430,12 +430,46 @@ function commitStroke(points) {
 function settleInZones(items) {
   showDropZone(null);
   const moved = new Set(items.map((it) => it.id));
+  const grown = new Set();
   for (const { id } of items) {
     const b = state.doc.blocks[id];
     if (!b || (b.zone && moved.has(b.zone))) continue;
     adopt(b);
+    const z = zoneOf(b);
+    if (z) { magnet(b, z, moved); grown.add(z.id); }
   }
+  // Le bloc qui se cale et la zone qui s'élargit glissent au lieu de sauter.
+  const animated = [...moved, ...grown].map((id) => nodeFor(id)).filter(Boolean);
+  animated.forEach((n) => n.classList.add("is-animating"));
+  setTimeout(() => animated.forEach((n) => n.classList.remove("is-animating")), 380);
 }
+
+const ZONE_PAD = 24;    // mêmes marges que le rangement automatique
+const ZONE_LABEL = 48;
+const SNAP = 16;        // portée de l'aimant, en unités du monde
+
+/* L'aimant : un bloc lâché dans une zone se cale sur le bord d'un voisin s'il
+   en est tout proche, rentre sous le nom de la zone s'il débordait en haut ou
+   à gauche, et la zone s'agrandit pour le contenir en entier. */
+function magnet(b, z, moved) {
+  const siblings = childrenOf(z.id).filter((s) => s !== b && !moved.has(s.id));
+  const near = (value, candidates) => {
+    let best = null;
+    for (const c of candidates) if (Math.abs(c - value) <= SNAP && (best === null || Math.abs(c - value) < Math.abs(best - value))) best = c;
+    return best;
+  };
+  const x = near(b.x, [z.x + ZONE_PAD, ...siblings.map((s) => s.x), ...siblings.map((s) => s.x + s.w + GAP_SNAP)]);
+  const y = near(b.y, [z.y + ZONE_LABEL, ...siblings.map((s) => s.y), ...siblings.map((s) => s.y + s.h + GAP_SNAP)]);
+  if (x !== null) b.x = x;
+  if (y !== null) b.y = y;
+
+  b.x = Math.max(b.x, z.x + ZONE_PAD);
+  b.y = Math.max(b.y, z.y + ZONE_LABEL);
+  z.w = Math.max(z.w, b.x + b.w + ZONE_PAD - z.x);
+  z.h = Math.max(z.h, b.y + b.h + ZONE_PAD - z.y);
+}
+
+const GAP_SNAP = 28; // l'écart entre deux blocs voisins, comme au rangement
 
 /* Pendant le glisser, la zone qui va recevoir le bloc s'éclaire. */
 let dropZone = null;
