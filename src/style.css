@@ -262,21 +262,65 @@ button { font: inherit; color: inherit; }
 .block .name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .block .sub { font-size: 12px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* Poignée de redimensionnement */
-.block .resize {
+/* ---------- Poignée de redimensionnement ----------
+
+   Au repos, un arc discret épouse le coin. Quand le pointeur l'approche, le
+   coin s'allume en orange puis se brise en deux petits traits qui s'écartent,
+   prêts à être tirés ; pendant le geste ils s'allongent, comme étirés. Les
+   traits arrivent sur une courbe à rebond (un ressort), tout le reste sur une
+   courbe douce qui ralentit longuement. */
+
+.resize {
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --smooth: cubic-bezier(0.22, 1, 0.36, 1);
+  --r: 13px; /* rayon intérieur du coin d'un bloc */
   position: absolute;
   right: 0; bottom: 0;
-  width: 16px; height: 16px;
+  width: 26px; height: 26px;
   cursor: nwse-resize;
-  opacity: 0;
+  touch-action: none;
 }
-.block:hover .resize, .block.is-selected .resize { opacity: 1; }
-.block .resize::after {
-  content: "";
-  position: absolute; right: 4px; bottom: 4px;
-  width: 6px; height: 6px;
+.zone .resize { --r: 16.5px; }
+.resize > span { position: absolute; pointer-events: none; }
+
+.rz-arc {
+  right: 0; bottom: 0;
+  width: var(--r); height: var(--r);
   border-right: 1.5px solid var(--line-strong);
   border-bottom: 1.5px solid var(--line-strong);
+  border-bottom-right-radius: var(--r);
+  opacity: 0;
+  transform-origin: 100% 100%;
+  transition: opacity 0.2s var(--smooth), border-color 0.18s var(--smooth), transform 0.3s var(--smooth);
+}
+.rz-v, .rz-h {
+  background: var(--accent);
+  border-radius: 2px;
+  opacity: 0;
+  transition: transform 0.55s var(--spring), opacity 0.16s var(--smooth);
+}
+.rz-v { right: 0; bottom: calc(var(--r) - 2px); width: 2px; height: 11px; transform-origin: 50% 100%; transform: translateY(4px) scaleY(0.2); }
+.rz-h { bottom: 0; right: calc(var(--r) - 2px); height: 2px; width: 11px; transform-origin: 100% 50%; transform: translateX(4px) scaleX(0.2); }
+
+.block:hover > .resize .rz-arc, .block.is-selected > .resize .rz-arc,
+.zone:hover > .resize .rz-arc, .zone.is-selected > .resize .rz-arc { opacity: 1; }
+
+/* Le pointeur approche : le coin passe à l'orange, puis se brise. */
+.resize:hover .rz-arc, .is-resizing > .resize .rz-arc {
+  border-color: var(--accent);
+  opacity: 0;
+  transform: scale(0.55);
+  transition: border-color 0.12s var(--smooth), opacity 0.22s var(--smooth) 0.1s, transform 0.3s var(--smooth) 0.1s;
+}
+.resize:hover .rz-v, .is-resizing > .resize .rz-v { opacity: 1; transform: translateY(-3px) scaleY(1); transition-delay: 0.08s; }
+.resize:hover .rz-h, .is-resizing > .resize .rz-h { opacity: 1; transform: translateX(-3px) scaleX(1); transition-delay: 0.08s; }
+
+/* Pendant le geste : les deux traits s'allongent et s'écartent, tirés. */
+.is-resizing > .resize .rz-v { transform: translateY(-6px) scaleY(1.45); transition-delay: 0s; }
+.is-resizing > .resize .rz-h { transform: translateX(-6px) scaleX(1.45); transition-delay: 0s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rz-arc, .rz-v, .rz-h { transition-duration: 0.01s !important; transition-delay: 0s !important; }
 }
 
 /* ---------- Dessin ---------- */
@@ -384,7 +428,6 @@ button { font: inherit; color: inherit; }
 .zone .zone-name:hover { color: var(--text); }
 
 .zone .zone-name:empty::before { content: "Zone"; opacity: 0.6; }
-.zone .resize { position: absolute; right: 0; bottom: 0; width: 18px; height: 18px; cursor: nwse-resize; }
 
 /* ---------- Marquee ---------- */
 

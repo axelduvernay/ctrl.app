@@ -80,7 +80,7 @@ function buildBlock(block) {
   const node = el("div", { class: "block", "data-id": block.id });
   node.append(el("div", { class: "body", "data-placeholder": "Écris…" }));
   node.append(el("div", { class: "meta" }));
-  node.append(el("div", { class: "resize", "data-resize": true }));
+  node.append(resizeHandle());
   // Poignée de connexion : on la tire jusqu'à un autre bloc pour les relier.
   node.append(el("div", { class: "connect", "data-connect": true, title: "Tirer pour relier" }));
   return node;
@@ -96,7 +96,7 @@ function updateBlock(node, b) {
 
   // Les classes d'effet sont posées de l'extérieur (rangement, aimant) : on
   // les garde, sinon le rendu qui suit les effacerait avant la transition.
-  const kept = ["is-animating", "is-magnet", "is-settled"].filter((c) => node.classList.contains(c));
+  const kept = ["is-animating", "is-magnet", "is-settled", "is-resizing"].filter((c) => node.classList.contains(c));
   node.className = "block kind-" + b.kind;
   node.classList.add(...kept);
   if (state.selection.has(b.id)) node.classList.add("is-selected");
@@ -260,12 +260,20 @@ function resolveAsset(b) {
   return url;
 }
 
+/** Le coin qu'on tire : un arc au repos, deux traits quand on l'approche. */
+function resizeHandle() {
+  return el("div", { class: "resize", "data-resize": true },
+    el("span", { class: "rz-arc" }),
+    el("span", { class: "rz-v" }),
+    el("span", { class: "rz-h" }));
+}
+
 /* ---------- Zones ---------- */
 
 function buildZone(zone) {
   const node = el("div", { class: "zone", "data-id": zone.id, "data-zone": true });
   node.append(el("div", { class: "zone-name", "data-zone-name": true }));
-  node.append(el("div", { class: "resize", "data-resize": true }));
+  node.append(resizeHandle());
   return node;
 }
 

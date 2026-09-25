@@ -135,6 +135,7 @@ function onPointerDown(e) {
     const it = item(node.dataset.id);
     if (it) {
       begin();
+      nodeFor(it.id)?.classList.add("is-resizing");
       gesture = { mode: "resize", id: it.id, ox: world.x, oy: world.y, x0: it.x, y0: it.y, w0: it.w, h0: it.h };
     }
     return;
@@ -337,6 +338,7 @@ function onPointerUp(e) {
     // Relâché sans avoir bougé : c'était un clic, pas un glisser.
     if (!g.moved && g.editOnRelease) editItem(g.id, g.at);
   } else if (g.mode === "resize") {
+    nodeFor(g.id)?.classList.remove("is-resizing");
     commit();
   } else if (g.mode === "draw-zone") {
     const z = state.doc.zones[g.id];
@@ -609,6 +611,7 @@ function startPinch() {
   // Un geste à un doigt était peut-être commencé : on l'abandonne proprement.
   if (gesture) {
     if (["drag", "resize", "draw-zone", "reorder"].includes(gesture.mode)) commit();
+    if (gesture.mode === "resize") nodeFor(gesture.id)?.classList.remove("is-resizing");
     if (gesture.mode === "connect" || gesture.mode === "draw") ink.replaceChildren();
     gesture = null;
     marquee.hidden = true;
