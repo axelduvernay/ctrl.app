@@ -7,7 +7,7 @@
 
 import { state, begin, commit, mutate, addBlock, addZone, addLink, linkBetween, raise, item, emit,
          childrenOf, childZones, adopt, zoneFor, zoneOf, parentOf, descendants, isContainer } from "./store.js";
-import { toWorld, panBy, zoomAt, viewCenter } from "./viewport.js";
+import { toWorld, panBy, zoomAt, smoothZoom, viewCenter } from "./viewport.js";
 import { render, nodeFor, curveTo } from "./render.js";
 import { moveItem, indexAt, renameItem } from "./lists.js";
 import { toast } from "./main.js";
@@ -61,7 +61,7 @@ function onWheel(e) {
   e.preventDefault();
   // Le pincement du trackpad arrive comme un wheel + ctrlKey.
   if (e.ctrlKey || e.metaKey) {
-    zoomAt(Math.exp(-e.deltaY * 0.01), e.clientX, e.clientY);
+    smoothZoom(Math.exp(-e.deltaY * 0.01), e.clientX, e.clientY);
   } else {
     panBy(-e.deltaX, -e.deltaY);
   }

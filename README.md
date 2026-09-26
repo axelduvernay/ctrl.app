@@ -37,7 +37,7 @@ du code peut passer inaperçue au rechargement.
 | Clic sur un bloc sélectionné, ou double-clic | Modifier son texte, curseur au point cliqué |
 | Clic sur le nom d'une zone | La renommer (`Entrée` pour valider) |
 | Deux doigts | Déplacer la vue |
-| Pincement, ou ⌘/Ctrl + molette | Zoomer |
+| Pincement, ou ⌘/Ctrl + molette | Zoomer, en douceur, avec des crans à 50, 100 et 200 % |
 | Espace + glisser | Déplacer la vue à la souris |
 | Glisser sur le fond | Sélection au lasso |
 | Maj ou ⌘ + clic | Ajouter ou retirer de la sélection |

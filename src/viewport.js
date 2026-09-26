@@ -64,6 +64,73 @@ export function zoomAt(factor, cx, cy) {
   apply();
 }
 
+/* ---------- Zoom doux au pavé tactile ----------
+
+   Le pincement du trackpad arrive par à-coups (des événements wheel). Plutôt
+   que de les appliquer tels quels, on les accumule dans une cible, et l'échelle
+   la rejoint en suivant un ressort à amortissement critique : départ en
+   douceur, arrivée en douceur, sans rebond. Le calcul se fait sur le
+   logarithme de l'échelle, pour que zoomer et dézoomer aient le même rythme.
+
+   Des crans magnétiques à 50 %, 100 % et 200 % : en passant près de l'un
+   d'eux, le zoom s'y arrête un instant, puis repart si on continue. Le pavé
+   tactile ne peut pas vibrer depuis une page web ; le cran se sent donc à
+   l'écran, avec une pulsation du niveau de zoom. */
+
+const DETENTS = [0.5, 1, 2];
+const DETENT_BAND = 0.07;  // largeur du cran, en logarithme (≈ ±7 %)
+const STIFFNESS = 0.09;    // raideur du ressort, par image
+const DAMPING = 2 * Math.sqrt(STIFFNESS); // amortissement critique
+
+let raw = null;       // cible brute, somme des gestes
+let anchor = null;    // point de l'écran qui reste fixe
+let velocity = 0;
+let frame = 0;
+let lastInput = 0;
+let heldAt = null;    // cran où le zoom est retenu
+
+export function smoothZoom(factor, cx, cy) {
+  raw = clamp((raw ?? state.view.scale) * factor, MIN_SCALE, MAX_SCALE);
+  anchor = { cx, cy };
+  lastInput = performance.now();
+  if (!frame) frame = requestAnimationFrame(step);
+}
+
+/** La cible après les crans : retenue au cran si la cible brute en est proche. */
+function detented() {
+  const lr = Math.log(raw);
+  for (const d of DETENTS) {
+    if (Math.abs(lr - Math.log(d)) < DETENT_BAND) {
+      if (heldAt !== d) { heldAt = d; pulse(); }
+      return d;
+    }
+  }
+  heldAt = null;
+  return raw;
+}
+
+function step(now) {
+  frame = 0;
+  const target = Math.log(detented());
+  const current = Math.log(state.view.scale);
+  velocity += STIFFNESS * (target - current) - DAMPING * velocity;
+  let next = current + velocity;
+  const settled = Math.abs(target - next) < 0.0005 && Math.abs(velocity) < 0.0005;
+  if (settled) { next = target; velocity = 0; }
+  zoomAt(Math.exp(next) / state.view.scale, anchor.cx, anchor.cy);
+  if (!settled) frame = requestAnimationFrame(step);
+  // Geste terminé et zoom posé : le prochain geste repart de l'échelle réelle.
+  else if (now - lastInput > 120) raw = null;
+  else frame = requestAnimationFrame(step);
+}
+
+function pulse() {
+  if (!zoomLabel) return;
+  zoomLabel.classList.remove("is-detent");
+  void zoomLabel.offsetWidth;
+  zoomLabel.classList.add("is-detent");
+}
+
 export function zoomTo(scale) {
   zoomAt(scale / state.view.scale, innerWidth / 2, innerHeight / 2);
 }
