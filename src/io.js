@@ -7,6 +7,7 @@ import { state, mutate, addBlock, putAsset, emptyDoc, save, emit, migrate } from
 import { toWorld, viewCenter } from "./viewport.js";
 import { render } from "./render.js";
 import { toast } from "./main.js";
+import { play } from "./sounds.js";
 import { addFiles, isAudio, toList, LIST_TYPES } from "./lists.js";
 
 const MAX_W = 360;
@@ -91,6 +92,7 @@ async function dropFiles(files, at) {
   }
   render();
   toast(files.length > 1 ? `${files.length} fichiers ajoutés` : "Ajouté");
+  play("drop");
 }
 
 function placeFromText(text, at) {

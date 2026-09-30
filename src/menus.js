@@ -11,6 +11,7 @@ import { fitAll } from "./viewport.js";
 import { exportBoard, importBoard } from "./io.js";
 import { toggleFilter, toggleDoneFilter, clearFilters } from "./search.js";
 import { toast, VERSION } from "./main.js";
+import { play, soundsEnabled, setSoundsEnabled } from "./sounds.js";
 import { createVariant } from "./variant.js";
 import { toList, LIST_TYPES } from "./lists.js";
 
@@ -81,6 +82,7 @@ export function openContextMenu(x, y, { onEmpty, world }) {
     return openPopup(x, y, [
       action(ids.length > 1 ? `Supprimer les liens (${ids.length})` : "Supprimer le lien", () => {
         mutate(() => removeItems(ids));
+        play("delete");
         render();
       }, { hint: "suppr" }),
     ]);
@@ -110,6 +112,7 @@ export function openContextMenu(x, y, { onEmpty, world }) {
           });
           render();
           toast(`${blockIds.length} blocs liés`);
+          play("link");
         })
       : null,
     linkIds.length
@@ -145,6 +148,7 @@ export function openContextMenu(x, y, { onEmpty, world }) {
     ids.length
       ? action(many ? `Supprimer (${ids.length})` : "Supprimer", () => {
           mutate(() => removeItems(ids));
+        play("delete");
           render();
         }, { hint: "suppr" })
       : null,
@@ -273,6 +277,11 @@ export function openMainMenu(anchor) {
     action("Système", () => setTheme("system"), { hint: theme === "system" ? "✓" : "" }),
     action("Clair", () => setTheme("light"), { hint: theme === "light" ? "✓" : "" }),
     action("Sombre", () => setTheme("dark"), { hint: theme === "dark" ? "✓" : "" }),
+    sep(),
+    action("Sons de l'interface", () => {
+      setSoundsEnabled(!soundsEnabled());
+      toast(soundsEnabled() ? "Sons activés" : "Sons coupés");
+    }, { hint: soundsEnabled() ? "✓" : "" }),
     sep(),
     label("Filtrer"),
     ...categoryList().map((cat, i) =>

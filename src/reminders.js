@@ -13,6 +13,7 @@ import { render } from "./render.js";
 import { centerOn } from "./viewport.js";
 import { parseLocal } from "./util.js";
 import { toast } from "./main.js";
+import { play } from "./sounds.js";
 
 const TICK = 15000;
 
@@ -53,6 +54,7 @@ function ring(block) {
   const own = firstLine(block) || "Rappel";
   const text = linked.length ? `${own} → ${linked.slice(0, 3).join(", ")}` : own;
   toast(`Rappel · ${text}`);
+  play("reminder");
 
   if (!("Notification" in window) || Notification.permission !== "granted") return;
   try {

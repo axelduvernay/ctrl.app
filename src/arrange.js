@@ -11,6 +11,7 @@
 import { state, mutate, isContainer, zoneOf, childrenOf, childZones, descendants } from "./store.js";
 import { render, nodeFor } from "./render.js";
 import { toast } from "./main.js";
+import { play } from "./sounds.js";
 
 const GAP = 28;        // écart minimal entre deux éléments
 const PAD = 24;        // marge intérieure d'une zone
@@ -24,6 +25,7 @@ const movable = (b) => !b.archived && b.kind !== "draw";
 
 /** Aligne tout le board, ou seulement l'intérieur d'une zone. */
 export function align(zoneId = null) {
+  play("align");
   const zone = zoneId && state.doc.zones[zoneId];
   animateAll(() => {
     if (zone) return tidyZone(zone);

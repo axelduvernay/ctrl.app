@@ -11,6 +11,7 @@ import { viewCenter } from "./viewport.js";
 import { render, nodeFor } from "./render.js";
 import { el, icon, uid } from "./util.js";
 import { toast } from "./main.js";
+import { play as playSound } from "./sounds.js";
 
 export const LIST_TYPES = {
   tracks: { title: "Tracklist", accept: "audio/*", empty: "Dépose des morceaux ici" },
@@ -57,6 +58,7 @@ export async function addFiles(id, files) {
     });
   }
   mutate(() => { b.items.push(...items); b.updatedAt = Date.now(); });
+  playSound("drop");
   render();
 }
 

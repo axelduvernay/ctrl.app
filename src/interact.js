@@ -11,6 +11,7 @@ import { toWorld, panBy, zoomAt, smoothZoom, viewCenter } from "./viewport.js";
 import { render, nodeFor, curveTo } from "./render.js";
 import { moveItem, indexAt, renameItem } from "./lists.js";
 import { toggleFold } from "./format.js";
+import { play } from "./sounds.js";
 import { toast } from "./main.js";
 import { startEditing } from "./editor.js";
 import { openContextMenu } from "./menus.js";
@@ -707,6 +708,7 @@ function setDropZone(zoneId, blockId) {
     node?.classList.remove("is-joined");
     void node?.offsetWidth;
     node?.classList.add("is-joined");
+    play("snap");
   }
   dropZone = zoneId;
 }
@@ -770,6 +772,7 @@ function finishConnect(from, e) {
     mutate(() => existing ? delete state.doc.links[existing.id] : addLink(from, to));
     render();
     toast(existing ? "Lien retiré" : "Blocs reliés");
+    play(existing ? "unlink" : "link");
     return;
   }
 
@@ -829,6 +832,7 @@ function onClick(e) {
       done = b.done;
     });
     render();
+    play(done ? "check" : "uncheck");
     done ? scheduleArchive(id) : (cancelArchive(id), unarchive(id));
     return;
   }
@@ -939,6 +943,7 @@ function onContextMenu(e) {
 /* ---------- Création ---------- */
 
 export function createBlockAt(x, y, props = {}) {
+  play("create");
   let block;
   mutate(() => {
     block = addBlock({ x: Math.round(x - 110), y: Math.round(y - 24), ...props });
@@ -956,6 +961,7 @@ export function createBlockAt(x, y, props = {}) {
 
 /** Crée une zone au centre de l'écran, nom prêt à écrire. */
 export function createZoneAtCenter() {
+  play("create");
   const c = viewCenter();
   const zone = mutate(() => addZone({ x: Math.round(c.x - 210), y: Math.round(c.y - 150), w: 420, h: 300 }));
   state.selection.clear();

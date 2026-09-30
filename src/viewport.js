@@ -7,6 +7,7 @@
 
 import { state, saveView, emit } from "./store.js";
 import { clamp, bounds } from "./util.js";
+import { play } from "./sounds.js";
 
 const MIN_SCALE = 0.1;
 const MAX_SCALE = 4;
@@ -125,6 +126,7 @@ function step(now) {
 }
 
 function pulse() {
+  play("detent");
   if (!zoomLabel) return;
   zoomLabel.classList.remove("is-detent");
   void zoomLabel.offsetWidth;

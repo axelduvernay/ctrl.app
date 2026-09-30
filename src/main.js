@@ -16,10 +16,11 @@ import { categoryList } from "./store.js";
 import { seedWelcome } from "./welcome.js";
 import { overlaps, el } from "./util.js";
 import { save } from "./store.js";
+import { play, initSounds } from "./sounds.js";
 
 /* Affichée dans le menu : permet de vérifier qu'une mise à jour est arrivée.
    À changer à chaque livraison. */
-export const VERSION = "30.09 · barre"
+export const VERSION = "30.09 · sons"
 
 async function boot() {
   applyTheme();
@@ -52,6 +53,7 @@ async function boot() {
   wireKeyboard();
   render();
   initReminders();
+  initSounds();
 
   registerServiceWorker();
 
@@ -155,6 +157,7 @@ function create(kind) {
 
 function setToolbarCollapsed(collapsed, remember = true) {
   const toolbar = document.getElementById("toolbar");
+  if (remember) play(collapsed ? "collapse" : "expand");
   toolbar.classList.toggle("is-collapsed", collapsed);
   const toggle = toolbar.querySelector('[data-action="collapse"]');
   toggle.setAttribute("aria-expanded", String(!collapsed));
@@ -189,6 +192,7 @@ function wireKeyboard() {
       if (typing) return;
       e.preventDefault();
       const ok = e.shiftKey ? redo() : undo();
+      if (ok) play(e.shiftKey ? "redo" : "undo");
       render();
       toast(ok ? (e.shiftKey ? "Rétabli" : "Annulé") : "Rien à annuler");
       return;
@@ -225,6 +229,7 @@ function wireKeyboard() {
       e.preventDefault();
       const count = state.selection.size;
       mutate(() => removeItems([...state.selection]));
+      play("delete");
       render();
       toast(count > 1 ? `${count} éléments supprimés` : "Supprimé");
       return;

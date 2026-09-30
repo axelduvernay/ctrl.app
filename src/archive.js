@@ -10,6 +10,7 @@
 import { state, mutate, addZone, zoneOf, childrenOf } from "./store.js";
 import { render, nodeFor } from "./render.js";
 import { bounds } from "./util.js";
+import { play } from "./sounds.js";
 
 const PAD = 26;
 const GAP = 14;
@@ -68,6 +69,7 @@ export function cancelArchive(id) {
 export function archive(id) {
   const block = state.doc.blocks[id];
   if (!block || block.archived) return;
+  play("archive");
   markAnimating();
   mutate(() => {
     ensureZone();

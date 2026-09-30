@@ -101,6 +101,7 @@ src/
   lists.js      Blocs tracklist et dossier, lecteur audio
   variant.js    Variantes : v2 d'un ensemble de blocs reliés
   format.js     Mise en forme du texte, barre flottante, nettoyage du HTML
+  sounds.js     Sons de l'interface (fichiers dans sounds/, voir sounds/README.md)
   welcome.js    Board d'accueil du premier lancement
   util.js       Utilitaires partagés
 ```

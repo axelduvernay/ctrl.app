@@ -4,7 +4,7 @@
    toujours la dernière version du code, et sans réseau l'app démarre quand même.
    Les données, elles, ne passent jamais par ici — elles vivent dans IndexedDB. */
 
-const CACHE = "ctrl-app-v7";
+const CACHE = "ctrl-app-v8";
 
 const SHELL = [
   "./",
@@ -31,6 +31,7 @@ const SHELL = [
   "./src/lists.js",
   "./src/variant.js",
   "./src/format.js",
+  "./src/sounds.js",
 ];
 
 self.addEventListener("install", (event) => {
