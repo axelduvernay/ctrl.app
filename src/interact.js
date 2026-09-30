@@ -954,6 +954,21 @@ export function createBlockAt(x, y, props = {}) {
   return block;
 }
 
+/** Crée une zone au centre de l'écran, nom prêt à écrire. */
+export function createZoneAtCenter() {
+  const c = viewCenter();
+  const zone = mutate(() => addZone({ x: Math.round(c.x - 210), y: Math.round(c.y - 150), w: 420, h: 300 }));
+  state.selection.clear();
+  state.selection.add(zone.id);
+  state.tool = "select";
+  emit("tool");
+  emit("selection");
+  render();
+  const node = nodeFor(zone.id);
+  if (node) startEditing(zone.id, node.querySelector(".zone-name"));
+  return zone;
+}
+
 /** Crée un bloc au centre de l'écran — utilisé par le clavier. */
 export function createBlockAtCenter(props = {}) {
   const c = viewCenter();

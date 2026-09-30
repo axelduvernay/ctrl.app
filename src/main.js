@@ -3,7 +3,9 @@
 import { state, load, on, emit, mutate, removeItems, undo, redo } from "./store.js";
 import { initViewport, fitAll, zoomAt, apply } from "./viewport.js";
 import { initRender, render, nodeFor } from "./render.js";
-import { initInteract, createBlockAtCenter } from "./interact.js";
+import { initInteract, createBlockAtCenter, createZoneAtCenter } from "./interact.js";
+import { pickImages } from "./io.js";
+import { createListAtCenter } from "./lists.js";
 import { initIO } from "./io.js";
 import { initSearch, openSearch, closeSearch, isSearchOpen, toggleFilter, clearFilters } from "./search.js";
 import { openMainMenu, closeMenus, applyTheme, duplicate } from "./menus.js";
@@ -17,7 +19,7 @@ import { save } from "./store.js";
 
 /* Affichée dans le menu : permet de vérifier qu'une mise à jour est arrivée.
    À changer à chaque livraison. */
-export const VERSION = "30.09 · refonte 2";
+export const VERSION = "30.09 · barre"
 
 async function boot() {
   applyTheme();
@@ -80,23 +82,32 @@ function anythingVisible() {
 function wireChrome() {
   const toolbar = document.getElementById("toolbar");
 
-  // Chaque outil annonce son nom et sa touche au survol.
+  // Chaque outil annonce son nom, et sa touche s'il en a une, au survol.
   for (const button of document.querySelectorAll("[data-tip]")) {
     button.append(el("span", { class: "tip", "aria-hidden": "true" },
       el("span", { text: button.dataset.tip }),
-      el("kbd", { text: button.dataset.key })));
+      button.dataset.key ? el("kbd", { text: button.dataset.key }) : null));
   }
 
   toolbar.addEventListener("click", (e) => {
     const button = e.target.closest("button");
     if (!button) return;
+    if (button.dataset.create) return create(button.dataset.create);
     if (button.dataset.tool) {
-      state.tool = button.dataset.tool;
+      // Le crayon se lâche en recliquant dessus.
+      state.tool = state.tool === button.dataset.tool ? "select" : button.dataset.tool;
       emit("tool");
     } else if (button.dataset.action === "arrange") {
       align();
+    } else if (button.dataset.action === "collapse") {
+      setToolbarCollapsed(!toolbar.classList.contains("is-collapsed"));
     }
   });
+
+  // La barre repliée le reste d'une visite à l'autre.
+  let collapsed = false;
+  try { collapsed = localStorage.getItem("ctrl-toolbar") === "collapsed"; } catch {}
+  setToolbarCollapsed(collapsed, false);
 
   on("tool", () => {
     for (const button of toolbar.querySelectorAll("[data-tool]")) {
@@ -130,6 +141,27 @@ function wireChrome() {
   }, true);
 
   addEventListener("resize", () => render());
+}
+
+/* ---------- Barre de création ---------- */
+
+function create(kind) {
+  if (kind === "text") return createBlockAtCenter();
+  if (kind === "task") return createBlockAtCenter({ category: "task" });
+  if (kind === "image") return pickImages();
+  if (kind === "tracks") return createListAtCenter("tracks");
+  if (kind === "zone") return createZoneAtCenter();
+}
+
+function setToolbarCollapsed(collapsed, remember = true) {
+  const toolbar = document.getElementById("toolbar");
+  toolbar.classList.toggle("is-collapsed", collapsed);
+  const toggle = toolbar.querySelector('[data-action="collapse"]');
+  toggle.setAttribute("aria-expanded", String(!collapsed));
+  toggle.setAttribute("aria-label", collapsed ? "Afficher la barre" : "Réduire la barre");
+  const tip = toggle.querySelector(".tip span");
+  if (tip) tip.textContent = collapsed ? "Créer" : "Réduire";
+  if (remember) try { localStorage.setItem("ctrl-toolbar", collapsed ? "collapsed" : "open"); } catch {}
 }
 
 /* ---------- Clavier ---------- */
@@ -213,7 +245,8 @@ function wireKeyboard() {
     // rectangle de sélection — ici, tracer une zone.
     if (e.key === "m" || e.key === "M") { state.tool = "zone"; return emit("tool"); }
     if ("bBdD".includes(e.key)) { state.tool = "draw"; return emit("tool"); }
-    if (e.key === "n" || e.key === "N") { e.preventDefault(); return createBlockAtCenter(); }
+    if ("nNtT".includes(e.key)) { e.preventDefault(); return createBlockAtCenter(); }
+    if (e.key === "k" || e.key === "K") { e.preventDefault(); return createBlockAtCenter({ category: "task" }); }
     // « / » sur le canvas : un nouveau bloc, menu des commandes déjà ouvert.
     if (e.key === "/") {
       e.preventDefault();

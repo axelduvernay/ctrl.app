@@ -43,6 +43,16 @@ export function initIO() {
   });
 }
 
+/** Ouvre la photothèque ou les fichiers, et pose les images au centre. */
+export function pickImages() {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "image/*";
+  input.multiple = true;
+  input.onchange = () => input.files?.length && dropFiles([...input.files], viewCenter());
+  input.click();
+}
+
 async function dropFiles(files, at) {
   // Que des morceaux : ils forment une tracklist plutôt qu'une pile de fichiers.
   if (files.every(isAudio)) {

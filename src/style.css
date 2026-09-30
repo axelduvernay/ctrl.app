@@ -640,7 +640,6 @@ button { font: inherit; color: inherit; }
   stroke-linejoin: round;
 }
 
-#toolbar button[data-tool="select"] svg { fill: currentColor; stroke-width: 1; }
 #toolbar .sep { width: 1px; height: 22px; background: var(--line); margin: 0 4px; }
 #zoom-level { font-variant-numeric: tabular-nums; min-width: 56px; }
 /* Le zoom s'arrête sur un cran (50, 100, 200 %) : le niveau pulse. */
@@ -1208,3 +1207,35 @@ button { font: inherit; color: inherit; }
 /* La barre de zoom est au bord de l'écran : ses infobulles s'alignent à droite. */
 #zoombar .tip { left: auto; right: -4px; transform: translate(0, 4px) scale(0.96); }
 #zoombar [data-tip]:hover > .tip { transform: none; }
+
+
+/* ---------- Barre de création repliable ----------
+
+   Repliée, il ne reste que le bouton « + » ; les autres se rétractent vers
+   lui sur un ressort. Dépliée, le « + » a tourné d'un quart et devient une
+   croix pour la refermer. */
+#toolbar { transition: gap 0.45s var(--spring), padding 0.45s var(--spring); }
+#toolbar .tb {
+  width: var(--tap);
+  padding: 0;
+  transition: width 0.5s var(--spring), margin 0.5s var(--spring), opacity 0.25s ease,
+              transform 0.5s var(--spring), background 0.2s ease, color 0.2s ease, box-shadow 0.25s ease;
+}
+#toolbar .sep.tb { width: 1px; }
+#toolbar.is-collapsed { gap: 0; }
+#toolbar.is-collapsed .tb {
+  width: 0;
+  min-width: 0;
+  margin: 0;
+  opacity: 0;
+  transform: scale(0.5);
+  overflow: hidden;
+  pointer-events: none;
+}
+#toolbar .toggle svg { transform: rotate(45deg); transition: transform 0.55s var(--spring); }
+#toolbar.is-collapsed .toggle svg { transform: none; }
+#toolbar.is-collapsed .toggle {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 4px 12px -2px rgba(224, 109, 59, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}

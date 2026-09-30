@@ -6,7 +6,8 @@
    fichiers partent dans le magasin d'assets comme les images, le bloc n'en
    garde que la clé. */
 
-import { state, mutate, putAsset, assetURL } from "./store.js";
+import { state, mutate, putAsset, assetURL, addBlock, emit } from "./store.js";
+import { viewCenter } from "./viewport.js";
 import { render, nodeFor } from "./render.js";
 import { el, icon, uid } from "./util.js";
 import { toast } from "./main.js";
@@ -57,6 +58,22 @@ export async function addFiles(id, files) {
   }
   mutate(() => { b.items.push(...items); b.updatedAt = Date.now(); });
   render();
+}
+
+/** Pose une liste au centre de l'écran et propose aussitôt d'y ajouter des fichiers. */
+export function createListAtCenter(type) {
+  const c = viewCenter();
+  const block = mutate(() => {
+    const b = addBlock({ x: Math.round(c.x - 150), y: Math.round(c.y - 60), text: LIST_TYPES[type].title });
+    toList(b, type);
+    return b;
+  });
+  state.selection.clear();
+  state.selection.add(block.id);
+  emit("selection");
+  render();
+  pickFiles(block.id);
+  return block;
 }
 
 function pickFiles(id) {

@@ -52,6 +52,7 @@ du code peut passer inaperçue au rechargement.
 | Sélectionner du texte pendant l'édition | Barre de mise en forme : titre, sous-titre, texte, gras, italique, souligné, barré, surligné, liste |
 | `#` ou `##` puis espace, en début de ligne | Titre ou sous-titre |
 | Flèche à gauche d'un titre | Replier ou déplier le texte qui le suit |
+| Barre du bas | Créer au centre : texte, tâche, image, tracklist, zone ; crayon ; aligner. Le « × » la replie en un « + » |
 | `/idea` `/task` … | Catégoriser depuis le clavier |
 | `/rappel` `/echeance` | Ajouter un rappel ou une échéance à n'importe quel bloc |
 | `/tracklist` `/folder` | Transformer le bloc en tracklist ou en dossier |
@@ -61,6 +62,7 @@ du code peut passer inaperçue au rechargement.
 | Raccourci | Effet |
 | --- | --- |
 | `V` `B` `M` | Sélection, crayon, tracer une zone (à la Adobe ; `D` marche aussi pour le crayon) |
+| `T` (ou `N`) `K` | Nouveau texte, nouvelle tâche, au centre |
 | `⌘+` `⌘−` `⌘0` | Zoomer, dézoomer, 100 % |
 | `N` | Nouveau bloc au centre |
 | `/` | Nouveau bloc, menu des commandes ouvert |
