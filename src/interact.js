@@ -563,13 +563,14 @@ function liveZones(g) {
   };
 
   let guides = [];
-  if (isZone) {
-    // Une zone s'aligne sur les zones de même niveau : bords, centres, ou
-    // juste à côté avec un écart régulier.
-    const snap = snapZone(it, z ? z.id : null, g.movedIds);
+  if (isZone || !z) {
+    // Une zone, ou un bloc libre, s'aligne sur ce qui partage son niveau —
+    // zones et blocs libres : bords, centres, ou juste à côté avec un écart
+    // régulier.
+    const snap = snapLevel(it, z ? z.id : null, g.movedIds);
     shift(snap);
     guides = snap.guides;
-  } else if (z) {
+  } else {
     const snap = snapIn(it, z, g.movedIds);
     shift(snap);
     guides = snap.guides;
@@ -615,11 +616,18 @@ function snapIn(b, z, moved) {
 
 const ZONE_GAP = 40; // écart entre deux zones voisines
 
-/** Alignement d'une zone sur ses sœurs : même parente, ou toutes deux libres. */
-function snapZone(z, parentId, moved) {
+/** Alignement sur ce qui partage le même niveau : les zones de même parente
+    et les blocs de cette zone — ou, sur le canvas, les zones et blocs libres. */
+function snapLevel(z, parentId, moved) {
   const reach = Math.max(8, 12 / state.view.scale); // ~12 px à l'écran, quel que soit le zoom
-  const sisters = Object.values(state.doc.zones).filter((o) =>
-    o !== z && !moved.has(o.id) && !o.auto && (o.parent || null) === parentId);
+  const zoneSisters = Object.values(state.doc.zones).filter((o) =>
+    o !== z && !moved.has(o.id) && !o.auto && !o.archive && (o.parent || null) === parentId);
+  const blockSisters = Object.values(state.doc.blocks).filter((o) =>
+    o !== z && !moved.has(o.id) && !o.archived && o.kind !== "draw" && (zoneOf(o)?.id || null) === parentId);
+  const sisters = [...zoneSisters, ...blockSisters];
+  // Entre deux blocs, l'écart du rangement ; dès qu'une zone est en jeu, plus d'air.
+  const isBlock = (o) => !!state.doc.blocks[o.id];
+  const gapWith = (o) => (isBlock(z) && isBlock(o) ? GAP_SNAP : ZONE_GAP);
 
   // Pour chaque axe, la correction la plus faible parmi les alignements possibles.
   const best = (axis) => {
@@ -630,8 +638,8 @@ function snapZone(z, parentId, moved) {
         [o[pos], o[pos]],                                   // bords de départ alignés
         [o[pos] + o[size] - z[size], o[pos] + o[size]],     // bords de fin alignés
         [o[pos] + (o[size] - z[size]) / 2, o[pos] + o[size] / 2], // centres alignés
-        [o[pos] + o[size] + ZONE_GAP, null],                // juste après
-        [o[pos] - ZONE_GAP - z[size], null],                // juste avant
+        [o[pos] + o[size] + gapWith(o), null],              // juste après
+        [o[pos] - gapWith(o) - z[size], null],              // juste avant
       ];
       for (const [to, line] of options) {
         const d = Math.abs(to - z[pos]);

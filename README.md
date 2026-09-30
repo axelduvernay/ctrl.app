@@ -44,7 +44,7 @@ du code peut passer inaperçue au rechargement.
 | Clic droit | Catégorie, échéance et rappel, liens, variante, zone, suppression |
 | Clic droit dans une zone → Couleur du fond | Un voile léger d'une teinte de la charte |
 | Glisser une zone dans une autre | En fait une sous-zone, qui suit sa parente |
-| Glisser une zone près d'une autre | Aimant : bords ou centres alignés, ou côte à côte avec un écart régulier |
+| Glisser une zone ou un bloc libre près d'un autre | Aimant : bords ou centres alignés, ou côte à côte avec un écart régulier |
 | Réduire une zone | Son contenu se resserre ; elle s'arrête avant que deux blocs se touchent |
 | Clic droit dans une zone → Réorganiser la zone | Range ses blocs sur place : une colonne par catégorie, tâches à faire d'abord et par échéance |
 | Tirer le point du bord droit d'un bloc | Le relier à un autre bloc (relâché sur un bloc déjà relié : retire le lien ; dans le vide : crée un bloc relié) |
