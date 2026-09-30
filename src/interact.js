@@ -551,23 +551,30 @@ function liveZones(g) {
   const home = isZone ? it.parent : it.zone;
   const z = home && g.movedIds.has(home) ? null : zoneFor(it, isZone ? it.id : undefined);
 
-  let guides = [];
-  if (z) {
-    if (!isZone) {
-      // L'aimant déplace tout le groupe glissé du même écart que le bloc visé.
-      const snap = snapIn(it, z, g.movedIds);
-      const dx = snap.x - it.x;
-      const dy = snap.y - it.y;
-      if (dx || dy) {
-        for (const { id } of g.items) {
-          const m = item(id);
-          if (m) { m.x += dx; m.y += dy; }
-        }
-      }
-      guides = snap.guides;
+  // L'aimant déplace tout le groupe glissé du même écart que l'élément visé.
+  const shift = (snap) => {
+    const dx = snap.x - it.x;
+    const dy = snap.y - it.y;
+    if (!dx && !dy) return;
+    for (const { id } of g.items) {
+      const m = item(id);
+      if (m) { m.x += dx; m.y += dy; }
     }
-    growChain(z, it, g.zoneSizes);
+  };
+
+  let guides = [];
+  if (isZone) {
+    // Une zone s'aligne sur les zones de même niveau : bords, centres, ou
+    // juste à côté avec un écart régulier.
+    const snap = snapZone(it, z ? z.id : null, g.movedIds);
+    shift(snap);
+    guides = snap.guides;
+  } else if (z) {
+    const snap = snapIn(it, z, g.movedIds);
+    shift(snap);
+    guides = snap.guides;
   }
+  if (z) growChain(z, it, g.zoneSizes);
 
   render();
   setDropZone(z ? z.id : null, g.id);
@@ -604,6 +611,48 @@ function snapIn(b, z, moved) {
   if (x !== null) guides.push({ x1: x, y1: z.y, x2: x, y2: z.y + Math.max(z.h, b.y + b.h + ZONE_PAD - z.y) });
   if (y !== null) guides.push({ x1: z.x, y1: y, x2: z.x + Math.max(z.w, b.x + b.w + ZONE_PAD - z.x), y2: y });
   return { x: x ?? b.x, y: y ?? b.y, guides };
+}
+
+const ZONE_GAP = 40; // écart entre deux zones voisines
+
+/** Alignement d'une zone sur ses sœurs : même parente, ou toutes deux libres. */
+function snapZone(z, parentId, moved) {
+  const reach = Math.max(8, 12 / state.view.scale); // ~12 px à l'écran, quel que soit le zoom
+  const sisters = Object.values(state.doc.zones).filter((o) =>
+    o !== z && !moved.has(o.id) && !o.auto && (o.parent || null) === parentId);
+
+  // Pour chaque axe, la correction la plus faible parmi les alignements possibles.
+  const best = (axis) => {
+    const [pos, size] = axis === "x" ? ["x", "w"] : ["y", "h"];
+    let pick = null;
+    for (const o of sisters) {
+      const options = [
+        [o[pos], o[pos]],                                   // bords de départ alignés
+        [o[pos] + o[size] - z[size], o[pos] + o[size]],     // bords de fin alignés
+        [o[pos] + (o[size] - z[size]) / 2, o[pos] + o[size] / 2], // centres alignés
+        [o[pos] + o[size] + ZONE_GAP, null],                // juste après
+        [o[pos] - ZONE_GAP - z[size], null],                // juste avant
+      ];
+      for (const [to, line] of options) {
+        const d = Math.abs(to - z[pos]);
+        if (d <= reach && (!pick || d < pick.d)) pick = { d, to, line, o };
+      }
+    }
+    return pick;
+  };
+
+  const bx = best("x");
+  const by = best("y");
+  const x = bx ? bx.to : z.x;
+  const y = by ? by.to : z.y;
+  const guides = [];
+  if (bx && bx.line !== null) {
+    guides.push({ x1: bx.line, y1: Math.min(y, bx.o.y), x2: bx.line, y2: Math.max(y + z.h, bx.o.y + bx.o.h) });
+  }
+  if (by && by.line !== null) {
+    guides.push({ x1: Math.min(x, by.o.x), y1: by.line, x2: Math.max(x + z.w, by.o.x + by.o.w), y2: by.line });
+  }
+  return { x, y, guides };
 }
 
 function drawGuides(guides) {
