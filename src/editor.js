@@ -11,6 +11,7 @@ import { toList, LIST_TYPES } from "./lists.js";
 import { createVariant } from "./variant.js";
 import { openProps } from "./props.js";
 import { askNotificationPermission } from "./reminders.js";
+import { attachFormatting, detachFormatting, readRich } from "./format.js";
 
 let slashMenu = null;
 let slashRange = null;
@@ -35,6 +36,7 @@ export function startEditing(id, element, at) {
   element.addEventListener("input", onInput);
   element.addEventListener("keydown", onKeyDown);
   element.addEventListener("blur", onBlur);
+  if (state.doc.blocks[id]?.kind === "text") attachFormatting(element);
   begin();
   render();
 }
@@ -53,12 +55,20 @@ export function stopEditing() {
     element.removeEventListener("input", onInput);
     element.removeEventListener("keydown", onKeyDown);
     element.removeEventListener("blur", onBlur);
+    detachFormatting(element);
     element.contentEditable = "false";
     const text = element.textContent.trim();
     const block = state.doc.blocks[id];
     const zone = state.doc.zones[id];
     if (block) {
-      block.text = element.textContent;
+      if (block.kind === "text") {
+        const rich = readRich(element);
+        block.text = rich.text;
+        block.html = rich.html;
+        element._html = rich.html;
+      } else {
+        block.text = element.textContent;
+      }
       block.updatedAt = Date.now();
       measure(block, node);
       // Un bloc resté vide n'a pas lieu d'encombrer le canvas.
@@ -84,7 +94,7 @@ function onInput(e) {
   const element = e.currentTarget;
   const block = state.doc.blocks[state.editing];
   if (block) {
-    block.text = element.textContent;
+    block.text = block.kind === "text" ? element.innerText.replace(/\n$/, "") : element.textContent;
     measure(block, nodeFor(state.editing));
   }
   updateSlashMenu(element);

@@ -9,6 +9,7 @@ import { state, getCategory, fieldsOf, depthOf } from "./store.js";
 import { el, icon, formatDate, isSoon, fold, ICON_PATHS } from "./util.js";
 import { assetURL as getAsset } from "./store.js";
 import { renderList } from "./lists.js";
+import { writeRich } from "./format.js";
 
 const nodes = new Map();
 const urls = new Map();
@@ -124,7 +125,7 @@ function updateBlock(node, b) {
 
 function renderBody(node, body, b) {
   if (b.kind === "text") {
-    if (body.textContent !== b.text && state.editing !== b.id) body.textContent = b.text;
+    if (state.editing !== b.id) writeRich(body, b);
     const cat = getCategory(b.category);
     body.dataset.placeholder = cat && cat.checkable ? "Quoi faire ?" : "Écris, ou tape /";
     return;

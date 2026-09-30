@@ -49,6 +49,7 @@ du code peut passer inaperçue au rechargement.
 | Clic droit dans une zone → Réorganiser la zone | Range ses blocs sur place : une colonne par catégorie, tâches à faire d'abord et par échéance |
 | Tirer le point du bord droit d'un bloc | Le relier à un autre bloc (relâché sur un bloc déjà relié : retire le lien ; dans le vide : crée un bloc relié) |
 | Clic sur un trait de liaison | Le sélectionner ; `Suppr` l'efface |
+| Sélectionner du texte pendant l'édition | Barre de mise en forme : gras, italique, souligné, barré, surligné, titre, liste |
 | `/idea` `/task` … | Catégoriser depuis le clavier |
 | `/rappel` `/echeance` | Ajouter un rappel ou une échéance à n'importe quel bloc |
 | `/tracklist` `/folder` | Transformer le bloc en tracklist ou en dossier |
@@ -65,6 +66,7 @@ du code peut passer inaperçue au rechargement.
 | `1` à `4` | Filtrer par catégorie |
 | `Échap` | Revenir à la sélection, fermer, retirer les filtres |
 | `⌘Z` / `⌘⇧Z` | Annuler / rétablir |
+| `⌘B` `⌘I` `⌘U` | Gras, italique, souligné (pendant l'édition) |
 | `⌘A` `⌘D` | Tout sélectionner, dupliquer |
 | `Entrée` | Éditer le bloc sélectionné |
 | `Maj+1` | Tout voir |
@@ -92,6 +94,7 @@ src/
   archive.js    Zone « Fait » des tâches terminées
   lists.js      Blocs tracklist et dossier, lecteur audio
   variant.js    Variantes : v2 d'un ensemble de blocs reliés
+  format.js     Mise en forme du texte, barre flottante, nettoyage du HTML
   welcome.js    Board d'accueil du premier lancement
   util.js       Utilitaires partagés
 ```
