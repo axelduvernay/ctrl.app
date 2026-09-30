@@ -12,12 +12,12 @@ import { align } from "./arrange.js";
 import { initReminders } from "./reminders.js";
 import { categoryList } from "./store.js";
 import { seedWelcome } from "./welcome.js";
-import { overlaps } from "./util.js";
+import { overlaps, el } from "./util.js";
 import { save } from "./store.js";
 
 /* Affichée dans le menu : permet de vérifier qu'une mise à jour est arrivée.
    À changer à chaque livraison. */
-export const VERSION = "30.09 · refonte";
+export const VERSION = "30.09 · refonte 2";
 
 async function boot() {
   applyTheme();
@@ -80,6 +80,13 @@ function anythingVisible() {
 function wireChrome() {
   const toolbar = document.getElementById("toolbar");
 
+  // Chaque outil annonce son nom et sa touche au survol.
+  for (const button of document.querySelectorAll("[data-tip]")) {
+    button.append(el("span", { class: "tip", "aria-hidden": "true" },
+      el("span", { text: button.dataset.tip }),
+      el("kbd", { text: button.dataset.key })));
+  }
+
   toolbar.addEventListener("click", (e) => {
     const button = e.target.closest("button");
     if (!button) return;
@@ -135,6 +142,15 @@ function wireKeyboard() {
     if (mod && e.key.toLowerCase() === "f") {
       e.preventDefault();
       return openSearch();
+    }
+
+    // ⌘+ ⌘− ⌘0 : le zoom du board plutôt que celui du navigateur.
+    if (mod && ["=", "+", "-", "0"].includes(e.key)) {
+      e.preventDefault();
+      const cx = innerWidth / 2;
+      const cy = innerHeight / 2;
+      if (e.key === "0") return zoomAt(1 / state.view.scale, cx, cy);
+      return zoomAt(e.key === "-" ? 0.8 : 1.25, cx, cy);
     }
 
     if (mod && e.key.toLowerCase() === "z") {
@@ -193,8 +209,10 @@ function wireKeyboard() {
 
     // Outils
     if (e.key === "v" || e.key === "V") { state.tool = "select"; return emit("tool"); }
-    if (e.key === "z" || e.key === "Z") { state.tool = "zone"; return emit("tool"); }
-    if (e.key === "d" || e.key === "D") { state.tool = "draw"; return emit("tool"); }
+    // Raccourcis à la Adobe : V sélection, B pinceau (D reste accepté), M
+    // rectangle de sélection — ici, tracer une zone.
+    if (e.key === "m" || e.key === "M") { state.tool = "zone"; return emit("tool"); }
+    if ("bBdD".includes(e.key)) { state.tool = "draw"; return emit("tool"); }
     if (e.key === "n" || e.key === "N") { e.preventDefault(); return createBlockAtCenter(); }
     // « / » sur le canvas : un nouveau bloc, menu des commandes déjà ouvert.
     if (e.key === "/") {

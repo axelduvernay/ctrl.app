@@ -30,17 +30,14 @@
 
     <!-- Barre d'outils : création, à gauche. -->
     <div id="toolbar" role="toolbar" aria-label="Outils">
-      <button data-tool="select" class="is-active" title="Sélection (V)" aria-label="Sélection">
+      <button data-tool="select" class="is-active" data-tip="Sélection" data-key="V" aria-label="Sélection (V)">
         <svg viewBox="0 0 24 24"><path d="M5 3l14 8-6 1.6L10.5 19z"/></svg>
       </button>
-      <button data-tool="draw" title="Dessiner (D)" aria-label="Dessiner">
+      <button data-tool="draw" data-tip="Crayon" data-key="B" aria-label="Crayon (B)">
         <svg viewBox="0 0 24 24"><path d="M4 20l4-1 10-10a2.1 2.1 0 0 0-3-3L5 16z"/><path d="M14 6l3 3"/></svg>
       </button>
-      <button data-tool="zone" title="Zone (Z)" aria-label="Zone">
-        <svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2.5"/></svg>
-      </button>
       <span class="sep"></span>
-      <button data-action="arrange" title="Aligner (R)" aria-label="Aligner">
+      <button data-action="arrange" data-tip="Aligner" data-key="R" aria-label="Aligner (R)">
         <svg viewBox="0 0 24 24"><path d="M4 4v16"/><rect x="7" y="6" width="10" height="4" rx="1.2"/><rect x="7" y="14" width="13" height="4" rx="1.2"/></svg>
       </button>
     </div>
@@ -54,10 +51,10 @@
 
     <!-- Indicateur de zoom, discret, en bas à droite. -->
     <div id="zoombar">
-      <button data-zoom="out" aria-label="Dézoomer">−</button>
-      <button id="zoom-level" data-zoom="reset" title="Revenir à 100 %">100 %</button>
-      <button data-zoom="in" aria-label="Zoomer">+</button>
-      <button data-zoom="fit" title="Tout voir" aria-label="Tout voir">
+      <button data-zoom="out" data-tip="Dézoomer" data-key="⌘ −" aria-label="Dézoomer">−</button>
+      <button id="zoom-level" data-zoom="reset" title="Revenir à 100 % (⌘0)" aria-label="Revenir à 100 %">100 %</button>
+      <button data-zoom="in" data-tip="Zoomer" data-key="⌘ +" aria-label="Zoomer">+</button>
+      <button data-zoom="fit" data-tip="Tout voir" data-key="⇧ 1" aria-label="Tout voir">
         <svg viewBox="0 0 24 24"><path d="M4 9V5h4M20 9V5h-4M4 15v4h4M20 15v4h-4"/></svg>
       </button>
     </div>

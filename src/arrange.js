@@ -1,10 +1,8 @@
 /* Aligner.
 
    Un seul rangement, et qui respecte le board : rien n'est ramené au centre
-   ni tassé dans un coin. Chaque élément reste dans sa région ; ceux qui sont
-   presque alignés le deviennent vraiment — même bord gauche pour une
-   colonne, même haut pour une rangée — puis les chevauchements sont défaits
-   en poussant vers la droite ou vers le bas.
+   ni tassé dans un coin. Chaque groupe reste dans sa région, mais s'y met
+   en ordre : colonnes nettes, écarts réguliers, rien qui se chevauche.
 
    Les zones sont rangées de l'intérieur d'abord, sous-zones comprises, puis
    s'alignent parmi le reste d'un seul tenant. Tout est calculé sur
@@ -15,7 +13,6 @@ import { render, nodeFor } from "./render.js";
 import { toast } from "./main.js";
 
 const GAP = 28;        // écart minimal entre deux éléments
-const TOLERANCE = 48;  // en deçà, deux bords sont « presque alignés »
 const PAD = 24;        // marge intérieure d'une zone
 const LABEL = 56;      // place réservée au titre d'une zone
 const MIN_W = 260;
@@ -60,30 +57,86 @@ function tidyZone(z) {
   z.h = Math.max(MIN_H, Math.round(bottom + PAD - z.y));
 }
 
-/** Aligne des éléments de même niveau, sur place. */
+/* Aligne des éléments de même niveau, sur place, en quatre temps :
+   1. on reconnaît les colonnes — des éléments à peu près les uns sous les
+      autres ;
+   2. chaque colonne prend un même bord gauche, et ses blocs de texte une
+      même largeur ;
+   3. les colonnes voisines s'alignent par le haut et se rapprochent à un
+      écart régulier, et dans chaque colonne les éléments se resserrent ;
+   4. les chevauchements qui resteraient sont défaits.
+   Un grand écart, lui, est gardé : il sépare volontairement deux groupes. */
 function tidyLevel(items) {
-  if (items.length < 2) return;
-  snapClusters(items, "x");
-  snapClusters(items, "y");
+  if (!items.length) return;
+  const columns = findColumns(items);
+
+  for (const col of columns) {
+    const left = Math.min(...col.map((i) => i.x));
+    for (const i of col) shift(i, left - i.x, 0);
+    // Des blocs de texte de même largeur font une colonne nette.
+    const texts = col.filter((i) => state.doc.blocks[i.id] && ["text", "list"].includes(i.kind));
+    if (texts.length > 1) {
+      const w = Math.max(...texts.map((i) => i.w));
+      for (const i of texts) i.w = w;
+    }
+  }
+
+  // Colonnes de gauche à droite : têtes alignées, écart régulier entre voisines.
+  const spans = columns.map((col) => ({ col, ...span(col) })).sort((a, b) => a.left - b.left);
+  for (let k = 1; k < spans.length; k++) {
+    const prev = spans[k - 1];
+    const cur = spans[k];
+    const sideBySide = cur.top < prev.bottom && cur.bottom > prev.top;
+    if (!sideBySide) continue;
+    const dy = Math.abs(cur.top - prev.top) <= ROW_TOLERANCE ? prev.top - cur.top : 0;
+    const gap = cur.left - prev.right;
+    const dx = gap < BREAK_X ? prev.right + COL_GAP - cur.left : 0;
+    if (dx || dy) {
+      for (const i of cur.col) shift(i, dx, dy);
+      Object.assign(cur, span(cur.col));
+    }
+  }
+
+  // Dans chaque colonne, les éléments se resserrent à l'écart standard.
+  for (const col of columns) {
+    const sorted = [...col].sort((a, b) => a.y - b.y);
+    for (let k = 1; k < sorted.length; k++) {
+      const above = sorted[k - 1];
+      const gap = sorted[k].y - (above.y + above.h);
+      if (gap < BREAK_Y) shift(sorted[k], 0, above.y + above.h + GAP - sorted[k].y);
+    }
+  }
+
   separate(items);
 }
 
-/* Les bords presque alignés le deviennent : on regroupe les positions
-   proches, et chaque groupe prend la plus petite — le bord le plus à gauche
-   pour une colonne, le plus haut pour une rangée. */
-function snapClusters(items, axis) {
-  const sorted = [...items].sort((a, b) => a[axis] - b[axis]);
-  let group = [];
-  const flush = () => {
-    const to = Math.min(...group.map((i) => i[axis]));
-    for (const i of group) shift(i, axis === "x" ? to - i.x : 0, axis === "y" ? to - i.y : 0);
-    group = [];
-  };
-  for (const i of sorted) {
-    if (group.length && i[axis] - group[0][axis] > TOLERANCE) flush();
-    group.push(i);
+const COL_TOLERANCE = 120; // bords gauches à moins de 120 px : même colonne
+const ROW_TOLERANCE = 90;  // têtes de colonnes à moins de 90 px : même rangée
+const COL_GAP = 40;        // écart entre deux colonnes voisines
+const BREAK_X = 180;       // au-delà, deux colonnes restent à distance
+const BREAK_Y = 140;       // au-delà, un trou dans une colonne est gardé
+
+/** Regroupe en colonnes : bords gauches proches, ou largeurs qui se recouvrent bien. */
+function findColumns(items) {
+  const columns = [];
+  for (const it of [...items].sort((a, b) => a.x - b.x)) {
+    const col = columns.find((c) => {
+      const { left, right } = span(c);
+      const shared = Math.min(right, it.x + it.w) - Math.max(left, it.x);
+      return it.x - left <= COL_TOLERANCE || shared >= Math.min(it.w, right - left) * 0.6;
+    });
+    col ? col.push(it) : columns.push([it]);
   }
-  if (group.length) flush();
+  return columns;
+}
+
+function span(col) {
+  return {
+    left: Math.min(...col.map((i) => i.x)),
+    right: Math.max(...col.map((i) => i.x + i.w)),
+    top: Math.min(...col.map((i) => i.y)),
+    bottom: Math.max(...col.map((i) => i.y + i.h)),
+  };
 }
 
 /* Défait les chevauchements, dans l'ordre de lecture. Un élément qui en
@@ -95,7 +148,7 @@ function separate(items) {
     for (let guard = 0; guard < 200; guard++) {
       const hit = placed.find((p) => overlaps(it, p));
       if (!hit) break;
-      const sameRow = Math.abs(it.y - hit.y) < TOLERANCE && it.x >= hit.x;
+      const sameRow = Math.abs(it.y - hit.y) < ROW_TOLERANCE && it.x >= hit.x;
       if (sameRow) shift(it, hit.x + hit.w + GAP - it.x, 0);
       else shift(it, 0, hit.y + hit.h + GAP - it.y);
     }

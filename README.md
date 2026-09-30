@@ -49,7 +49,9 @@ du code peut passer inaperçue au rechargement.
 | Clic droit dans une zone → Aligner la zone | Aligne son contenu sur place et ajuste la zone |
 | Tirer le point du bord droit d'un bloc | Le relier à un autre bloc (relâché sur un bloc déjà relié : retire le lien ; dans le vide : crée un bloc relié) |
 | Clic sur un trait de liaison | Le sélectionner ; `Suppr` l'efface |
-| Sélectionner du texte pendant l'édition | Barre de mise en forme : gras, italique, souligné, barré, surligné, titre, liste |
+| Sélectionner du texte pendant l'édition | Barre de mise en forme : titre, sous-titre, texte, gras, italique, souligné, barré, surligné, liste |
+| `#` ou `##` puis espace, en début de ligne | Titre ou sous-titre |
+| Flèche à gauche d'un titre | Replier ou déplier le texte qui le suit |
 | `/idea` `/task` … | Catégoriser depuis le clavier |
 | `/rappel` `/echeance` | Ajouter un rappel ou une échéance à n'importe quel bloc |
 | `/tracklist` `/folder` | Transformer le bloc en tracklist ou en dossier |
@@ -58,7 +60,8 @@ du code peut passer inaperçue au rechargement.
 
 | Raccourci | Effet |
 | --- | --- |
-| `V` `D` `Z` | Outils sélection, dessin, zone |
+| `V` `B` `M` | Sélection, crayon, tracer une zone (à la Adobe ; `D` marche aussi pour le crayon) |
+| `⌘+` `⌘−` `⌘0` | Zoomer, dézoomer, 100 % |
 | `N` | Nouveau bloc au centre |
 | `/` | Nouveau bloc, menu des commandes ouvert |
 | `R` | Aligner : colonnes et rangées nettes, sans rien ramener au centre |
@@ -67,6 +70,7 @@ du code peut passer inaperçue au rechargement.
 | `Échap` | Revenir à la sélection, fermer, retirer les filtres |
 | `⌘Z` / `⌘⇧Z` | Annuler / rétablir |
 | `⌘B` `⌘I` `⌘U` | Gras, italique, souligné (pendant l'édition) |
+| `⇧⌘T` `⇧⌘H` `⇧⌘B` | Titre, sous-titre, texte (comme dans Notes) |
 | `⌘A` `⌘D` | Tout sélectionner, dupliquer |
 | `Entrée` | Éditer le bloc sélectionné |
 | `Maj+1` | Tout voir |

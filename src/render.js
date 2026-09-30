@@ -114,7 +114,9 @@ function updateBlock(node, b) {
   node.style.width = b.w + "px";
   const grows = b.kind === "text" || b.kind === "list";
   node.style.height = grows ? "auto" : b.h + "px";
-  node.style.minHeight = b.kind === "text" ? b.h + "px" : "";
+  // Un bloc texte prend exactement la hauteur de son contenu : c'est ce qui
+  // lui permet de rétrécir quand on replie un titre.
+  node.style.minHeight = "";
 
   // Les classes d'effet sont posées de l'extérieur (rangement, aimant) : on
   // les garde, sinon le rendu qui suit les effacerait avant la transition.

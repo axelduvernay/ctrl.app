@@ -30,6 +30,17 @@
   --glass-shadow: 0 1px 1px rgba(20, 20, 21, 0.04), 0 14px 36px -10px rgba(20, 20, 21, 0.22);
   --hover: rgba(30, 30, 32, 0.06);
 
+  /* Liquid glass : presque transparent, un flou léger qui laisse voir le
+     canvas, des reflets sur les bords comme une lentille. */
+  --lg-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.46), rgba(255, 255, 255, 0.16));
+  --lg-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.95),
+    inset 0 -1px 1px rgba(255, 255, 255, 0.35),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.4),
+    inset 0 0 18px rgba(255, 255, 255, 0.28),
+    0 0 0 0.5px rgba(30, 30, 32, 0.08),
+    0 10px 30px -8px rgba(20, 20, 21, 0.22);
+
   /* Mouvement : un ressort qui dépasse à peine, et une sortie douce. */
   --spring: cubic-bezier(0.34, 1.4, 0.64, 1);
   --soft: cubic-bezier(0.22, 1, 0.36, 1);
@@ -66,6 +77,14 @@
     --glass-edge: rgba(0, 0, 0, 0.3);
     --glass-shadow: 0 1px 1px rgba(0, 0, 0, 0.3), 0 16px 40px -10px rgba(0, 0, 0, 0.6);
     --hover: rgba(244, 240, 234, 0.08);
+    --lg-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03));
+    --lg-shadow:
+      inset 0 1px 1px rgba(255, 255, 255, 0.22),
+      inset 0 -1px 1px rgba(255, 255, 255, 0.06),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+      inset 0 0 18px rgba(255, 255, 255, 0.05),
+      0 0 0 0.5px rgba(0, 0, 0, 0.5),
+      0 12px 34px -8px rgba(0, 0, 0, 0.6);
   }
 }
 
@@ -89,6 +108,14 @@
   --glass-edge: rgba(0, 0, 0, 0.3);
   --glass-shadow: 0 1px 1px rgba(0, 0, 0, 0.3), 0 16px 40px -10px rgba(0, 0, 0, 0.6);
   --hover: rgba(244, 240, 234, 0.08);
+  --lg-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03));
+  --lg-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.22),
+    inset 0 -1px 1px rgba(255, 255, 255, 0.06),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    inset 0 0 18px rgba(255, 255, 255, 0.05),
+    0 0 0 0.5px rgba(0, 0, 0, 0.5),
+    0 12px 34px -8px rgba(0, 0, 0, 0.6);
 }
 
 * { box-sizing: border-box; }
@@ -549,12 +576,23 @@ button { font: inherit; color: inherit; }
 /* Verre dépoli : flou et saturation de ce qui passe dessous, un liseré clair
    en haut comme un reflet, et un contour sombre à peine visible pour détacher
    la barre d'un fond clair. */
-#toolbar, #topright, #zoombar, #search, #filters .chip, #status, .popup {
+#search, #filters .chip, #status, .popup {
   background: var(--glass);
   -webkit-backdrop-filter: blur(22px) saturate(180%);
   backdrop-filter: blur(22px) saturate(180%);
   border: 1px solid var(--glass-border);
   box-shadow: inset 0 1px 0 var(--glass-border), 0 0 0 0.5px var(--glass-edge), var(--glass-shadow);
+}
+
+/* Les barres flottantes et la barre de mise en forme : liquid glass. Le
+   canvas passe au travers, à peine flouté ; ce sont les reflets qui
+   dessinent la forme. */
+#toolbar, #topright, #zoombar, .format-bar {
+  background: var(--lg-bg);
+  -webkit-backdrop-filter: blur(7px) saturate(190%) brightness(1.04);
+  backdrop-filter: blur(7px) saturate(190%) brightness(1.04);
+  border: 0;
+  box-shadow: var(--lg-shadow);
 }
 
 #toolbar, #topright, #zoombar {
@@ -1058,7 +1096,31 @@ button { font: inherit; color: inherit; }
   border-radius: 3px;
   padding: 0 1px;
 }
-.block .body h3 { margin: 0 0 2px; font-size: 1.22em; font-weight: 700; letter-spacing: -0.01em; line-height: 1.3; }
+/* Styles de paragraphe : titre, sous-titre (et l'ancien intertitre). */
+.block .body h1 { margin: 0 0 4px; font-size: 1.55em; font-weight: 700; letter-spacing: -0.02em; line-height: 1.22; }
+.block .body h2 { margin: 2px 0 2px; font-size: 1.2em; font-weight: 700; letter-spacing: -0.01em; line-height: 1.3; }
+.block .body h3 { margin: 2px 0 2px; font-size: 1.05em; font-weight: 700; line-height: 1.35; }
+
+/* La flèche de repli, dans la marge à gauche du titre : visible au survol
+   du bloc, toujours visible quand le titre est replié. */
+.block .body :is(h1, h2, h3) { position: relative; }
+.block .body :is(h1, h2, h3).has-body::before {
+  content: "";
+  position: absolute;
+  left: -15px; top: 0.62em;
+  width: 10px; height: 10px;
+  margin-top: -5px;
+  background: var(--text-2);
+  -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><path d="M3 1.5 7 5 3 8.5" fill="none" stroke="black" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>') center / contain no-repeat;
+  mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><path d="M3 1.5 7 5 3 8.5" fill="none" stroke="black" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>') center / contain no-repeat;
+  transform: rotate(90deg);
+  opacity: 0;
+  cursor: pointer;
+  transition: transform 0.4s var(--spring), opacity 0.2s ease, background 0.2s ease;
+}
+.block:hover .body :is(h1, h2, h3).has-body::before { opacity: 1; }
+.block .body :is(h1, h2, h3)[data-folded].has-body::before { opacity: 1; transform: none; background: var(--accent); }
+.block .body .is-folded-away { display: none; }
 .block .body ul, .block .body ol { margin: 0; padding-left: 1.25em; white-space: normal; }
 .block .body li { white-space: pre-wrap; }
 .block .body li::marker { color: var(--text-2); }
@@ -1072,9 +1134,7 @@ button { font: inherit; color: inherit; }
   gap: 2px;
   padding: 4px;
   border-radius: var(--r-pill);
-  background: var(--text);
-  color: var(--bg);
-  box-shadow: 0 6px 20px rgba(20, 20, 21, 0.22);
+  color: var(--text);
   opacity: 0;
   transform: translateY(4px) scale(0.96);
   transition: opacity 0.14s ease, transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -1091,5 +1151,60 @@ button { font: inherit; color: inherit; }
   opacity: 0.72;
   cursor: pointer;
 }
-.format-bar button:hover { opacity: 1; background: color-mix(in srgb, var(--bg) 14%, transparent); }
+.format-bar button:hover { opacity: 1; background: var(--hover); }
 .format-bar button.is-on { opacity: 1; color: var(--accent); }
+.format-bar .sep { width: 1px; margin: 5px 3px; background: var(--line-strong); }
+/* Les styles de paragraphe s'écrivent dans leur propre style. */
+.format-bar .style-btn { width: auto; padding: 0 10px; border-radius: var(--r-pill); font-size: 13px; line-height: 1; }
+.format-bar .style-h1 { font-weight: 700; font-size: 14px; }
+.format-bar .style-h2 { font-weight: 600; }
+.format-bar .style-btn.is-on { background: var(--accent-soft); color: var(--accent); }
+
+
+/* ---------- Infobulles des outils ----------
+
+   Au survol d'un outil, après un court temps : son nom et sa touche, dans
+   une petite pastille de verre au-dessus. */
+[data-tip] { position: relative; }
+.tip {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 6px 5px 10px;
+  border-radius: 10px;
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  backdrop-filter: blur(18px) saturate(180%);
+  box-shadow: inset 0 1px 0 var(--glass-border), 0 0 0 0.5px var(--glass-edge), var(--glass-shadow);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, 4px) scale(0.96);
+  transition: opacity 0.15s ease, transform 0.3s var(--spring);
+  z-index: 50;
+}
+.tip kbd {
+  font: inherit;
+  font-size: 11px;
+  min-width: 18px;
+  padding: 1px 5px;
+  border-radius: 5px;
+  text-align: center;
+  color: var(--text-2);
+  background: var(--hover);
+}
+[data-tip]:hover > .tip {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+  transition-delay: 0.35s;
+}
+/* La barre de zoom est au bord de l'écran : ses infobulles s'alignent à droite. */
+#zoombar .tip { left: auto; right: -4px; transform: translate(0, 4px) scale(0.96); }
+#zoombar [data-tip]:hover > .tip { transform: none; }

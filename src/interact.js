@@ -10,6 +10,7 @@ import { state, begin, commit, mutate, addBlock, addZone, addLink, linkBetween, 
 import { toWorld, panBy, zoomAt, smoothZoom, viewCenter } from "./viewport.js";
 import { render, nodeFor, curveTo } from "./render.js";
 import { moveItem, indexAt, renameItem } from "./lists.js";
+import { toggleFold } from "./format.js";
 import { toast } from "./main.js";
 import { startEditing } from "./editor.js";
 import { openContextMenu } from "./menus.js";
@@ -77,6 +78,23 @@ function onPointerDown(e) {
   if (pointers.size > 2) return;
 
   const target = e.target;
+
+  // La flèche d'un titre, dans la marge à sa gauche : replier ou déplier.
+  const heading = target.closest(".block .body :is(h1, h2, h3)");
+  if (heading && e.clientX < heading.getBoundingClientRect().left) {
+    e.preventDefault();
+    const node = heading.closest("[data-id]");
+    const body = heading.closest(".body");
+    const b = state.doc.blocks[node.dataset.id];
+    const html = toggleFold(heading, body);
+    // En édition, le texte sera enregistré à la sortie ; sinon, tout de suite.
+    if (b && state.editing !== b.id) {
+      mutate(() => { b.html = html; });
+      body._html = html;
+    }
+    render();
+    return;
+  }
 
   // Case à cocher, champ de date ou de rappel : action immédiate, pas un glisser.
   if (target.closest("[data-check]") || target.closest("[data-prop]") || target.closest("[data-action]")) return;
