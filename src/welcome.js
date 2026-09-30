@@ -12,7 +12,7 @@ export function seedWelcome() {
   const first = addBlock({
     x: -330, y: -200, w: 240, h: 92,
     text: "Double-clique n'importe où sur le fond pour écrire.",
-    category: "note",
+    category: null,
   });
 
   const second = addBlock({
@@ -24,25 +24,25 @@ export function seedWelcome() {
   addBlock({
     x: 210, y: -200, w: 240, h: 92,
     text: "Clic droit sur un bloc : catégorie, échéance, liens.",
-    category: "note",
+    category: null,
   });
 
   addBlock({
     x: -330, y: -80, w: 240, h: 92,
     text: "Glisse une image ou un fichier depuis ton bureau.",
-    category: "note",
+    category: null,
   });
 
   addBlock({
     x: -60, y: -80, w: 240, h: 92,
-    text: "Range le tableau en deux clics avec le bouton en bas.",
+    text: "Aligne tout proprement d’un clic, avec le bouton en bas ou la touche R.",
     category: "task",
   });
 
   addBlock({
     x: 210, y: -80, w: 240, h: 92,
-    text: "⌘F pour chercher, 1 à 4 pour filtrer, ⌘Z pour annuler.",
-    category: "note",
+    text: "⌘F pour chercher, 1 à 3 pour filtrer, ⌘Z pour annuler.",
+    category: null,
   });
 
   addBlock({

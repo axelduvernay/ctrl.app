@@ -6,9 +6,9 @@ import { initRender, render, nodeFor } from "./render.js";
 import { initInteract, createBlockAtCenter } from "./interact.js";
 import { initIO } from "./io.js";
 import { initSearch, openSearch, closeSearch, isSearchOpen, toggleFilter, clearFilters } from "./search.js";
-import { openMainMenu, closeMenus, applyTheme, duplicate, openArrangeMenu } from "./menus.js";
+import { openMainMenu, closeMenus, applyTheme, duplicate } from "./menus.js";
 import { startEditing, stopEditing } from "./editor.js";
-import { arrange } from "./arrange.js";
+import { align } from "./arrange.js";
 import { initReminders } from "./reminders.js";
 import { categoryList } from "./store.js";
 import { seedWelcome } from "./welcome.js";
@@ -17,7 +17,7 @@ import { save } from "./store.js";
 
 /* Affichée dans le menu : permet de vérifier qu'une mise à jour est arrivée.
    À changer à chaque livraison. */
-export const VERSION = "30.09 · 3";
+export const VERSION = "30.09 · refonte";
 
 async function boot() {
   applyTheme();
@@ -55,7 +55,7 @@ async function boot() {
 
   // Accès de développement, utile pour inspecter ou peupler un board de test.
   if (["localhost", "127.0.0.1"].includes(location.hostname)) {
-    window.ctrl = { state, render, arrange, fitAll, toast };
+    window.ctrl = { state, render, align, fitAll, toast };
   }
 }
 
@@ -87,8 +87,7 @@ function wireChrome() {
       state.tool = button.dataset.tool;
       emit("tool");
     } else if (button.dataset.action === "arrange") {
-      const rect = button.getBoundingClientRect();
-      openArrangeMenu(rect.left - 20, rect.top - 150);
+      align();
     }
   });
 
@@ -208,7 +207,7 @@ function wireKeyboard() {
       body.dispatchEvent(new Event("input"));
       return;
     }
-    if (e.key === "r" || e.key === "R") { e.preventDefault(); return arrange("tidy"); }
+    if (e.key === "r" || e.key === "R") { e.preventDefault(); return align(); }
 
     // Filtres rapides : 1 à 4 selon l'ordre des catégories.
     const digit = Number(e.key);

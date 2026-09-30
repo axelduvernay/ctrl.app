@@ -90,7 +90,7 @@ function placeFromText(text, at) {
     addBlock(
       isURL
         ? { kind: "link", url: trimmed, name: prettyURL(trimmed), x: Math.round(at.x - 130), y: Math.round(at.y - 32), w: 260, h: 64 }
-        : { kind: "text", text: trimmed, x: Math.round(at.x - 110), y: Math.round(at.y - 40), w: 240, h: 96 }
+        : { kind: "text", text: trimmed, x: Math.round(at.x - 110), y: Math.round(at.y - 40), w: 240, h: 50 }
     )
   );
   render();

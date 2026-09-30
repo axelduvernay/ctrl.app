@@ -86,7 +86,7 @@ export function stopEditing() {
 /** Ajuste la hauteur stockée à ce que le texte occupe réellement. */
 function measure(block, node) {
   if (!node || block.kind !== "text") return;
-  const h = Math.max(56, Math.round(node.getBoundingClientRect().height / state.view.scale));
+  const h = Math.max(50, Math.round(node.getBoundingClientRect().height / state.view.scale));
   block.h = h;
 }
 

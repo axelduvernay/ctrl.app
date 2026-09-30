@@ -6,7 +6,7 @@ import { el, icon, bounds, uid, ICON_PATHS } from "./util.js";
 import { openProps } from "./props.js";
 import { render } from "./render.js";
 import { setCategory, setDue, stopEditing } from "./editor.js";
-import { arrange, arrangeZone } from "./arrange.js";
+import { align } from "./arrange.js";
 import { fitAll } from "./viewport.js";
 import { exportBoard, importBoard } from "./io.js";
 import { toggleFilter, toggleDoneFilter, clearFilters } from "./search.js";
@@ -66,7 +66,7 @@ export function openContextMenu(x, y, { onEmpty, world }) {
         render();
       }),
       sep(),
-      ...arrangeItems(),
+      action("Aligner", () => align(), { hint: "R", iconPath: ALIGN_ICON }),
       sep(),
       action("Tout sélectionner", () => {
         for (const id of Object.keys(state.doc.blocks)) state.selection.add(id);
@@ -93,7 +93,7 @@ export function openContextMenu(x, y, { onEmpty, world }) {
     .filter((l) => blockIds.includes(l.from) || blockIds.includes(l.to)).map((l) => l.id);
   return openPopup(x, y, [
     ...zoneColorItems(ids),
-    zoneId ? action("Réorganiser la zone", () => arrangeZone(zoneId), { iconPath: '<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>' }) : null,
+    zoneId ? action("Aligner la zone", () => align(zoneId), { iconPath: ALIGN_ICON }) : null,
     zoneId ? sep() : null,
     blockIds.length ? label("Catégorie") : null,
     ...(blockIds.length
@@ -209,18 +209,7 @@ function fieldItems(blockIds) {
   ];
 }
 
-function arrangeItems() {
-  return [
-    label("Ranger le tableau"),
-    action("Par catégorie", () => arrange("category")),
-    action("Par date", () => arrange("date")),
-    action("Aligner proprement", () => arrange("tidy")),
-  ];
-}
-
-export function openArrangeMenu(x, y) {
-  openPopup(x, y, arrangeItems());
-}
+const ALIGN_ICON = '<path d="M4 4v16"/><rect x="7" y="6" width="10" height="4" rx="1.2"/><rect x="7" y="14" width="13" height="4" rx="1.2"/>';
 
 /* Date locale au format AAAA-MM-JJ.
    `toISOString` passerait par UTC : passé minuit en heure d'été, « demain »

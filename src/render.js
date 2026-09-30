@@ -25,6 +25,24 @@ export function nodeFor(id) {
   return nodes.get(id) || null;
 }
 
+/* Les éléments créés après le premier affichage naissent avec une petite
+   animation ; au chargement, tout apparaît d'un coup. */
+let booted = false;
+
+function enter(node) {
+  if (!booted) return;
+  node.classList.add("is-entering");
+  node.addEventListener("animationend", () => node.classList.remove("is-entering"), { once: true });
+}
+
+/* Un élément supprimé part en fondu : il quitte tout de suite le registre (un
+   ⌘Z le recréera proprement), et le nœud reste le temps de l'animation. */
+function leave(node) {
+  node.classList.remove("is-entering");
+  node.classList.add("is-leaving");
+  setTimeout(() => node.remove(), 220);
+}
+
 export function render() {
   const seen = new Set();
 
@@ -35,6 +53,7 @@ export function render() {
       node = buildZone(zone);
       nodes.set(zone.id, node);
       zonesRoot.append(node);
+      enter(node);
     }
     updateZone(node, zone);
   }
@@ -48,6 +67,7 @@ export function render() {
       node = buildBlock(block);
       nodes.set(id, node);
       blocksRoot.append(node);
+      enter(node);
     }
     updateBlock(node, block);
   }
@@ -65,7 +85,7 @@ export function render() {
 
   for (const [id, node] of nodes) {
     if (!seen.has(id)) {
-      node.remove();
+      leave(node);
       nodes.delete(id);
       const url = urls.get(id);
       if (url) { URL.revokeObjectURL(url); urls.delete(id); }
@@ -73,6 +93,7 @@ export function render() {
   }
 
   renderLinks();
+  booted = true;
 }
 
 /* ---------- Blocs ---------- */
@@ -97,7 +118,7 @@ function updateBlock(node, b) {
 
   // Les classes d'effet sont posées de l'extérieur (rangement, aimant) : on
   // les garde, sinon le rendu qui suit les effacerait avant la transition.
-  const kept = ["is-animating", "is-magnet", "is-settled", "is-resizing"].filter((c) => node.classList.contains(c));
+  const kept = ["is-animating", "is-magnet", "is-settled", "is-resizing", "is-entering", "is-leaving"].filter((c) => node.classList.contains(c));
   node.className = "block kind-" + b.kind;
   node.classList.add(...kept);
   if (state.selection.has(b.id)) node.classList.add("is-selected");
@@ -120,7 +141,8 @@ function updateBlock(node, b) {
   renderMeta(node, b);
   // Une liste prend la hauteur de son contenu ; on la reporte dans le
   // document pour que liens et rangement voient la vraie taille.
-  if (b.kind === "list") b.h = node.offsetHeight || b.h;
+  // Idem pour un bloc texte, qui grandit avec ce qu'on y écrit.
+  if (b.kind === "list" || (b.kind === "text" && state.editing !== b.id)) b.h = node.offsetHeight || b.h;
 }
 
 function renderBody(node, body, b) {
@@ -211,7 +233,10 @@ function renderMeta(node, b) {
   const parts = [];
 
   if (b.variant) parts.push(el("span", { class: "version", text: "v" + b.variant }));
-  if (cat) parts.push(el("span", { class: "tag", text: cat.label.toLowerCase() }));
+  // Une pastille pour la catégorie ; une tâche a déjà sa case à cocher.
+  if (cat && !cat.checkable) {
+    parts.push(el("span", { class: "tag", title: cat.label }, el("span", { class: "tag-label", text: cat.label.toLowerCase() })));
+  }
 
   // Les champs n'apparaissent que si la catégorie les prévoit.
   const fields = fieldsOf(b);

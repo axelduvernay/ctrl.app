@@ -27,7 +27,6 @@ const ALL_FIELDS = { due: true, remind: true };
 export const DEFAULT_CATEGORIES = [
   { id: "idea",     label: "Idée",     color: "#C9992B", cmd: "idea",     checkable: false, fields: NO_FIELDS },
   { id: "task",     label: "Tâche",    color: "#4F8A72", cmd: "task",     checkable: true,  fields: ALL_FIELDS },
-  { id: "note",     label: "Note",     color: "#6F81A8", cmd: "note",     checkable: false, fields: NO_FIELDS },
   { id: "question", label: "Question", color: "#8E6FA3", cmd: "question", checkable: false, fields: NO_FIELDS },
 ];
 
@@ -196,7 +195,7 @@ export function addBlock(props) {
   const block = {
     id,
     kind: "text",
-    x: 0, y: 0, w: 220, h: 96,
+    x: 0, y: 0, w: 220, h: 50,
     text: "",
     category: null,
     done: false,
@@ -429,6 +428,32 @@ export function migrate() {
   // échéance et rappel, comme la Tâche d'origine.
   for (const cat of Object.values(state.doc.categories)) {
     if (!cat.fields) cat.fields = cat.checkable ? { ...ALL_FIELDS } : { ...NO_FIELDS };
+  }
+  // La catégorie « Note » d'origine faisait doublon avec un bloc simple : elle
+  // disparaît, et ses blocs redeviennent neutres. Une seule fois, pour ne pas
+  // toucher à une catégorie « Note » que l'utilisateur recréerait ensuite.
+  if (!state.doc.noteRetired) {
+    const note = state.doc.categories.note;
+    if (note && note.cmd === "note") removeCategory("note");
+    state.doc.noteRetired = true;
+  }
+  // Les blocs texte avaient une hauteur minimale de 96 px, qui laissait un
+  // grand blanc sous une ligne courte : ils prennent désormais la hauteur de
+  // leur texte.
+  if (!state.doc.compactText) {
+    for (const b of Object.values(state.doc.blocks)) if (b.kind === "text" && b.h === 96) b.h = 50;
+    state.doc.compactText = true;
+  }
+  // Étiquettes posées par l'ancien rangement par catégorie, qui n'existe plus.
+  for (const [id, z] of Object.entries(state.doc.zones)) if (z.auto) delete state.doc.zones[id];
+  // Board antérieur aux zones imbriquées : une zone entièrement dans une
+  // autre en devient l'enfant.
+  for (const z of Object.values(state.doc.zones)) {
+    if (z.parent !== undefined || !isContainer(z)) continue;
+    const home = Object.values(state.doc.zones)
+      .filter((o) => o !== z && isContainer(o) && contains(o, z) && o.w * o.h > z.w * z.h)
+      .sort((a, c) => a.w * a.h - c.w * c.h)[0];
+    z.parent = home ? home.id : null;
   }
   // Board antérieur aux zones conteneurs : un bloc entièrement dans une zone
   // en devient l'enfant.

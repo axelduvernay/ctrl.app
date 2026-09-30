@@ -530,7 +530,7 @@ function onModifier(e) {
    rend à la zone sa taille d'avant. */
 
 const ZONE_PAD = 24;    // mêmes marges que le rangement automatique
-const ZONE_LABEL = 48;
+const ZONE_LABEL = 56;
 const SNAP = 16;        // portée de l'aimant, en unités du monde
 const GAP_SNAP = 28;    // l'écart entre deux blocs voisins, comme au rangement
 

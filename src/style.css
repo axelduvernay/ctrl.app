@@ -16,13 +16,30 @@
   --grid: rgba(30, 30, 32, 0.07);
   --shadow: 0 1px 2px rgba(20, 20, 21, 0.06), 0 8px 24px rgba(20, 20, 21, 0.08);
 
+  /* Profondeur : les blocs sont des objets posés, pas des cadres. Trois
+     couches d'ombre — contact, proximité, ambiance — et une quatrième, plus
+     haute, quand on les prend en main. */
+  --shadow-block: 0 0.5px 1px rgba(20, 20, 21, 0.06), 0 2px 6px rgba(20, 20, 21, 0.045), 0 12px 28px -8px rgba(20, 20, 21, 0.12);
+  --shadow-lift: 0 1px 2px rgba(20, 20, 21, 0.06), 0 8px 18px rgba(20, 20, 21, 0.07), 0 26px 48px -12px rgba(20, 20, 21, 0.2);
+  --block-edge: transparent;
+
+  /* Verre : le canvas se devine sous les barres et les menus. */
+  --glass: rgba(255, 255, 255, 0.62);
+  --glass-border: rgba(255, 255, 255, 0.75);
+  --glass-edge: rgba(30, 30, 32, 0.07);
+  --glass-shadow: 0 1px 1px rgba(20, 20, 21, 0.04), 0 14px 36px -10px rgba(20, 20, 21, 0.22);
+  --hover: rgba(30, 30, 32, 0.06);
+
+  /* Mouvement : un ressort qui dépasse à peine, et une sortie douce. */
+  --spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --soft: cubic-bezier(0.22, 1, 0.36, 1);
+
   /* Catégories : teintes désaturées, l'orange reste au système. */
   --cat-idea: #C9992B;
   --cat-task: #4F8A72;
-  --cat-note: #6F81A8;
   --cat-question: #8E6FA3;
 
-  --r-block: 14px;
+  --r-block: 16px;
   --r-ui: 12px;
   --r-pill: 999px;
   --tap: 38px;
@@ -41,6 +58,14 @@
     --zone-tint: 17%;
     --grid: rgba(244, 240, 234, 0.06);
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 24px rgba(0, 0, 0, 0.35);
+    --shadow-block: 0 0.5px 1px rgba(0, 0, 0, 0.4), 0 3px 8px rgba(0, 0, 0, 0.28), 0 14px 32px -8px rgba(0, 0, 0, 0.5);
+    --shadow-lift: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 22px rgba(0, 0, 0, 0.34), 0 30px 56px -12px rgba(0, 0, 0, 0.6);
+    --block-edge: rgba(244, 240, 234, 0.07);
+    --glass: rgba(38, 38, 42, 0.58);
+    --glass-border: rgba(244, 240, 234, 0.1);
+    --glass-edge: rgba(0, 0, 0, 0.3);
+    --glass-shadow: 0 1px 1px rgba(0, 0, 0, 0.3), 0 16px 40px -10px rgba(0, 0, 0, 0.6);
+    --hover: rgba(244, 240, 234, 0.08);
   }
 }
 
@@ -56,6 +81,14 @@
   --zone-tint: 17%;
   --grid: rgba(244, 240, 234, 0.06);
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-block: 0 0.5px 1px rgba(0, 0, 0, 0.4), 0 3px 8px rgba(0, 0, 0, 0.28), 0 14px 32px -8px rgba(0, 0, 0, 0.5);
+  --shadow-lift: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 22px rgba(0, 0, 0, 0.34), 0 30px 56px -12px rgba(0, 0, 0, 0.6);
+  --block-edge: rgba(244, 240, 234, 0.07);
+  --glass: rgba(38, 38, 42, 0.58);
+  --glass-border: rgba(244, 240, 234, 0.1);
+  --glass-edge: rgba(0, 0, 0, 0.3);
+  --glass-shadow: 0 1px 1px rgba(0, 0, 0, 0.3), 0 16px 40px -10px rgba(0, 0, 0, 0.6);
+  --hover: rgba(244, 240, 234, 0.08);
 }
 
 * { box-sizing: border-box; }
@@ -132,21 +165,34 @@ button { font: inherit; color: inherit; }
 .block {
   position: absolute;
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--block-edge);
   border-radius: var(--r-block);
-  box-shadow: var(--shadow);
-  padding: 12px 14px;
+  box-shadow: var(--shadow-block);
+  padding: 14px 16px;
   overflow: hidden;
-  transition: box-shadow 0.15s ease, opacity 0.15s ease, border-color 0.15s ease;
+  transition:
+    box-shadow 0.3s var(--soft),
+    transform 0.45s var(--spring),
+    opacity 0.2s ease,
+    border-color 0.2s ease;
 }
 
+/* Au survol, l'objet se soulève d'un rien. */
+.block:not(.kind-draw):not(.is-editing):hover { transform: translateY(-1.5px); box-shadow: var(--shadow-lift); }
+
+/* Sélection : un anneau net et un halo, sans alourdir le bord. */
 .block.is-selected {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-soft), var(--shadow);
+  box-shadow: 0 0 0 1.5px var(--accent), 0 0 0 5px var(--accent-soft), var(--shadow-lift);
 }
 
 .block.is-dimmed { opacity: 0.28; }
-.block.is-animating { transition: left 0.35s cubic-bezier(0.22, 0.61, 0.36, 1), top 0.35s cubic-bezier(0.22, 0.61, 0.36, 1); }
+.block.is-animating { transition: left 0.5s var(--spring), top 0.5s var(--spring), box-shadow 0.3s var(--soft), transform 0.45s var(--spring); }
+
+/* Naissance et départ d'un bloc : un léger rebond, une sortie en fondu. */
+.block.is-entering { animation: block-in 0.42s var(--spring) both; }
+.block.is-leaving { animation: block-out 0.2s var(--soft) both; pointer-events: none; }
+@keyframes block-in { from { opacity: 0; transform: scale(0.94) translateY(4px); } }
+@keyframes block-out { to { opacity: 0; transform: scale(0.96); } }
 
 /* Hors édition, un bloc ne se sélectionne pas comme du texte : sans ça, un
    shift+clic pour étendre la sélection surlignerait le contenu. */
@@ -169,14 +215,26 @@ button { font: inherit; color: inherit; }
 
 .block.is-editing .body { cursor: text; }
 
-/* Liseré de catégorie : discret, jamais une boîte lourde. */
-.block[data-category]::before {
-  content: "";
+/* La catégorie tient en une pastille, en haut à droite ; son nom n'apparaît
+   qu'au survol ou à la sélection. Une tâche n'en a pas besoin : sa case à
+   cocher suffit. */
+.block .meta .tag {
   position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 3px;
-  background: var(--cat, var(--text-2));
+  top: 17px; right: 15px;
+  height: 14px;
+  flex-direction: row-reverse;
 }
+.block .tag-label {
+  max-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  opacity: 0;
+  transition: max-width 0.35s var(--soft), opacity 0.2s ease;
+}
+.block:hover .tag-label, .block.is-selected .tag-label { max-width: 120px; opacity: 1; }
+.block[data-category]:not(.has-check) .body { padding-right: 14px; }
+/* Une méta qui ne porte que la pastille ne prend pas de place. */
+.block .meta:not(:has(.prop)) { margin: 0; height: 0; }
 
 /* La teinte est posée en ligne par le rendu, depuis la catégorie du document. */
 
@@ -201,9 +259,11 @@ button { font: inherit; color: inherit; }
 
 .block .tag::before {
   content: "";
-  width: 6px; height: 6px;
+  flex: none;
+  width: 7px; height: 7px;
   border-radius: 50%;
   background: var(--cat, var(--text-2));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cat, var(--text-2)) 16%, transparent);
 }
 
 /* Champs d'un bloc : échéance et rappel. Des puces cliquables, discrètes au
@@ -243,12 +303,15 @@ button { font: inherit; color: inherit; }
   padding: 0;
   display: grid;
   place-items: center;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.4s var(--spring);
 }
+.block .check:hover { border-color: var(--cat-task); }
+.block .check:active { transform: scale(0.86); }
 
-.block .check svg { width: 13px; height: 13px; stroke: var(--surface); stroke-width: 3; fill: none; opacity: 0; }
+.block .check svg { width: 13px; height: 13px; stroke: var(--surface); stroke-width: 3; fill: none; opacity: 0; transform: scale(0.5); transition: opacity 0.15s ease, transform 0.4s var(--spring); }
 .block.is-done .check { background: var(--cat-task); border-color: var(--cat-task); }
-.block.is-done .check svg { opacity: 1; }
-.block.is-done .body { color: var(--text-2); text-decoration: line-through; text-decoration-color: var(--line-strong); }
+.block.is-done .check svg { opacity: 1; transform: none; }
+.block.is-done .body { color: var(--text-2); text-decoration: line-through; text-decoration-color: var(--line-strong); transition: color 0.3s ease; }
 .block.has-check .body { padding-right: 26px; }
 
 /* Images, fichiers, liens */
@@ -377,14 +440,22 @@ button { font: inherit; color: inherit; }
 
 /* ---------- Zones ---------- */
 
+/* Une zone est une page : un fond à peine plus clair que le canvas, un bord
+   fin, et un vrai titre posé dedans. */
 .zone {
   position: absolute;
-  border: 1.5px solid var(--line-strong);
-  border-radius: 18px;
-  background: color-mix(in srgb, var(--surface) 35%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 26px;
+  background: color-mix(in srgb, var(--surface) 42%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--surface) 70%, transparent);
+  transition: border-color 0.25s ease, background 0.3s ease, box-shadow 0.3s var(--soft);
 }
+.zone:hover { border-color: var(--line-strong); }
 
-.zone.is-selected { border-color: var(--accent); }
+.zone.is-selected { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+.zone.is-entering { animation: zone-in 0.45s var(--spring) both; }
+.zone.is-leaving { animation: block-out 0.2s var(--soft) both; pointer-events: none; }
+@keyframes zone-in { from { opacity: 0; transform: scale(0.97); } }
 
 /* Zone colorée : un voile léger de la teinte, un bord à peine teinté. */
 .zone.has-color {
@@ -428,12 +499,12 @@ button { font: inherit; color: inherit; }
 
 /* Le bloc au-dessus d'une zone prend un halo, puis se pose avec un rebond. */
 .zone.is-magnet { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
-.block.is-magnet { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft), 0 14px 32px rgba(224, 109, 59, 0.22); }
+.block.is-magnet { box-shadow: 0 0 0 1.5px var(--accent), 0 0 0 5px var(--accent-soft), 0 18px 40px -8px rgba(224, 109, 59, 0.3); }
 .block.is-settled { animation: block-settle 0.36s cubic-bezier(0.3, 1.6, 0.5, 1); }
 @keyframes block-settle { 0% { transform: scale(1.045); } 100% { transform: scale(1); } }
 
 #ink .guide { stroke: var(--accent); stroke-width: 1; stroke-dasharray: 4 4; vector-effect: non-scaling-stroke; }
-.zone.is-animating { transition: left 0.35s cubic-bezier(0.22, 0.61, 0.36, 1), top 0.35s cubic-bezier(0.22, 0.61, 0.36, 1), width 0.35s cubic-bezier(0.22, 0.61, 0.36, 1), height 0.35s cubic-bezier(0.22, 0.61, 0.36, 1); }
+.zone.is-animating { transition: left 0.5s var(--spring), top 0.5s var(--spring), width 0.5s var(--spring), height 0.5s var(--spring); }
 .zone.is-dimmed { opacity: 0.3; }
 
 /* L'archive se signale par un trait discontinu : présente, mais en retrait. */
@@ -443,25 +514,25 @@ button { font: inherit; color: inherit; }
   background: transparent;
 }
 
-.zone.is-archive .zone-name { color: var(--text-2); }
+.zone.is-archive .zone-name { color: var(--text-2); font-size: 14px; font-weight: 500; }
 
 .zone .zone-name {
   position: absolute;
-  top: -11px; left: 14px;
-  padding: 1px 8px;
-  background: var(--bg);
-  color: var(--text-2);
-  font-size: 12px;
-  font-weight: 500;
-  border-radius: var(--r-pill);
+  top: 17px; left: 24px;
+  max-width: calc(100% - 48px);
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
   outline: none;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   cursor: text;
 }
 
-.zone .zone-name:hover { color: var(--text); }
-
-.zone .zone-name:empty::before { content: "Zone"; opacity: 0.6; }
+.zone .zone-name:empty::before { content: "Sans titre"; color: var(--text-2); font-weight: 500; }
 
 /* ---------- Marquee ---------- */
 
@@ -475,21 +546,29 @@ button { font: inherit; color: inherit; }
 
 /* ---------- Chrome flottant ---------- */
 
+/* Verre dépoli : flou et saturation de ce qui passe dessous, un liseré clair
+   en haut comme un reflet, et un contour sombre à peine visible pour détacher
+   la barre d'un fond clair. */
+#toolbar, #topright, #zoombar, #search, #filters .chip, #status, .popup {
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  backdrop-filter: blur(22px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  box-shadow: inset 0 1px 0 var(--glass-border), 0 0 0 0.5px var(--glass-edge), var(--glass-shadow);
+}
+
 #toolbar, #topright, #zoombar {
   position: absolute;
   z-index: 10;
   display: flex;
   align-items: center;
   gap: 2px;
-  padding: 4px;
-  background: var(--surface);
-  border: 1px solid var(--line);
+  padding: 5px;
   border-radius: var(--r-pill);
-  box-shadow: var(--shadow);
 }
 
 #toolbar { bottom: 20px; left: 50%; transform: translateX(-50%); }
-#topright { top: 18px; right: 18px; }
+#topright { top: 18px; right: 18px; padding: 3px; }
 #zoombar { bottom: 20px; right: 18px; font-size: 13px; }
 
 #toolbar button, #topright button, #zoombar button {
@@ -503,10 +582,16 @@ button { font: inherit; color: inherit; }
   display: grid;
   place-items: center;
   color: var(--text);
+  transition: background 0.2s ease, color 0.2s ease, transform 0.4s var(--spring), box-shadow 0.25s ease;
 }
 
-#toolbar button:hover, #topright button:hover, #zoombar button:hover { background: var(--surface-2); }
-#toolbar button.is-active { background: var(--accent); color: #fff; }
+#toolbar button:hover, #topright button:hover, #zoombar button:hover { background: var(--hover); }
+#toolbar button:active, #topright button:active, #zoombar button:active { transform: scale(0.9); }
+#toolbar button.is-active {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 4px 12px -2px rgba(224, 109, 59, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
 
 #toolbar svg, #topright svg, #zoombar svg {
   width: 19px; height: 19px;
@@ -535,11 +620,11 @@ button { font: inherit; color: inherit; }
   z-index: 40;
   min-width: 194px;
   padding: 6px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--r-ui);
-  box-shadow: var(--shadow);
+  border-radius: 16px;
+  transform-origin: top left;
+  animation: pop-in 0.32s var(--spring);
 }
+@keyframes pop-in { from { opacity: 0; transform: scale(0.95) translateY(-4px); } }
 
 .popup button {
   display: flex;
@@ -548,13 +633,14 @@ button { font: inherit; color: inherit; }
   width: 100%;
   padding: 8px 10px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 10px;
   background: transparent;
   text-align: left;
   cursor: pointer;
+  transition: background 0.15s ease;
 }
 
-.popup button:hover, .popup button.is-active { background: var(--surface-2); }
+.popup button:hover, .popup button.is-active { background: var(--hover); }
 .popup button[disabled] { opacity: 0.4; cursor: default; }
 .popup button[disabled]:hover { background: transparent; }
 .popup .hint { margin-left: auto; color: var(--text-2); font-size: 12px; }
@@ -574,10 +660,8 @@ button { font: inherit; color: inherit; }
   gap: 8px;
   padding: 6px 8px 6px 14px;
   width: min(460px, calc(100vw - 36px));
-  background: var(--surface);
-  border: 1px solid var(--line);
   border-radius: var(--r-pill);
-  box-shadow: var(--shadow);
+  animation: pop-in 0.32s var(--spring);
 }
 
 #search input {
@@ -603,7 +687,7 @@ button { font: inherit; color: inherit; }
 #search button:hover { background: var(--surface-2); }
 #search svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
 
-.block.is-hit { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft), var(--shadow); }
+.block.is-hit { box-shadow: 0 0 0 1.5px var(--accent), 0 0 0 6px var(--accent-soft), var(--shadow-lift); }
 
 /* ---------- Filtres actifs ---------- */
 
@@ -621,11 +705,9 @@ button { font: inherit; color: inherit; }
   gap: 7px;
   height: 32px;
   padding: 0 8px 0 12px;
-  background: var(--surface);
-  border: 1px solid var(--line);
   border-radius: var(--r-pill);
-  box-shadow: var(--shadow);
   font-size: 13px;
+  animation: pop-in 0.32s var(--spring);
 }
 
 #filters .chip button {
@@ -644,16 +726,13 @@ button { font: inherit; color: inherit; }
   position: absolute;
   bottom: 20px; left: 18px;
   z-index: 10;
-  padding: 7px 13px;
-  background: var(--surface);
-  border: 1px solid var(--line);
+  padding: 8px 14px;
   border-radius: var(--r-pill);
-  box-shadow: var(--shadow);
   font-size: 13px;
-  color: var(--text-2);
+  color: var(--text);
   opacity: 0;
-  transform: translateY(4px);
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transform: translateY(8px) scale(0.96);
+  transition: opacity 0.2s ease, transform 0.45s var(--spring);
   pointer-events: none;
 }
 

@@ -46,7 +46,7 @@ du code peut passer inaperçue au rechargement.
 | Glisser une zone dans une autre | En fait une sous-zone, qui suit sa parente |
 | Glisser une zone ou un bloc libre près d'un autre | Aimant : bords ou centres alignés, ou côte à côte avec un écart régulier |
 | Réduire une zone | Son contenu se resserre ; elle s'arrête avant que deux blocs se touchent |
-| Clic droit dans une zone → Réorganiser la zone | Range ses blocs sur place : une colonne par catégorie, tâches à faire d'abord et par échéance |
+| Clic droit dans une zone → Aligner la zone | Aligne son contenu sur place et ajuste la zone |
 | Tirer le point du bord droit d'un bloc | Le relier à un autre bloc (relâché sur un bloc déjà relié : retire le lien ; dans le vide : crée un bloc relié) |
 | Clic sur un trait de liaison | Le sélectionner ; `Suppr` l'efface |
 | Sélectionner du texte pendant l'édition | Barre de mise en forme : gras, italique, souligné, barré, surligné, titre, liste |
@@ -61,9 +61,9 @@ du code peut passer inaperçue au rechargement.
 | `V` `D` `Z` | Outils sélection, dessin, zone |
 | `N` | Nouveau bloc au centre |
 | `/` | Nouveau bloc, menu des commandes ouvert |
-| `R` | Aligner proprement |
+| `R` | Aligner : colonnes et rangées nettes, sans rien ramener au centre |
 | `⌘F` | Chercher |
-| `1` à `4` | Filtrer par catégorie |
+| `1` à `3` | Filtrer par catégorie |
 | `Échap` | Revenir à la sélection, fermer, retirer les filtres |
 | `⌘Z` / `⌘⇧Z` | Annuler / rétablir |
 | `⌘B` `⌘I` `⌘U` | Gras, italique, souligné (pendant l'édition) |
@@ -86,7 +86,7 @@ src/
   editor.js     Édition de texte et slash-commandes
   menus.js      Clic droit et menu du compte
   search.js     Recherche et filtres
-  arrange.js    Rangement automatique
+  arrange.js    Aligner : colonnes, rangées, sans chevauchement
   io.js         Dépôt de fichiers, collage, export, import
   draw.js       Lissage et vectorisation du tracé à main levée
   props.js      Panneau échéance et rappel d'un bloc
@@ -163,10 +163,25 @@ notifications, prévu avec la synchronisation.
 **Les zones sont des conteneurs.** Chaque bloc porte l'identifiant de sa
 zone (`block.zone`) : c'est l'appartenance qui compte, pas la position. Un bloc
 créé ou lâché dans une zone en devient l'enfant ; il n'en sort que si on l'en
-fait glisser. Le rangement automatique range chaque zone de l'intérieur, puis
+fait glisser. « Aligner » range chaque zone de l'intérieur, puis
 déplace les zones d'un seul tenant : les notes, tâches et rappels d'un projet
-restent ensemble. Les zones posées par le rangement par catégorie, elles, ne
-sont que des étiquettes recalculées à chaque fois.
+restent ensemble.
+
+**Aligner ne déplace pas le board.** Rien n'est ramené au centre : chaque
+élément reste dans sa région. Les bords presque alignés (à moins de 48 px) le
+deviennent, par colonnes et par rangées, puis les chevauchements sont défaits
+vers la droite ou vers le bas. C'est le seul rangement : les anciens modes
+par catégorie et par date faisaient perdre la disposition choisie à la main.
+
+**Trois catégories, dont une seule a une fonction.** La Tâche porte une case à
+cocher, une échéance et un rappel. Idée et Question ne sont que des pastilles
+de couleur. L'ancienne « Note » a disparu : c'était un bloc ordinaire.
+
+**Refonte visuelle (septembre 2026).** Blocs sans bordure, portés par une
+ombre sur trois couches, qui se soulèvent au survol. Zones présentées comme
+des pages, avec un vrai titre. Barres, menus et messages en verre dépoli.
+Un même ressort (`--spring`) anime tout ce qui bouge. La version d'avant est le
+commit `1b74c26`.
 
 **Les tâches cochées rejoignent la zone « Fait ».** Elles ne disparaissent pas
 et n'encombrent plus. L'appartenance à l'archive est portée par le bloc, pas
@@ -179,7 +194,7 @@ liens, dessin vectoriel lissé, catégories modifiables avec leurs champs, éch�
 rappels, catégorisation par
 slash-commande et clic droit, échéances, tâches cochables avec archivage
 automatique, sélection multiple, liens entre blocs, recherche, filtres par
-surlignage, rangement automatique, thèmes clair et sombre, annulation,
+surlignage, alignement automatique, thèmes clair et sombre, annulation,
 sauvegarde locale, export et import, board d'accueil, pincement tactile,
 connexion de blocs par glisser, tracklists, dossiers, variantes, rappel sur
 n'importe quel bloc.
