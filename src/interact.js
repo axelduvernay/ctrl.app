@@ -11,6 +11,7 @@ import { toWorld, panBy, zoomAt, smoothZoom, viewCenter } from "./viewport.js";
 import { render, nodeFor, curveTo } from "./render.js";
 import { moveItem, indexAt, renameItem } from "./lists.js";
 import { toggleFold } from "./format.js";
+import { resizeCol, focusCell } from "./table.js";
 import { play } from "./sounds.js";
 import { toast } from "./main.js";
 import { startEditing } from "./editor.js";
@@ -137,6 +138,16 @@ function onPointerDown(e) {
     const from = connect.closest("[data-id]").dataset.id;
     gesture = { mode: "connect", from };
     drawLinkPreview(from, world);
+    return;
+  }
+
+  // Bord droit d'une colonne de tableau : on la redimensionne.
+  const colResize = target.closest("[data-col-resize]");
+  if (colResize) {
+    const id = colResize.closest("[data-id]").dataset.id;
+    const col = state.doc.blocks[id].table.cols.find((c) => c.id === colResize.dataset.colResize);
+    begin();
+    gesture = { mode: "col-resize", id, col: col.id, ox: world.x, w0: col.w };
     return;
   }
 
@@ -281,6 +292,11 @@ function onPointerMove(e) {
     return;
   }
 
+  if (gesture.mode === "col-resize") {
+    resizeCol(gesture.id, gesture.col, gesture.w0 + world.x - gesture.ox);
+    return;
+  }
+
   if (gesture.mode === "reorder") {
     if (moveItem(gesture.id, gesture.item, indexAt(gesture.id, e.clientY))) render();
     return;
@@ -360,6 +376,8 @@ function onPointerUp(e) {
   } else if (g.mode === "connect") {
     ink.replaceChildren();
     finishConnect(g.from, e);
+  } else if (g.mode === "col-resize") {
+    commit();
   } else if (g.mode === "reorder") {
     nodeFor(g.id)?.classList.remove("is-reordering");
     commit();
@@ -817,7 +835,7 @@ function armLongPress(e) {
     timer: setTimeout(() => {
       longPress = null;
       // Le glisser commencé s'arrête net : on ouvre le menu à la place.
-      if (gesture && ["drag", "resize", "draw-zone", "reorder"].includes(gesture.mode)) commit();
+      if (gesture && ["drag", "resize", "draw-zone", "reorder", "col-resize"].includes(gesture.mode)) commit();
       gesture = null;
       navigator.vibrate?.(8);
       onContextMenu({ preventDefault() {}, clientX: at.x, clientY: at.y, target: document.elementFromPoint(at.x, at.y) });
@@ -847,7 +865,7 @@ function startPinch() {
   cancelLongPress();
   // Un geste à un doigt était peut-être commencé : on l'abandonne proprement.
   if (gesture) {
-    if (["drag", "resize", "draw-zone", "reorder"].includes(gesture.mode)) commit();
+    if (["drag", "resize", "draw-zone", "reorder", "col-resize"].includes(gesture.mode)) commit();
     if (gesture.mode === "resize") nodeFor(gesture.id)?.classList.remove("is-resizing");
     if (gesture.mode === "connect" || gesture.mode === "draw") ink.replaceChildren();
     gesture = null;
@@ -940,6 +958,13 @@ function editItem(id, at) {
     startEditing(id, node.querySelector(".list-title"), at);
     return true;
   }
+  if (b && b.kind === "table") {
+    // La cellule visée, ou la première.
+    const hit = at && document.elementFromPoint(at.x, at.y)?.closest("[data-cell]");
+    const cell = hit && node.contains(hit) ? hit : node.querySelector("[data-cell]:not(.head)");
+    if (cell) focusCell(id, cell.dataset.row, cell.dataset.col);
+    return true;
+  }
   return false;
 }
 
@@ -996,7 +1021,11 @@ function onContextMenu(e) {
     state.selection.clear();
     render();
   }
-  openContextMenu(e.clientX, e.clientY, { onEmpty: !node, world: toWorld(e.clientX, e.clientY) });
+  const cell = hitTarget(e).closest("[data-cell]");
+  openContextMenu(e.clientX, e.clientY, {
+    onEmpty: !node, world: toWorld(e.clientX, e.clientY),
+    cell: cell && { row: cell.dataset.row, col: cell.dataset.col },
+  });
 }
 
 /* ---------- Création ---------- */

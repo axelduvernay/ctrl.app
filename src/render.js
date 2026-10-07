@@ -9,6 +9,7 @@ import { state, getCategory, fieldsOf, depthOf } from "./store.js";
 import { el, icon, formatDate, isSoon, fold, ICON_PATHS } from "./util.js";
 import { assetURL as getAsset } from "./store.js";
 import { renderList } from "./lists.js";
+import { renderTable, tableText } from "./table.js";
 import { writeRich } from "./format.js";
 
 const nodes = new Map();
@@ -112,7 +113,7 @@ function updateBlock(node, b) {
   node.style.left = b.x + "px";
   node.style.top = b.y + "px";
   node.style.width = b.w + "px";
-  const grows = b.kind === "text" || b.kind === "list";
+  const grows = b.kind === "text" || b.kind === "list" || b.kind === "table";
   node.style.height = grows ? "auto" : b.h + "px";
   // Un bloc texte prend exactement la hauteur de son contenu : c'est ce qui
   // lui permet de rétrécir quand on replie un titre.
@@ -144,7 +145,7 @@ function updateBlock(node, b) {
   // Une liste prend la hauteur de son contenu ; on la reporte dans le
   // document pour que liens et rangement voient la vraie taille.
   // Idem pour un bloc texte, qui grandit avec ce qu'on y écrit.
-  if (b.kind === "list" || (b.kind === "text" && state.editing !== b.id)) b.h = node.offsetHeight || b.h;
+  if (b.kind === "list" || b.kind === "table" || (b.kind === "text" && state.editing !== b.id)) b.h = node.offsetHeight || b.h;
 }
 
 function renderBody(node, body, b) {
@@ -156,6 +157,7 @@ function renderBody(node, body, b) {
   }
 
   if (b.kind === "list") return renderList(node, body, b);
+  if (b.kind === "table") return renderTable(node, body, b);
 
   if (b.kind === "image") {
     let img = node.querySelector("img");
@@ -381,6 +383,7 @@ function isDimmed(b) {
   if (state.search.query) {
     const q = fold(state.search.query);
     const items = (b.items || []).map((it) => it.name);
+    if (b.table) items.push(tableText(b));
     const hay = fold([b.text, b.name, b.url, b.category, ...items].filter(Boolean).join(" "));
     if (!hay.includes(q)) return true;
   }

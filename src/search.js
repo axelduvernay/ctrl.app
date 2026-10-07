@@ -4,6 +4,7 @@
    masquer. Le paysage reste reconnaissable, donc la mémoire spatiale continue
    de fonctionner pendant qu'on filtre. */
 
+import { tableText } from "./table.js";
 import { state, getCategory, on, emit } from "./store.js";
 import { el, icon, fold } from "./util.js";
 import { render } from "./render.js";
@@ -72,7 +73,7 @@ function runSearch(query) {
   state.search.hits = !q
     ? []
     : Object.values(state.doc.blocks)
-        .filter((b) => fold([b.text, b.name, b.url, b.category, ...(b.items || []).map((it) => it.name)].filter(Boolean).join(" ")).includes(q))
+        .filter((b) => fold([b.text, b.name, b.url, b.category, ...(b.items || []).map((it) => it.name), b.table ? tableText(b) : ""].filter(Boolean).join(" ")).includes(q))
         .sort((a, b) => (a.y - b.y) || (a.x - b.x))
         .map((b) => b.id);
 

@@ -23,7 +23,7 @@ import { initInstall } from "./install.js";
 
 /* Affichée dans le menu : permet de vérifier qu'une mise à jour est arrivée.
    À changer à chaque livraison. */
-export const VERSION = "07.10 · mobile"
+export const VERSION = "08.10 · tableaux"
 
 async function boot() {
   applyTheme();

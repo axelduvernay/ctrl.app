@@ -58,6 +58,8 @@ du code peut passer inaperçue au rechargement.
 | `/idea` `/task` … | Catégoriser depuis le clavier |
 | `/rappel` `/echeance` | Ajouter un rappel ou une échéance à n'importe quel bloc |
 | `/tracklist` `/folder` | Transformer le bloc en tracklist ou en dossier |
+| `/tableau` `/decoupage` | Tableau vierge, ou découpage technique (Séq., Plan, Valeur, Mouvement, Action, Son, Durée) |
+| Dans un tableau | Tab / ⇧Tab cellule suivante, Entrée cellule du dessous, ⇧Entrée retour à la ligne ; coller depuis un tableur remplit plusieurs cellules ; clic droit : lignes et colonnes |
 | `/variant` | Créer une v2 du bloc et de tout ce qui lui est relié |
 | Déposer des fichiers audio | Crée une tracklist ; déposés sur une liste, ils s'y ajoutent |
 
@@ -105,6 +107,7 @@ src/
   format.js     Mise en forme du texte, barre flottante, nettoyage du HTML
   sounds.js     Sons de l'interface (fichiers dans sounds/, voir sounds/README.md)
   onboarding.js Carte d'arrivée : e-mail puis code, ou invité
+  table.js      Bloc tableau : cellules, navigation au clavier, collage
   install.js    Installation sur l'écran d'accueil, création rapide (?new=)
   sync.js       Connexion par e-mail et synchronisation avec Supabase
   merge.js      Fusion à trois de deux versions du board

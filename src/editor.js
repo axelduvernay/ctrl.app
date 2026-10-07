@@ -8,6 +8,7 @@ import { state, begin, commit, mutate, categoryList, getCategory, removeItems, e
 import { render, nodeFor } from "./render.js";
 import { el, fold, icon, ICON_PATHS } from "./util.js";
 import { toList, LIST_TYPES } from "./lists.js";
+import { toTable, focusCell } from "./table.js";
 import { createVariant } from "./variant.js";
 import { openProps } from "./props.js";
 import { askNotificationPermission } from "./reminders.js";
@@ -209,6 +210,8 @@ const SLASH_ACTIONS = [
   { id: "reminder", label: "Rappel", cmd: "rappel", aliases: ["reminder", "alarme", "notif"], section: "Ajouter", icon: ICON_PATHS.remind },
   { id: "due", label: "Échéance", cmd: "echeance", aliases: ["date", "due", "deadline"], section: "Ajouter", icon: ICON_PATHS.due },
   { id: "tracks", label: "Tracklist", cmd: "tracklist", aliases: ["music", "musique", "playlist", "audio", "son"], section: "Bloc", icon: '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>' },
+  { id: "table", label: "Tableau", cmd: "tableau", aliases: ["table", "grille", "tab"], section: "Bloc", icon: '<rect x="3.5" y="5" width="17" height="14" rx="2.5"/><path d="M3.5 10h17M3.5 14.5h17M10 5v14"/>' },
+  { id: "decoupage", label: "Découpage technique", cmd: "decoupage", aliases: ["découpage", "script", "storyboard", "plans"], section: "Bloc", icon: '<rect x="3.5" y="5" width="17" height="14" rx="2.5"/><path d="M3.5 10h17M7.5 5v14M11.5 5v14"/>' },
   { id: "files", label: "Dossier", cmd: "folder", aliases: ["dossier", "fichiers", "files"], section: "Bloc", icon: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>' },
   { id: "variant", label: "Variante", cmd: "variant", aliases: ["variante", "branche", "version", "v2"], section: "Bloc", icon: '<circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="8" r="2"/><path d="M6 7v10M18 10c0 5-8 3-11.5 7"/>' },
 ];
@@ -313,6 +316,15 @@ function applyAction(action, element) {
   const id = state.editing;
   const block = state.doc.blocks[id];
   if (!block) return;
+
+  if (action === "table" || action === "decoupage") {
+    // Le texte déjà écrit devient le titre du tableau.
+    element.textContent = element.textContent.trim();
+    toTable(block, action);
+    stopEditing();
+    focusCell(id, "head", block.table.cols[0].id);
+    return;
+  }
 
   if (action === "tracks" || action === "files") {
     // Le texte déjà écrit devient le titre ; l'édition se referme dans la

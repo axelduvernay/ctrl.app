@@ -16,6 +16,7 @@ import { syncAvailable, syncUser, syncStatus, signOut, listSnapshots, restoreSna
 import { showLogin } from "./onboarding.js";
 import { createVariant } from "./variant.js";
 import { toList, LIST_TYPES } from "./lists.js";
+import { addRow, addCol, removeRow, removeCol, focusCell } from "./table.js";
 
 let popup = null;
 
@@ -55,7 +56,7 @@ function action(text, onClick, { hint, dot, disabled, iconPath } = {}) {
 
 /* ---------- Clic droit ---------- */
 
-export function openContextMenu(x, y, { onEmpty, world }) {
+export function openContextMenu(x, y, { onEmpty, world, cell }) {
   stopEditing();
   const ids = [...state.selection];
   const blockIds = ids.filter((id) => state.doc.blocks[id]);
@@ -98,7 +99,19 @@ export function openContextMenu(x, y, { onEmpty, world }) {
   const zoneId = ids.length === 1 && isContainer(state.doc.zones[ids[0]]) ? ids[0] : null;
   const linkIds = Object.values(state.doc.links)
     .filter((l) => blockIds.includes(l.from) || blockIds.includes(l.to)).map((l) => l.id);
+  // Clic droit dans une cellule de tableau : lignes et colonnes d'abord.
+  const tableId = cell && blockIds.length === 1 && state.doc.blocks[blockIds[0]]?.kind === "table" ? blockIds[0] : null;
+  const tableItems = tableId ? [
+    label("Tableau"),
+    action("Insérer une ligne dessous", () => focusCell(tableId, addRow(tableId, cell.row === "head" ? null : cell.row).id, cell.col)),
+    action("Insérer une colonne à droite", () => focusCell(tableId, "head", addCol(tableId, cell.col).id)),
+    cell.row !== "head" ? action("Supprimer la ligne", () => removeRow(tableId, cell.row)) : null,
+    action("Supprimer la colonne", () => removeCol(tableId, cell.col)),
+    sep(),
+  ] : [];
+
   return openPopup(x, y, [
+    ...tableItems,
     ...zoneColorItems(ids),
     zoneId ? action("Aligner la zone", () => align(zoneId), { iconPath: ALIGN_ICON }) : null,
     zoneId ? sep() : null,

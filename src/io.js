@@ -35,7 +35,9 @@ export function initIO() {
   });
 
   addEventListener("paste", async (e) => {
-    if (state.editing) return; // le collage dans un bloc en cours d'édition reste du texte
+    // Un collage dans un bloc en édition, ou dans une cellule de tableau,
+    // reste à cet endroit.
+    if (state.editing || e.defaultPrevented || e.target?.isContentEditable) return;
     const at = viewCenter();
     const files = [...(e.clipboardData?.files || [])];
     if (files.length) { e.preventDefault(); return dropFiles(files, at); }
