@@ -83,6 +83,23 @@ function onPointerDown(e) {
 
   const target = e.target;
 
+  /* Lecture seule (lecteur, invité) : on regarde, on se déplace, on lit une
+     tracklist ou ouvre un fichier ; rien ne se modifie. Tout glisser déplace
+     la vue. */
+  if (state.readOnly) {
+    const heading = target.closest(".block .body :is(h1, h2, h3)");
+    if (heading && e.clientX < heading.getBoundingClientRect().left) {
+      toggleFold(heading, heading.closest(".body")); // pour soi, sans l'enregistrer
+      render();
+      return;
+    }
+    if (target.closest("[data-action]")) return;
+    canvas.setPointerCapture(e.pointerId);
+    gesture = { mode: "pan", sx: e.clientX, sy: e.clientY };
+    canvas.classList.add("is-panning");
+    return;
+  }
+
   // La flèche d'un titre, dans la marge à sa gauche : replier ou déplier.
   const heading = target.closest(".block .body :is(h1, h2, h3)");
   if (heading && e.clientX < heading.getBoundingClientRect().left) {
@@ -850,6 +867,7 @@ function cancelLongPress() {
 }
 
 function doubleTap(e) {
+  if (state.readOnly) return;
   const now = Date.now();
   if (lastTap && now - lastTap.t < 320 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 30) {
     lastTap = null;
@@ -895,6 +913,7 @@ function measurePinch() {
 /* ---------- Clic, double-clic, clic droit ---------- */
 
 function onClick(e) {
+  if (state.readOnly) return;
   const check = hitTarget(e).closest("[data-check]");
   if (check) {
     const id = check.closest("[data-id]").dataset.id;
@@ -972,6 +991,16 @@ function onDoubleClick(e) {
   // Le navigateur peut doubler notre double-tapotement d'un double-clic.
   if (Date.now() - lastTouchCreate < 600) return;
   const node = hitTarget(e).closest("[data-id]");
+  if (state.readOnly) {
+    // En lecture seule, le double-clic ouvre un lien ou un fichier, rien d'autre.
+    const b = node && state.doc.blocks[node.dataset.id];
+    if (b?.kind === "link") window.open(b.url, "_blank", "noopener");
+    else if (b && (b.kind === "file" || b.kind === "image")) {
+      const url = node.dataset.download || node.querySelector("img")?.src;
+      if (url) window.open(url, "_blank", "noopener");
+    }
+    return;
+  }
 
   // Double-clic dans le fond d'une zone : un bloc naît dedans, comme sur le board.
   if (node && state.doc.zones[node.dataset.id] && !hitTarget(e).closest("[data-zone-name]")) {
@@ -1002,6 +1031,7 @@ function onDoubleClick(e) {
 
 function onContextMenu(e) {
   e.preventDefault();
+  if (state.readOnly) return;
   const linkHit = hitTarget(e).closest("[data-link]");
   if (linkHit) {
     state.selection.clear();

@@ -4,7 +4,7 @@
    toujours la dernière version du code, et sans réseau l'app démarre quand même.
    Les données, elles, ne passent jamais par ici — elles vivent dans IndexedDB. */
 
-const CACHE = "ctrl-app-v11";
+const CACHE = "ctrl-app-v12";
 
 const SHELL = [
   "./",
@@ -38,6 +38,7 @@ const SHELL = [
   "./src/onboarding.js",
   "./src/install.js",
   "./src/table.js",
+  "./src/share.js",
   "./icons/icon-180.png",
   "./icons/icon-192.png",
 ];

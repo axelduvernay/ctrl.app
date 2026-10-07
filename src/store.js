@@ -25,8 +25,8 @@ const NO_FIELDS = { due: false, remind: false };
 const ALL_FIELDS = { due: true, remind: true };
 
 export const DEFAULT_CATEGORIES = [
-  { id: "idea",     label: "Idée",     color: "#C9992B", cmd: "idea",     checkable: false, fields: NO_FIELDS },
-  { id: "task",     label: "Tâche",    color: "#4F8A72", cmd: "task",     checkable: true,  fields: ALL_FIELDS },
+  { id: "idea",     label: "Idée",     color: "#C9992B", cmd: "idee",     checkable: false, fields: NO_FIELDS },
+  { id: "task",     label: "Tâche",    color: "#4F8A72", cmd: "tache",    checkable: true,  fields: ALL_FIELDS },
   { id: "question", label: "Question", color: "#8E6FA3", cmd: "question", checkable: false, fields: NO_FIELDS },
 ];
 
@@ -95,7 +95,14 @@ function seedCategories() {
   return out;
 }
 
+/* Le board ouvert. « local » : le board de cet appareil, sans compte. Sinon
+   l'identifiant du board dans le cloud, avec le rôle qu'on y a (owner,
+   editor, viewer) et, pour un partage limité, la zone partagée. */
+export const LOCAL_BOARD = { id: "local", name: "Mon board", role: "owner", zone: null };
+
 export const state = {
+  board: { ...LOCAL_BOARD },
+  readOnly: false,
   doc: emptyDoc(),
   view: { x: 0, y: 0, scale: 1 },
   selection: new Set(),
@@ -424,11 +431,37 @@ function tx(store, mode, fn) {
   );
 }
 
+/* Chaque board a sa copie locale : le board de l'appareil sous « doc »
+   (comme avant les comptes), les autres sous « doc:<id> ». */
+const docKey = (id) => (id === "local" ? DOC_KEY : DOC_KEY + ":" + id);
+
 export const save = debounce(() => {
-  tx("state", "readwrite", (s) => s.put(JSON.parse(JSON.stringify(state.doc)), DOC_KEY))
+  const key = docKey(state.board.id);
+  tx("state", "readwrite", (s) => s.put(JSON.parse(JSON.stringify(state.doc)), key))
     .then(() => emit("saved"))
     .catch((err) => console.error("Sauvegarde impossible", err));
 }, 400);
+
+/** La copie locale d'un board, s'il y en a une. */
+export const loadDoc = (id) => tx("state", "readonly", (s) => s.get(docKey(id))).catch(() => null);
+export const saveDoc = (id, doc) => tx("state", "readwrite", (s) => s.put(JSON.parse(JSON.stringify(doc)), docKey(id))).catch(() => {});
+
+/* Ouvre un autre board : la copie locale s'affiche tout de suite, la
+   synchronisation la met ensuite à jour. */
+export async function openBoard(board, doc) {
+  save.flush?.();
+  state.board = { ...board };
+  state.readOnly = board.role === "viewer";
+  try { localStorage.setItem("ctrl-board", board.id); } catch {}
+  state.doc = { ...emptyDoc(), ...(doc || (await loadDoc(board.id)) || {}) };
+  migrate();
+  undoStack.length = 0;
+  redoStack.length = 0;
+  state.selection.clear();
+  state.editing = null;
+  emit("board", state.board);
+  emit("change");
+}
 
 export function saveView() {
   try {
@@ -462,6 +495,9 @@ export function migrate() {
     for (const b of Object.values(state.doc.blocks)) if (b.kind === "text" && b.h === 96) b.h = 50;
     state.doc.compactText = true;
   }
+  // Commandes en français : /idee et /tache (les mots anglais restent compris).
+  if (state.doc.categories.idea?.cmd === "idea") state.doc.categories.idea.cmd = "idee";
+  if (state.doc.categories.task?.cmd === "task") state.doc.categories.task.cmd = "tache";
   // Étiquettes posées par l'ancien rangement par catégorie, qui n'existe plus.
   for (const [id, z] of Object.entries(state.doc.zones)) if (z.auto) delete state.doc.zones[id];
   // Board antérieur aux zones imbriquées : une zone entièrement dans une
@@ -485,7 +521,16 @@ export function migrate() {
 
 export async function load() {
   try {
-    const doc = await tx("state", "readonly", (s) => s.get(DOC_KEY));
+    // Le dernier board ouvert ; le rôle est confirmé plus tard par la synchro.
+    let id = "local";
+    try { id = localStorage.getItem("ctrl-board") || "local"; } catch {}
+    let doc = await tx("state", "readonly", (s) => s.get(docKey(id)));
+    if (id !== "local" && !doc) { id = "local"; doc = await tx("state", "readonly", (s) => s.get(DOC_KEY)); }
+    if (id !== "local") {
+      const known = JSON.parse(localStorage.getItem("ctrl-boards") || "[]").find((b) => b.id === id);
+      state.board = known ? { ...known } : { id, name: "Board", role: "owner", zone: null };
+      state.readOnly = state.board.role === "viewer";
+    }
     if (doc && doc.blocks) state.doc = { ...emptyDoc(), ...doc };
     migrate();
     const assets = await tx("assets", "readonly", (s) => s.getAll());

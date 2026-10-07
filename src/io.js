@@ -22,6 +22,7 @@ export function initIO() {
 
   canvas.addEventListener("drop", async (e) => {
     e.preventDefault();
+    if (state.readOnly) return;
     const at = toWorld(e.clientX, e.clientY);
     const files = [...(e.dataTransfer?.files || [])];
     // Déposé sur une tracklist ou un dossier : les fichiers y entrent.
@@ -37,7 +38,7 @@ export function initIO() {
   addEventListener("paste", async (e) => {
     // Un collage dans un bloc en édition, ou dans une cellule de tableau,
     // reste à cet endroit.
-    if (state.editing || e.defaultPrevented || e.target?.isContentEditable) return;
+    if (state.editing || state.readOnly || e.defaultPrevented || e.target?.isContentEditable) return;
     const at = viewCenter();
     const files = [...(e.clipboardData?.files || [])];
     if (files.length) { e.preventDefault(); return dropFiles(files, at); }

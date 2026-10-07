@@ -1,0 +1,79 @@
+CTRL.APP — ACTIVER LE PARTAGE ET LES BOARDS MULTIPLES
+Une seule chose à faire de ton côté : relancer le script SQL. 3 minutes.
+
+
+==============================================================
+ÉTAPE 0 — SAUVEGARDE (30 secondes)
+==============================================================
+
+Menu ⋮ → « Exporter le board » → range le .json dans iCloud Drive.
+(Par précaution : la mise à niveau garde ton board, mais on ne prend aucun
+risque avec tes données.)
+
+
+==============================================================
+ÉTAPE 1 — METTRE À NIVEAU LA BASE (2 minutes)
+==============================================================
+
+1. Supabase → ton projet → « SQL Editor » → « New query ».
+2. Ouvre le fichier supabase/schema.sql (sur GitHub :
+   github.com/axelduvernay/ctrl.app, branche main-486yxj, dossier supabase),
+   copie TOUT son contenu, colle-le.
+3. « Run ». Tu dois voir « Success. No rows returned ».
+
+Ce que ça fait :
+   - ton board actuel devient « Mon board », avec tout son contenu et ses
+     copies quotidiennes ;
+   - tu peux avoir plusieurs boards ;
+   - le partage par lien (board entier ou une zone) devient possible ;
+   - les règles de sécurité qui vont avec.
+
+Le script peut être relancé sans risque.
+
+
+==============================================================
+ÉTAPE 2 — RECHARGER L'APP SUR CHAQUE APPAREIL
+==============================================================
+
+Ouvre ctrl.app et fais ⌘⇧R (sur iPhone : ferme et rouvre l'app).
+Le menu ⋮ doit afficher en bas « v08.10 · partage ».
+
+Entre l'étape 1 et le rechargement, une ancienne version de l'app ouverte
+quelque part peut afficher un point rouge : c'est normal, elle cherche
+l'ancienne table. Le rechargement règle tout.
+
+
+==============================================================
+UTILISER LE PARTAGE
+==============================================================
+
+- Partager tout le board : menu ⋮ → « Partager… ».
+- Partager une seule zone : clic droit dans la zone → « Partager la zone… ».
+- Deux liens :
+    « Peut modifier » : la personne se connecte avec son e-mail, puis modifie.
+    « Lecture seule » : elle choisit entre « Continuer en tant qu'invité »
+                        et se connecter.
+- « Désactiver les liens » : plus personne de nouveau ne peut entrer par
+  ces liens. Les personnes déjà ajoutées gardent l'accès ; tu peux les
+  retirer une par une dans le même panneau (la croix à côté de leur e-mail).
+- Une personne qui a le lien « peut modifier » peut partager à son tour,
+  seulement ce qu'elle voit.
+- Une zone partagée : la personne ne reçoit QUE cette zone (et ses
+  sous-zones). Le reste de ton board ne quitte jamais le cloud.
+
+Plusieurs boards : en haut à gauche, le nom du board ouvert (il n'apparaît
+que s'il y a de quoi choisir). Clic → liste, « Nouveau board », « Renommer ».
+
+
+==============================================================
+BON À SAVOIR
+==============================================================
+
+- Pour voir les images, un invité sans compte passe par une copie publique
+  des fichiers du board partagé, rangée sous un chemin impossible à deviner
+  (comme un lien Google Photos). Les images d'un board jamais partagé
+  restent dans l'espace privé.
+- Une zone partagée se met à jour chez l'autre en ~15 secondes ; un board
+  entier, en direct.
+- L'offre gratuite de Supabase envoie peu de mails de connexion par heure :
+  si quelqu'un voit « Trop d'envois », il attend un peu.

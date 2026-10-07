@@ -18,7 +18,7 @@ let slashMenu = null;
 let slashRange = null;
 
 export function startEditing(id, element, at) {
-  if (!element) return;
+  if (!element || state.readOnly) return;
   // Déjà en cours sur cet élément (le second clic d'un double-clic, par
   // exemple) : on déplace seulement le curseur, sans refermer ni rouvrir.
   if (state.editing === id && element.isContentEditable) {
@@ -212,13 +212,15 @@ const SLASH_ACTIONS = [
   { id: "tracks", label: "Tracklist", cmd: "tracklist", aliases: ["music", "musique", "playlist", "audio", "son"], section: "Bloc", icon: '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>' },
   { id: "table", label: "Tableau", cmd: "tableau", aliases: ["table", "grille", "tab"], section: "Bloc", icon: '<rect x="3.5" y="5" width="17" height="14" rx="2.5"/><path d="M3.5 10h17M3.5 14.5h17M10 5v14"/>' },
   { id: "decoupage", label: "Découpage technique", cmd: "decoupage", aliases: ["découpage", "script", "storyboard", "plans"], section: "Bloc", icon: '<rect x="3.5" y="5" width="17" height="14" rx="2.5"/><path d="M3.5 10h17M7.5 5v14M11.5 5v14"/>' },
-  { id: "files", label: "Dossier", cmd: "folder", aliases: ["dossier", "fichiers", "files"], section: "Bloc", icon: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>' },
-  { id: "variant", label: "Variante", cmd: "variant", aliases: ["variante", "branche", "version", "v2"], section: "Bloc", icon: '<circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="8" r="2"/><path d="M6 7v10M18 10c0 5-8 3-11.5 7"/>' },
+  { id: "files", label: "Dossier", cmd: "dossier", aliases: ["folder", "fichiers", "files"], section: "Bloc", icon: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>' },
+  { id: "variant", label: "Variante", cmd: "variante", aliases: ["variant", "branche", "version", "v2"], section: "Bloc", icon: '<circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="8" r="2"/><path d="M6 7v10M18 10c0 5-8 3-11.5 7"/>' },
 ];
 
 function slashMatches(q) {
   const hit = (...words) => !q || words.some((w) => fold(w).startsWith(q));
-  const cats = categoryList().filter((cat) => hit(cat.cmd, cat.label))
+  // Les catégories d'origine répondent aussi à leur nom anglais.
+  const english = { idea: ["idea"], task: ["task", "todo"], question: [] };
+  const cats = categoryList().filter((cat) => hit(cat.cmd, cat.label, ...(english[cat.id] || [])))
     .map((cat) => ({ section: "Catégorie", label: cat.label, cmd: cat.cmd, color: cat.color, run: (el) => applySlash(cat.id, el) }));
   const block = state.doc.blocks[state.editing];
   const actions = SLASH_ACTIONS

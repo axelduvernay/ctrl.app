@@ -19,11 +19,12 @@ import { save } from "./store.js";
 import { play, initSounds } from "./sounds.js";
 import { initSync } from "./sync.js";
 import { maybeOnboard } from "./onboarding.js";
+import { initShare } from "./share.js";
 import { initInstall } from "./install.js";
 
 /* Affichée dans le menu : permet de vérifier qu'une mise à jour est arrivée.
    À changer à chaque livraison. */
-export const VERSION = "08.10 · tableaux"
+export const VERSION = "08.10 · partage"
 
 async function boot() {
   applyTheme();
@@ -58,10 +59,13 @@ async function boot() {
   initReminders();
   initSounds();
   // Première visite : la carte d'arrivée, une fois qu'on sait si l'on est connecté.
+  initShare();
   initSync().then(maybeOnboard);
   initInstall();
   // Le petit point sur le bouton du menu dit où en est la synchronisation.
   on("sync", (s) => { document.getElementById("menu-btn").dataset.sync = s; });
+  // Un autre board s'ouvre : la vue se cale sur son contenu s'il est hors champ.
+  on("board", () => setTimeout(() => { if (!anythingVisible()) fitAll(); }, 80));
 
   registerServiceWorker();
 
@@ -207,6 +211,13 @@ function wireKeyboard() {
     }
 
     if (typing) return;
+
+    // Lecture seule : seuls la navigation et la recherche restent.
+    if (state.readOnly) {
+      if (e.key === "Escape") { closeMenus(); closeSearch(); }
+      if (e.key === "!" || (e.shiftKey && e.code === "Digit1")) fitAll();
+      return;
+    }
 
     if (mod && e.key.toLowerCase() === "a") {
       e.preventDefault();

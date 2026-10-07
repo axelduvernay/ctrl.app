@@ -122,7 +122,7 @@ export function renderTable(node, body, b) {
   cols.forEach((c, ci) => {
     grid.append(el("div", {
       class: "cell head" + (c.name ? "" : " is-empty"), "data-cell": true, "data-row": "head", "data-col": c.id,
-      contenteditable: selected ? "true" : false, spellcheck: "false",
+      contenteditable: selected && !state.readOnly ? "true" : false, spellcheck: "false",
       "data-placeholder": `Colonne ${ci + 1}`, text: c.name,
     }, el("span", { class: "col-resize", "data-col-resize": c.id, contenteditable: "false" })));
   });
@@ -130,22 +130,22 @@ export function renderTable(node, body, b) {
     for (const c of cols) {
       grid.append(el("div", {
         class: "cell", "data-cell": true, "data-row": r.id, "data-col": c.id,
-        contenteditable: selected ? "true" : false, spellcheck: "false",
+        contenteditable: selected && !state.readOnly ? "true" : false, spellcheck: "false",
         text: r.cells[c.id] || "",
       }));
     }
   }
 
   body.className = "body table-body";
-  body.replaceChildren(
+  body.replaceChildren(...[
     b.text ? el("div", { class: "tbl-title", text: b.text }) : null,
     grid,
-    selected ? el("div", { class: "tbl-tools" },
+    selected && !state.readOnly ? el("div", { class: "tbl-tools" },
       el("button", { type: "button", "data-action": true, onclick: () => focusCell(b.id, addRow(b.id).id, cols[0].id) },
         icon('<path d="M12 5v14M5 12h14"/>', 13), el("span", { text: "Ligne" })),
       el("button", { type: "button", "data-action": true, onclick: () => focusCell(b.id, "head", addCol(b.id).id) },
         icon('<path d="M12 5v14M5 12h14"/>', 13), el("span", { text: "Colonne" }))) : null,
-  );
+  ].filter(Boolean));
   for (const cell of grid.children) wireCell(cell, b.id);
 }
 

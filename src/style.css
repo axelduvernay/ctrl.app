@@ -1606,3 +1606,92 @@ button { font: inherit; color: inherit; }
   animation: pop-in 0.3s var(--spring);
 }
 .tbl-tools button:hover { background: var(--hover); color: var(--text); }
+
+.ob-invite { text-align: center; margin-top: -2px; }
+.ob-from { font-size: 13px; color: var(--text-2); }
+.ob-what { font-size: 18px; font-weight: 700; letter-spacing: -0.015em; margin-top: 2px; }
+.ob-role { font-size: 12.5px; color: var(--text-2); margin-top: 4px; }
+
+/* ---------- Sélecteur de boards ---------- */
+
+/* Un mot en haut à gauche, rien de plus : le nom du board, en gris. */
+#board-switch {
+  position: absolute;
+  z-index: 10;
+  top: max(22px, env(safe-area-inset-top));
+  left: 22px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100vw - 120px);
+  padding: 4px 8px;
+  margin-left: -8px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.2s ease, background 0.2s ease;
+  animation: pop-in 0.35s var(--spring);
+}
+#board-switch:hover { color: var(--text); background: var(--hover); }
+#board-switch[hidden] { display: none; }
+#board-switch .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#board-switch .tag { opacity: 0.7; font-weight: 400; white-space: nowrap; }
+#board-switch .tag::before { content: "· "; }
+
+.popup.boards { min-width: 220px; max-width: 300px; }
+.popup .board-row { display: flex; align-items: center; gap: 8px; }
+.popup .board-row .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.popup .board-row .tag { color: var(--text-2); font-size: 12px; white-space: nowrap; }
+.popup .board-row.is-current { font-weight: 600; }
+.popup .board-row svg { color: var(--accent); flex: none; }
+.popup .board-row input {
+  flex: 1; height: 34px; padding: 0 10px; margin: 2px;
+  border: 1px solid var(--accent); border-radius: 9px;
+  background: var(--surface); color: var(--text); font: inherit; outline: none;
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+.popup .board-action { color: var(--text-2); }
+.popup .board-action:hover { color: var(--text); }
+
+/* ---------- Partager ---------- */
+
+.popup.share { width: 340px; padding: 16px; }
+.share-title { font-weight: 700; font-size: 15px; letter-spacing: -0.01em; margin-bottom: 12px; }
+.share-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); }
+.share-label { font-weight: 500; }
+.share-label.small { font-size: 12px; color: var(--text-2); font-weight: 500; margin: 10px 0 4px; }
+.share-hint { font-size: 12px; color: var(--text-2); }
+.popup.share button.copy {
+  width: auto; flex: none;
+  padding: 7px 12px;
+  border-radius: 10px;
+  background: var(--accent); color: #fff;
+  font-size: 13px; font-weight: 600;
+  justify-content: center;
+  transition: background 0.2s ease, transform 0.35s var(--spring);
+}
+.popup.share button.copy:hover { background: color-mix(in srgb, var(--accent) 88%, #000); }
+.popup.share button.copy.is-done { background: #4F8A72; transform: scale(1.04); }
+.share-people .person { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 13px; }
+.share-people .email { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.share-people .role { color: var(--text-2); font-size: 12px; }
+.popup.share .person button.remove { width: 24px; height: 24px; padding: 0; justify-content: center; border-radius: 50%; color: var(--text-2); }
+.popup.share button.share-revoke { width: auto; margin-top: 10px; padding: 6px 0; color: var(--text-2); font-size: 12px; background: none; }
+.popup.share button.share-revoke:hover { color: #C4513B; background: none; }
+
+/* ---------- Lecture seule ---------- */
+
+body.is-readonly #toolbar,
+body.is-readonly .block .connect,
+body.is-readonly .resize,
+body.is-readonly .item-x,
+body.is-readonly .item-grip,
+body.is-readonly .list-add,
+body.is-readonly .tbl-tools { display: none !important; }
+body.is-readonly .block .check { pointer-events: none; }
+body.is-readonly .block .prop.is-ghost { display: none; }

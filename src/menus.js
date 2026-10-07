@@ -14,11 +14,17 @@ import { toast, VERSION } from "./main.js";
 import { play, soundsEnabled, setSoundsEnabled } from "./sounds.js";
 import { syncAvailable, syncUser, syncStatus, signOut, listSnapshots, restoreSnapshot } from "./sync.js";
 import { showLogin } from "./onboarding.js";
+import { openShare, canShare } from "./share.js";
 import { createVariant } from "./variant.js";
 import { toList, LIST_TYPES } from "./lists.js";
 import { addRow, addCol, removeRow, removeCol, focusCell } from "./table.js";
 
 let popup = null;
+
+/** Un panneau ouvert ailleurs (partage, boards) se ferme comme un menu. */
+export function registerPopup(node) {
+  popup = node;
+}
 
 export function closeMenus() {
   popup?.remove();
@@ -67,7 +73,7 @@ export function openContextMenu(x, y, { onEmpty, world, cell }) {
         import("./interact.js").then((m) => m.createBlockAt(world.x, world.y));
       }, { hint: "double-clic" }),
       action("Nouvelle tracklist", () => newList("tracks", world), { hint: "/tracklist" }),
-      action("Nouveau dossier", () => newList("files", world), { hint: "/folder" }),
+      action("Nouveau dossier", () => newList("files", world), { hint: "/dossier" }),
       action("Nouvelle zone", () => {
         mutate(() => addZone({ x: world.x - 210, y: world.y - 150, w: 420, h: 300 }));
         render();
@@ -114,6 +120,7 @@ export function openContextMenu(x, y, { onEmpty, world, cell }) {
     ...tableItems,
     ...zoneColorItems(ids),
     zoneId ? action("Aligner la zone", () => align(zoneId), { iconPath: ALIGN_ICON }) : null,
+    zoneId && canShare(zoneId) ? action("Partager la zone…", () => openShare(zoneId)) : null,
     zoneId ? sep() : null,
     blockIds.length ? label("Catégorie") : null,
     ...(blockIds.length
@@ -140,7 +147,7 @@ export function openContextMenu(x, y, { onEmpty, world, cell }) {
         })
       : null,
     blockIds.length
-      ? action("Créer une variante", () => createVariant(blockIds[0]), { hint: "/variant" })
+      ? action("Créer une variante", () => createVariant(blockIds[0]), { hint: "/variante" })
       : null,
     ids.length
       ? action("Grouper dans une zone", () => {
@@ -364,7 +371,8 @@ function accountItems() {
       el("div", {},
         el("div", { class: "account-email", text: user.email }),
         el("div", { class: "account-status", text: STATUS_TEXT[syncStatus()] || "" }))),
-    action("Historique…", () => openHistory()),
+    canShare() ? action("Partager…", () => openShare()) : null,
+    !state.board.zone && ["owner", "editor"].includes(state.board.role) ? action("Historique…", () => openHistory()) : null,
     action("Se déconnecter", async () => {
       await signOut();
       toast("Déconnecté — le board reste sur cet appareil");

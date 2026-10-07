@@ -43,11 +43,22 @@ export function icon(path, size = 18) {
 }
 
 export function debounce(fn, ms) {
-  let t;
-  return (...args) => {
+  let t = null;
+  let pending = null;
+  const run = (...args) => {
     clearTimeout(t);
-    t = setTimeout(() => fn(...args), ms);
+    pending = args;
+    t = setTimeout(() => { pending = null; fn(...args); }, ms);
   };
+  // Exécute tout de suite ce qui attendait — avant de changer de board, par exemple.
+  run.flush = () => {
+    if (!pending) return;
+    clearTimeout(t);
+    const args = pending;
+    pending = null;
+    fn(...args);
+  };
+  return run;
 }
 
 /** Rectangle englobant d'une liste de {x, y, w, h}. */

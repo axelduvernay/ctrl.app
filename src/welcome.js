@@ -17,7 +17,7 @@ export function seedWelcome() {
 
   const second = addBlock({ welcome: true,
     x: -60, y: -200, w: 240, h: 92,
-    text: "Dans un bloc, tape /task ou /idea pour lui donner un sens.",
+    text: "Dans un bloc, tape /tache ou /idee pour lui donner un sens.",
     category: "idea",
   });
 

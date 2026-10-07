@@ -55,12 +55,12 @@ du code peut passer inaperçue au rechargement.
 | Au doigt : appui long | Le menu du clic droit |
 | Au doigt : deux tapotements sur le vide | Nouveau bloc |
 | Barre du bas | Créer au centre : texte, tâche, image, tracklist, zone ; crayon ; aligner. Le « × » la replie en un « + » |
-| `/idea` `/task` … | Catégoriser depuis le clavier |
+| `/idee` `/tache` … | Catégoriser depuis le clavier |
 | `/rappel` `/echeance` | Ajouter un rappel ou une échéance à n'importe quel bloc |
-| `/tracklist` `/folder` | Transformer le bloc en tracklist ou en dossier |
+| `/tracklist` `/dossier` | Transformer le bloc en tracklist ou en dossier |
 | `/tableau` `/decoupage` | Tableau vierge, ou découpage technique (Séq., Plan, Valeur, Mouvement, Action, Son, Durée) |
 | Dans un tableau | Tab / ⇧Tab cellule suivante, Entrée cellule du dessous, ⇧Entrée retour à la ligne ; coller depuis un tableur remplit plusieurs cellules ; clic droit : lignes et colonnes |
-| `/variant` | Créer une v2 du bloc et de tout ce qui lui est relié |
+| `/variante` | Créer une v2 du bloc et de tout ce qui lui est relié |
 | Déposer des fichiers audio | Crée une tracklist ; déposés sur une liste, ils s'y ajoutent |
 
 | Raccourci | Effet |
@@ -109,7 +109,8 @@ src/
   onboarding.js Carte d'arrivée : e-mail puis code, ou invité
   table.js      Bloc tableau : cellules, navigation au clavier, collage
   install.js    Installation sur l'écran d'accueil, création rapide (?new=)
-  sync.js       Connexion par e-mail et synchronisation avec Supabase
+  sync.js       Connexion, synchronisation, boards, liens de partage, invités
+  share.js      Sélecteur de boards et panneau de partage
   merge.js      Fusion à trois de deux versions du board
   config.js     Adresse et clé publique du projet Supabase
 supabase/
@@ -168,7 +169,7 @@ un dossier ouvre ou télécharge ses fichiers. On y renomme au double-clic et on
 réordonne à la poignée. Les fichiers vont dans le magasin d'assets, comme les
 images.
 
-**Une variante est une branche.** `/variant` copie le bloc et tout ce qui lui
+**Une variante est une branche.** `/variante` copie le bloc et tout ce qui lui
 est relié, ou la sélection si plusieurs blocs sont choisis. La copie est posée
 à droite de l'original, avec le numéro de version suivant. Toutes les versions
 partagent une lignée, et un lien pointillé les rattache. Les rappels ne sont pas
@@ -182,6 +183,15 @@ connue, sinon on récupère, on fusionne et on réessaie. La fusion est à trois
 qui n'a changé que d'un côté gagne, et en cas de modification des deux côtés
 la plus récente l'emporte. Images et fichiers vont dans un espace privé, un
 dossier par compte. Une copie du board est gardée chaque jour, sur 30 jours.
+
+**Partager, sans rien exposer de plus.** Un board ou une seule zone se
+partage par lien : « peut modifier » (il faut se connecter) ou « lecture
+seule » (avec ou sans compte). Les règles sont dans la base (Row Level
+Security) et les fonctions du serveur : un partage de zone ne renvoie et
+n'accepte que cette zone, le reste du board ne quitte jamais le cloud. Un
+éditeur peut inviter à son tour, mais seulement vers ce qu'il voit. Les
+invités sans compte voient les images grâce à une copie publique, rangée
+sous un chemin impossible à deviner.
 
 **Les rappels sonnent tant que l'app est ouverte**, même en arrière-plan :
 notification du système si elle est autorisée, message dans l'app sinon.

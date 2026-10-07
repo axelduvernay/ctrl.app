@@ -10,7 +10,7 @@
    se connecter depuis le menu. */
 
 import { el, icon } from "./util.js";
-import { sendLoginEmail, verifyCode, syncAvailable, syncUser } from "./sync.js";
+import { sendLoginEmail, verifyCode, syncAvailable, syncUser, openAsGuest } from "./sync.js";
 import { toast } from "./main.js";
 
 const SEEN = "ctrl-onboarded";
@@ -20,11 +20,14 @@ const looksLikeEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim());
 
 let overlay = null;
 
-/** Première visite, pas connecté : la carte. */
-export function maybeOnboard() {
+/** Première visite, pas connecté : la carte. Un lien de partage ouvert sans
+    être connecté : la carte aussi, qui dit qui partage quoi. */
+export function maybeOnboard(link) {
+  if (syncUser() || !syncAvailable()) return;
+  if (link) return showLogin({ firstVisit: true, link });
   let seen = null;
   try { seen = localStorage.getItem(SEEN); } catch {}
-  if (seen || syncUser() || !syncAvailable()) return;
+  if (seen) return;
   showLogin({ firstVisit: true });
 }
 
@@ -32,9 +35,11 @@ function remember(value) {
   try { localStorage.setItem(SEEN, value); } catch {}
 }
 
-export function showLogin({ firstVisit = false } = {}) {
+export function showLogin({ firstVisit = false, link = null } = {}) {
   if (overlay) return;
   let email = "";
+  // Lien « peut modifier » : il faut un compte. Lien de lecture : au choix.
+  const guestAllowed = !link || link.role === "viewer";
 
   const field = el("input", {
     type: "email", class: "ob-email", placeholder: "Ton e-mail",
@@ -44,10 +49,20 @@ export function showLogin({ firstVisit = false } = {}) {
   const form = el("form", { class: "ob-field" }, field, go);
   const cells = el("div", { class: "ob-code", role: "group", "aria-label": "Code reçu par e-mail" });
   const note = el("p", { class: "ob-note" });
-  const guest = el("button", { type: "button", class: "ob-guest", text: firstVisit ? "Continuer en tant qu'invité" : "Fermer" });
+  const guest = el("button", {
+    type: "button", class: "ob-guest",
+    text: !firstVisit ? "Fermer" : guestAllowed ? "Continuer en tant qu'invité" : "Plus tard",
+  });
+
+  // Ouvert par un lien : qui partage, quoi, et ce qu'on pourra en faire.
+  const invite = link ? el("div", { class: "ob-invite" },
+    el("div", { class: "ob-from", text: link.owner_email ? `${link.owner_email} te partage` : "On te partage" }),
+    el("div", { class: "ob-what", text: link.zone_name ? `la zone « ${link.zone_name} »` : `« ${link.name} »` }),
+    el("div", { class: "ob-role", text: link.role === "editor" ? "Tu pourras le modifier : connecte-toi avec ton e-mail." : "En lecture seule." })) : null;
 
   const card = el("div", { class: "ob-card", "data-step": "email" },
     el("div", { class: "ob-mark" }, logo()),
+    invite,
     note,
     el("div", { class: "ob-stage" }, form, cells),
     guest);
@@ -80,7 +95,8 @@ export function showLogin({ firstVisit = false } = {}) {
   });
 
   guest.addEventListener("click", () => {
-    if (firstVisit) remember("guest");
+    if (link && guestAllowed) openAsGuest(link.token);
+    else if (firstVisit && !link) remember("guest");
     close();
   });
 
