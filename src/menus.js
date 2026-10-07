@@ -120,7 +120,7 @@ export function openContextMenu(x, y, { onEmpty, world, cell }) {
     ...tableItems,
     ...zoneColorItems(ids),
     zoneId ? action("Aligner la zone", () => align(zoneId), { iconPath: ALIGN_ICON }) : null,
-    zoneId && canShare(zoneId) ? action("Partager la zone…", () => openShare(zoneId)) : null,
+    zoneId && !state.readOnly ? action("Partager la zone…", () => openShare(zoneId), { iconPath: SHARE_ICON }) : null,
     zoneId ? sep() : null,
     blockIds.length ? label("Catégorie") : null,
     ...(blockIds.length
@@ -238,6 +238,7 @@ function fieldItems(blockIds) {
   ];
 }
 
+const SHARE_ICON = '<path d="M12 3v12M8 7l4-4 4 4"/><path d="M6 11v8a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-8"/>';
 const ALIGN_ICON = '<path d="M4 4v16"/><rect x="7" y="6" width="10" height="4" rx="1.2"/><rect x="7" y="14" width="13" height="4" rx="1.2"/>';
 
 /* Date locale au format AAAA-MM-JJ.
@@ -294,6 +295,8 @@ export function openMainMenu(anchor) {
   const theme = localStorage.getItem("ctrl-theme") || "system";
 
   const menu = openPopup(rect.right - 212, rect.bottom + 8, [
+    !state.readOnly ? action("Partager…", () => openShare(), { iconPath: SHARE_ICON }) : null,
+    !state.readOnly ? sep() : null,
     label("Compte"),
     ...accountItems(),
     sep(),
@@ -371,7 +374,6 @@ function accountItems() {
       el("div", {},
         el("div", { class: "account-email", text: user.email }),
         el("div", { class: "account-status", text: STATUS_TEXT[syncStatus()] || "" }))),
-    canShare() ? action("Partager…", () => openShare()) : null,
     !state.board.zone && ["owner", "editor"].includes(state.board.role) ? action("Historique…", () => openHistory()) : null,
     action("Se déconnecter", async () => {
       await signOut();

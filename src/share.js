@@ -133,7 +133,11 @@ export function openShare(zoneId = null) {
     toast("Connecte-toi pour partager");
     return showLogin();
   }
-  if (state.board.id === "local") return toast("Ce board n'est pas encore synchronisé");
+  // Connecté mais toujours sur le board de l'appareil : la base n'a pas
+  // encore été mise à niveau (script SQL), ou la synchro n'a pas abouti.
+  if (state.board.id === "local") {
+    return toast("Partage pas encore activé : relance le script SQL dans Supabase (ETAPES-PARTAGE.txt), puis recharge l'app");
+  }
   // Un éditeur de zone partage toujours sa zone.
   const zone = zoneId || state.board.zone || null;
   if (!canShare(zone)) return toast("Seuls le propriétaire et les éditeurs peuvent partager");
