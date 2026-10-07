@@ -12,7 +12,7 @@ import { exportBoard, importBoard } from "./io.js";
 import { toggleFilter, toggleDoneFilter, clearFilters } from "./search.js";
 import { toast, VERSION } from "./main.js";
 import { play, soundsEnabled, setSoundsEnabled } from "./sounds.js";
-import { syncAvailable, syncUser, syncStatus, signOut, listSnapshots, restoreSnapshot } from "./sync.js";
+import { syncAvailable, syncUser, syncStatus, signOut, listSnapshots, restoreSnapshot, createBoard } from "./sync.js";
 import { showLogin } from "./onboarding.js";
 import { openShare, canShare } from "./share.js";
 import { createVariant } from "./variant.js";
@@ -374,6 +374,7 @@ function accountItems() {
       el("div", {},
         el("div", { class: "account-email", text: user.email }),
         el("div", { class: "account-status", text: STATUS_TEXT[syncStatus()] || "" }))),
+    action("Nouveau board", () => createBoard()),
     !state.board.zone && ["owner", "editor"].includes(state.board.role) ? action("Historique…", () => openHistory()) : null,
     action("Se déconnecter", async () => {
       await signOut();
