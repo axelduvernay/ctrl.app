@@ -1655,6 +1655,28 @@ button { font: inherit; color: inherit; }
   background: var(--surface); color: var(--text); font: inherit; outline: none;
   box-shadow: 0 0 0 4px var(--accent-soft);
 }
+.popup .board-item { display: flex; align-items: center; gap: 2px; }
+.popup .board-item .board-row { flex: 1; min-width: 0; }
+.popup .board-row.is-current[title] { cursor: text; }
+.popup button.board-del {
+  width: 30px; height: 30px; padding: 0; justify-content: center; flex: none;
+  color: var(--text-2); opacity: 0; transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+.popup button.board-del svg { color: currentColor; }
+.popup .board-item:hover .board-del, .popup button.board-del:focus-visible { opacity: 1; }
+.popup button.board-del:hover { color: #D9483B; background: rgba(217, 72, 59, 0.1); }
+@media (hover: none) { .popup button.board-del { opacity: 0.6; } }
+
+.popup .board-confirm { padding: 8px 10px 6px; animation: confirm-in 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.2); }
+.popup .board-confirm-text { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.popup .board-confirm-hint { margin-top: 2px; color: var(--text-2); font-size: 12px; line-height: 1.35; }
+.popup .board-confirm-actions { display: flex; gap: 6px; margin-top: 10px; }
+.popup .board-confirm-actions button { flex: 1; justify-content: center; padding: 7px 10px; font-weight: 500; }
+.popup .board-confirm-actions .cancel { background: var(--hover); }
+.popup .board-confirm-actions .danger { background: #D9483B; color: #fff; }
+.popup .board-confirm-actions .danger:hover { background: #C43D31; }
+@keyframes confirm-in { from { opacity: 0; transform: scale(0.97); } }
+
 .popup .board-action { color: var(--text-2); }
 .popup .board-action:hover { color: var(--text); }
 

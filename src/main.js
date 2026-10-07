@@ -24,7 +24,7 @@ import { initInstall } from "./install.js";
 
 /* Affichée dans le menu : permet de vérifier qu'une mise à jour est arrivée.
    À changer à chaque livraison. */
-export const VERSION = "08.10 · réparation"
+export const VERSION = "09.10 · boards"
 
 async function boot() {
   applyTheme();

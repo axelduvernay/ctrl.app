@@ -446,6 +446,11 @@ export const save = debounce(() => {
 export const loadDoc = (id) => tx("state", "readonly", (s) => s.get(docKey(id))).catch(() => null);
 export const saveDoc = (id, doc) => tx("state", "readwrite", (s) => s.put(JSON.parse(JSON.stringify(doc)), docKey(id))).catch(() => {});
 
+/** Oublie la copie locale d'un board supprimé ou quitté. */
+export const forgetBoard = (id) => tx("state", "readwrite", (s) => {
+  for (const key of [docKey(id), "meta:sync-" + id, "meta:sync-assets-" + id, "meta:sync-shared-" + id]) s.delete(key);
+}).catch(() => {});
+
 /* Ouvre un autre board : la copie locale s'affiche tout de suite, la
    synchronisation la met ensuite à jour. */
 export async function openBoard(board, doc) {

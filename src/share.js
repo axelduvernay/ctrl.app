@@ -14,7 +14,7 @@ import { el, icon } from "./util.js";
 import { toast } from "./main.js";
 import { closeMenus, registerPopup } from "./menus.js";
 import {
-  syncUser, boardsList, switchBoard, createBoard, renameBoard,
+  syncUser, boardsList, switchBoard, createBoard, renameBoard, deleteBoard, leaveBoard,
   ensureLink, revokeLinks, listMembers, removeMember,
 } from "./sync.js";
 import { showLogin } from "./onboarding.js";
@@ -23,6 +23,8 @@ const CHEVRON = '<path d="M7 10l5 5 5-5"/>';
 const CHECK = '<path d="M5 12.5l4.5 4.5L19 7"/>';
 const PLUS = '<path d="M12 5v14M5 12h14"/>';
 const CLOSE = '<path d="M6 6l12 12M18 6L6 18"/>';
+const TRASH = '<path d="M4 7h16M10 7V4.5h4V7M6.5 7l.8 12.5h9.4L17.5 7"/>';
+const LEAVE = '<path d="M14 5h4.5v14H14M10 8l-4 4 4 4M6 12h9"/>';
 
 /* ---------- Sélecteur de boards ---------- */
 
@@ -48,8 +50,8 @@ function roleTag(b) {
 function update() {
   const b = state.board;
   document.body.classList.toggle("is-readonly", !!state.readOnly);
-  // Rien à choisir : rien à afficher.
-  const worth = b.guest || (syncUser() && (boardsList().length > 1 || b.role !== "owner"));
+  // Hors connexion, rien à choisir ni à renommer : rien à afficher.
+  const worth = b.guest || (syncUser() && b.id !== "local");
   switcher.hidden = !worth;
   if (!worth) return;
   const tag = roleTag(b);
@@ -64,34 +66,85 @@ function openBoards() {
   const list = boardsList();
   const panel = el("div", { class: "popup boards", role: "menu" });
   let renaming = false;
+  let confirming = null; // le board dont on confirme la suppression
+
+  // Le nom du board ouvert se renomme d'un clic (propriétaire, ou éditeur du
+  // board entier).
+  const canRename = state.board.role === "owner" || (state.board.role === "editor" && !state.board.zone);
+  const owned = list.filter((b) => b.role === "owner").length;
 
   const draw = () => {
     const rows = state.board.guest
       ? [el("div", { class: "board-row is-current" }, el("span", { class: "name", text: state.board.name }), el("span", { class: "tag", text: "lecture seule" }))]
       : list.map((b) => {
           const current = b.id === state.board.id;
+          const name = b.zone && b.zoneName ? b.zoneName : b.name;
+          const mine = b.role === "owner";
+
           if (current && renaming) {
             const input = el("input", { type: "text", value: b.name, "aria-label": "Nom du board" });
-            const done = () => { renameBoard(input.value); renaming = false; closeMenus(); };
+            let finished = false;
+            const done = () => {
+              if (finished) return;
+              finished = true;
+              if (input.value.trim() && input.value.trim() !== b.name) {
+                renameBoard(input.value)?.catch(() => toast("Renommage impossible pour l'instant"));
+              }
+              closeMenus();
+            };
             input.addEventListener("keydown", (e) => {
               e.stopPropagation();
               if (e.key === "Enter") done();
-              if (e.key === "Escape") { renaming = false; draw(); }
+              if (e.key === "Escape") { finished = true; renaming = false; draw(); }
             });
             input.addEventListener("blur", done);
             setTimeout(() => { input.focus(); input.select(); }, 0);
             return el("div", { class: "board-row is-current" }, input);
           }
-          return el("button", {
-            type: "button", class: "board-row" + (current ? " is-current" : ""),
-            onclick: () => { closeMenus(); if (!current) switchBoard(b.id); },
-          },
-            el("span", { class: "name", text: b.zone && b.zoneName ? b.zoneName : b.name }),
-            roleTag(b) ? el("span", { class: "tag", text: roleTag(b) }) : null,
-            current ? icon(CHECK, 14) : null);
+
+          if (confirming === b.id) {
+            const remove = async () => {
+              closeMenus();
+              try {
+                await (mine ? deleteBoard(b.id) : leaveBoard(b.id));
+                toast(mine ? `« ${name} » supprimé` : `Tu as quitté « ${name} »`);
+              } catch {
+                toast("Impossible pour l'instant");
+              }
+            };
+            return el("div", { class: "board-confirm" },
+              el("div", { class: "board-confirm-text", text: mine ? `Supprimer « ${name} » ?` : `Quitter « ${name} » ?` }),
+              el("div", { class: "board-confirm-hint", text: mine
+                ? "Définitif, aussi pour les personnes avec qui il est partagé."
+                : "Il faudra un nouveau lien pour y revenir." }),
+              el("div", { class: "board-confirm-actions" },
+                el("button", { type: "button", class: "cancel", text: "Annuler", onclick: () => { confirming = null; draw(); } }),
+                el("button", { type: "button", class: "danger", text: mine ? "Supprimer" : "Quitter", onclick: remove })));
+          }
+
+          // On ne supprime jamais son dernier board.
+          const removable = mine ? owned > 1 : true;
+          return el("div", { class: "board-item" },
+            el("button", {
+              type: "button", class: "board-row" + (current ? " is-current" : ""),
+              title: current && canRename ? "Renommer" : null,
+              onclick: () => {
+                if (current && canRename) { renaming = true; draw(); return; }
+                closeMenus();
+                if (!current) switchBoard(b.id);
+              },
+            },
+              el("span", { class: "name", text: name }),
+              roleTag(b) ? el("span", { class: "tag", text: roleTag(b) }) : null,
+              current ? icon(CHECK, 14) : null),
+            removable ? el("button", {
+              type: "button", class: "board-del",
+              "aria-label": mine ? "Supprimer ce board" : "Quitter ce board",
+              title: mine ? "Supprimer" : "Quitter",
+              onclick: () => { confirming = b.id; renaming = false; draw(); },
+            }, icon(mine ? TRASH : LEAVE, 14)) : null);
         });
 
-    const own = state.board.role === "owner" || (state.board.role === "editor" && !state.board.zone);
     panel.replaceChildren(...[
       ...rows,
       el("div", { class: "sep" }),
@@ -100,9 +153,6 @@ function openBoards() {
             el("span", { text: "Se connecter pour l'ajouter à mes boards" }))
         : el("button", { type: "button", class: "board-action", onclick: () => { closeMenus(); createBoard(); } },
             icon(PLUS, 14), el("span", { text: "Nouveau board" })),
-      own && !state.board.guest
-        ? el("button", { type: "button", class: "board-action", onclick: () => { renaming = true; draw(); } }, el("span", { text: "Renommer" }))
-        : null,
     ].filter(Boolean));
   };
 

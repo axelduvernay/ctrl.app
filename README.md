@@ -36,6 +36,7 @@ du code peut passer inaperçue au rechargement.
 | Glisser un bloc dans ou hors d'une zone | L'y range, ou l'en sort ; en direct, la zone s'allume, s'étire pour le contenir, et l'aimant l'aligne sur ses voisins |
 | Clic sur un bloc sélectionné, ou double-clic | Modifier son texte, curseur au point cliqué |
 | Clic sur le nom d'une zone | La renommer (`Entrée` pour valider) |
+| Clic sur le nom du board (en haut à gauche) | Changer de board ; re-clic sur le board ouvert pour le renommer, corbeille au survol pour le supprimer (ou quitter un board partagé) |
 | Deux doigts | Déplacer la vue |
 | Pincement, ou ⌘/Ctrl + molette | Zoomer, en douceur, avec des crans à 50, 100 et 200 % |
 | Espace + glisser | Déplacer la vue à la souris |

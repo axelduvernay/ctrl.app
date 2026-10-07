@@ -22,7 +22,7 @@
    La connexion se fait par un code envoyé par e-mail. Aucun mot de passe. */
 
 import { SUPABASE_URL, SUPABASE_KEY, SUPABASE_LIB } from "./config.js";
-import { state, on, emit, replaceDoc, isBusy, storeAsset, getMeta, setMeta, openBoard, loadDoc, saveDoc, LOCAL_BOARD } from "./store.js";
+import { state, on, emit, replaceDoc, isBusy, storeAsset, getMeta, setMeta, openBoard, loadDoc, saveDoc, forgetBoard, LOCAL_BOARD } from "./store.js";
 import { merge, shareable, withoutWelcome, sameDoc } from "./merge.js";
 import { render } from "./render.js";
 import { toast } from "./main.js";
@@ -288,6 +288,42 @@ export function renameBoard(name) {
     state.board.name = name;
     await fetchBoards();
     emit("board", state.board);
+  });
+}
+
+/* Supprimer un board (propriétaire) ou quitter un board partagé. Le board
+   ouvert laisse d'abord la place à un autre de mes boards ; on ne supprime
+   jamais son dernier board. */
+export function deleteBoard(id) {
+  return removeBoard(id, async (b) => {
+    const { data, error } = await sb.from("boards").delete().eq("id", id).select("id");
+    if (error) throw error;
+    if (!data?.length) throw new Error("Suppression refusée");
+  }, (b) => b.role === "owner");
+}
+
+export function leaveBoard(id) {
+  return removeBoard(id, async (b) => {
+    let q = sb.from("board_members").delete().eq("board_id", id).eq("user_id", user.id);
+    q = b.zone ? q.eq("zone_id", b.zone) : q.is("zone_id", null);
+    const { error } = await q;
+    if (error) throw error;
+  }, (b) => b.role !== "owner");
+}
+
+function removeBoard(id, drop, allowed) {
+  return queue(async () => {
+    const b = boards.find((x) => x.id === id);
+    if (!b || !allowed(b)) throw new Error("Action impossible");
+    const next = boards.find((x) => x.id !== id && x.role === "owner");
+    if (!next) throw new Error("Dernier board");
+    if (state.board.id === id) {
+      clearTimeout(pushTimer);
+      await enter(next);
+    }
+    await drop(b);
+    await forgetBoard(id);
+    await fetchBoards();
   });
 }
 
