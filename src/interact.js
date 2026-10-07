@@ -776,12 +776,15 @@ function finishConnect(from, e) {
     return;
   }
 
+  // Relâché dans le vide ou dans le fond d'une zone : un nouveau bloc. Dans
+  // une zone, il en devient l'enfant, et la zone s'agrandit s'il déborde.
   const world = toWorld(e.clientX, e.clientY);
-  if (node) return; // relâché sur une zone : on ne crée rien
   const block = createBlockAt(world.x + 110, world.y + 24);
   // Le lien rejoint la transaction ouverte par l'édition du nouveau bloc :
   // si le bloc reste vide, il disparaît avec son lien.
   addLink(from, block.id);
+  const zone = zoneOf(block);
+  if (zone) growChain(zone, block);
   render();
 }
 

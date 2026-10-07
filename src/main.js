@@ -21,7 +21,7 @@ import { initSync } from "./sync.js";
 
 /* Affichée dans le menu : permet de vérifier qu'une mise à jour est arrivée.
    À changer à chaque livraison. */
-export const VERSION = "07.10 · synchro"
+export const VERSION = "07.10 · synchro 2"
 
 async function boot() {
   applyTheme();
