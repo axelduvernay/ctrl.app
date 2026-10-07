@@ -22,7 +22,7 @@
    La connexion se fait par un code envoyé par e-mail. Aucun mot de passe. */
 
 import { SUPABASE_URL, SUPABASE_KEY, SUPABASE_LIB } from "./config.js";
-import { state, on, emit, replaceDoc, isBusy, storeAsset, getMeta, setMeta, openBoard, loadDoc, LOCAL_BOARD } from "./store.js";
+import { state, on, emit, replaceDoc, isBusy, storeAsset, getMeta, setMeta, openBoard, loadDoc, saveDoc, LOCAL_BOARD } from "./store.js";
 import { merge, shareable, withoutWelcome, sameDoc } from "./merge.js";
 import { render } from "./render.js";
 import { toast } from "./main.js";
@@ -46,6 +46,7 @@ let pushTimer = null;
 let pollTimer = null;
 let status = "off";
 let pendingToken = null;    // lien de partage ouvert avant d'être connecté
+let startedFor = null;      // le compte pour lequel la synchro a déjà démarré
 
 export const syncUser = () => user;
 export const syncStatus = () => status;
@@ -115,7 +116,12 @@ export async function initSync() {
   sb.auth.onAuthStateChange((event, session) => {
     // Le rappel de Supabase ne doit pas attendre nos appels réseau.
     setTimeout(() => {
-      if (session?.user && session.user.id !== user?.id) queue(() => start(session.user));
+      // Supabase annonce la session au démarrage alors qu'on vient de la
+      // lire : on ne démarre jamais deux fois pour le même compte.
+      if (session?.user && session.user.id !== startedFor) {
+        startedFor = session.user.id;
+        queue(() => start(session.user));
+      }
       if (!session && user) stop();
     }, 0);
   });
@@ -133,7 +139,10 @@ export async function initSync() {
 
   const { data } = await sb.auth.getSession();
   if (data?.session?.user) {
-    await queue(() => start(data.session.user));
+    if (data.session.user.id !== startedFor) {
+      startedFor = data.session.user.id;
+      await queue(() => start(data.session.user));
+    }
     return null;
   }
   setStatus("off");
@@ -179,6 +188,7 @@ async function start(u) {
 
 function stop() {
   user = null;
+  startedFor = null;
   boards = [];
   channel?.unsubscribe?.();
   channel = null;
@@ -231,11 +241,18 @@ async function enter(board, seed = null, merging = false) {
   channel?.unsubscribe?.();
   base = null;
   baseRev = 0;
-  await openBoard(board, merging ? seed : null);
+  const localCopy = merging ? seed : await loadDoc(board.id);
+  await openBoard(board, localCopy || null);
+  // La copie locale est écrite tout de suite : rouvrir ce board ne doit
+  // jamais tomber sur un board vide.
+  await saveDoc(board.id, state.doc);
   render();
-  const saved = await getMeta("sync-" + board.id);
-  base = merging ? null : saved?.base || null;
-  baseRev = merging ? 0 : saved?.rev || 0;
+  // Sans copie locale, la version de référence ne veut plus rien dire :
+  // on repart de zéro et le cloud fait foi. (Sinon un board vide passerait
+  // pour « tout a été effacé ici », et l'effacement partirait au cloud.)
+  const saved = localCopy && !merging ? await getMeta("sync-" + board.id) : null;
+  base = saved?.base || null;
+  baseRev = saved?.rev || 0;
   uploaded = new Set((await getMeta("sync-assets-" + board.id)) || []);
   mirrored = new Set((await getMeta("sync-shared-" + board.id)) || []);
   listen();
@@ -451,7 +468,16 @@ async function reconcile() {
       replaceDoc(structuredClone(merged));
       render();
     }
-    base = merged;
+    // Filet de sécurité : avant d'envoyer une grosse suppression, le cloud
+    // est mis de côté dans l'historique. Rien ne disparaît sans copie.
+    const before = Object.keys(remote.doc?.blocks || {}).length;
+    const after = Object.keys(merged.blocks || {}).length;
+    if (!zoned() && before >= 5 && after < before * 0.4) {
+      await sb.from("board_history").insert({ user_id: user.id, board_id: state.board.id, doc: remote.doc });
+    }
+    // La version commune avec le cloud, c'est la sienne : ce que la fusion
+    // ajoute part ensuite par push(), qui compare à cette référence.
+    base = remote.doc;
     baseRev = remote.rev;
     if (!sameDoc(merged, remote.doc)) await push();
   }
@@ -511,10 +537,11 @@ async function snapshot(doc) {
 export async function listSnapshots() {
   if (!cloud() || zoned()) return [];
   const { data, error } = await sb.from("board_history")
-    .select("id, created_at").eq("board_id", state.board.id)
+    .select("id, created_at, doc").eq("board_id", state.board.id)
     .order("created_at", { ascending: false }).limit(KEEP_SNAPSHOTS_DAYS + 5);
   if (error) throw error;
-  return data || [];
+  // Le nombre de blocs de chaque copie : on repère d'un coup d'œil la bonne.
+  return (data || []).map((s) => ({ id: s.id, created_at: s.created_at, blocks: Object.keys(s.doc?.blocks || {}).length }));
 }
 
 /* Revenir à une copie. Le board actuel est d'abord mis de côté dans
@@ -527,6 +554,28 @@ export async function restoreSnapshot(id) {
     .insert({ user_id: user.id, board_id: state.board.id, doc: shareable(state.doc) });
   if (saveError) throw saveError;
   replaceDoc(structuredClone(data.doc));
+  render();
+  emit("change");
+}
+
+/* ---------- Copie de cet appareil ---------- */
+
+/** Le board resté sur cet appareil d'avant la connexion, s'il contient quelque chose. */
+export async function deviceCopy() {
+  if (!cloud()) return null;
+  const doc = await loadDoc("local");
+  const n = Object.keys(doc?.blocks || {}).length;
+  return n ? { doc, blocks: n } : null;
+}
+
+/* Revenir à la copie de cet appareil. Comme pour l'historique, le board
+   actuel est d'abord mis de côté. */
+export async function restoreDeviceCopy() {
+  const copy = await deviceCopy();
+  if (!copy) throw new Error("Aucune copie sur cet appareil");
+  await pushNow();
+  await sb.from("board_history").insert({ user_id: user.id, board_id: state.board.id, doc: shareable(state.doc) });
+  replaceDoc(structuredClone(shareable(copy.doc)));
   render();
   emit("change");
 }

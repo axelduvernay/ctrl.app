@@ -12,7 +12,7 @@ import { exportBoard, importBoard } from "./io.js";
 import { toggleFilter, toggleDoneFilter, clearFilters } from "./search.js";
 import { toast, VERSION } from "./main.js";
 import { play, soundsEnabled, setSoundsEnabled } from "./sounds.js";
-import { syncAvailable, syncUser, syncStatus, signOut, listSnapshots, restoreSnapshot, createBoard } from "./sync.js";
+import { syncAvailable, syncUser, syncStatus, signOut, listSnapshots, restoreSnapshot, createBoard, deviceCopy, restoreDeviceCopy } from "./sync.js";
 import { showLogin } from "./onboarding.js";
 import { openShare, canShare } from "./share.js";
 import { createVariant } from "./variant.js";
@@ -395,13 +395,27 @@ async function openHistory() {
   panel.style.top = "68px";
 
   let snapshots = [];
+  let device = null;
   try { snapshots = await listSnapshots(); } catch { /* réseau */ }
+  try { device = await deviceCopy(); } catch { /* rien */ }
   if (popup !== panel) return;
   const when = (iso) => new Date(iso).toLocaleString("fr-FR", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
-  panel.replaceChildren(
+  panel.replaceChildren(...[
     label("Historique"),
+    // La copie restée sur cet ordinateur, d'avant la connexion : souvent la
+    // plus récente quand quelque chose a mal tourné à la synchro.
+    device ? action(`Copie de cet appareil · ${device.blocks} blocs`, async () => {
+      if (!confirm(`Revenir à la copie de cet appareil (${device.blocks} blocs) ?\nLe board actuel est gardé dans l'historique.`)) return;
+      try {
+        await restoreDeviceCopy();
+        toast("Copie de l'appareil restaurée");
+      } catch {
+        toast("Restauration impossible pour l'instant");
+      }
+    }) : null,
+    device && snapshots.length ? el("div", { class: "sep" }) : null,
     ...(snapshots.length
-      ? snapshots.map((s) => action(when(s.created_at), async () => {
+      ? snapshots.map((s) => action(when(s.created_at) + (s.blocks != null ? ` · ${s.blocks} blocs` : ""), async () => {
           if (!confirm("Revenir à la version du " + when(s.created_at) + " ?\nLe board actuel est gardé dans l'historique.")) return;
           try {
             await restoreSnapshot(s.id);
@@ -411,7 +425,7 @@ async function openHistory() {
           }
         }))
       : [el("div", { class: "label", text: "Aucune copie pour l'instant. La première est faite à la prochaine synchronisation, puis une par jour." })]),
-  );
+  ].filter(Boolean));
 }
 
 /* ---------- Gestionnaire de catégories ---------- */
