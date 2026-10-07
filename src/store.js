@@ -177,6 +177,24 @@ export function redo() {
 }
 
 export const canUndo = () => undoStack.length > 0;
+
+/** Une modification est-elle en cours (glisser, édition) ? La synchronisation
+    attend alors pour appliquer ce qui vient du cloud. */
+export const isBusy = () => pending !== null || !!state.editing;
+
+/* Remplace le document par une version venue d'ailleurs (le cloud). Les
+   historiques d'annulation repartent de zéro : annuler ne doit pas défaire
+   ce qu'un autre appareil a fait. */
+export function replaceDoc(doc) {
+  const rev = state.doc.rev || 0;
+  state.doc = { ...emptyDoc(), ...doc, rev };
+  undoStack.length = 0;
+  redoStack.length = 0;
+  for (const id of [...state.selection]) {
+    if (!state.doc.blocks[id] && !state.doc.zones[id] && !state.doc.links[id]) state.selection.delete(id);
+  }
+  save();
+}
 export const canRedo = () => redoStack.length > 0;
 
 function afterTimeTravel() {
@@ -486,10 +504,21 @@ export async function load() {
 /** Stocke un blob (image, fichier) hors de l'historique et renvoie sa clé. */
 export async function putAsset(blob) {
   const key = uid();
-  state.assets.set(key, blob);
-  await tx("assets", "readwrite", (s) => s.put(blob, key));
+  await storeAsset(key, blob);
+  emit("asset", key);
   return key;
 }
+
+/** Stocke un blob sous une clé donnée — un fichier reçu du cloud. */
+export async function storeAsset(key, blob) {
+  state.assets.set(key, blob);
+  await tx("assets", "readwrite", (s) => s.put(blob, key));
+}
+
+/* Petites données propres à l'appareil (état de la synchronisation), à côté
+   du document dans IndexedDB. */
+export const getMeta = (key) => tx("state", "readonly", (s) => s.get("meta:" + key)).catch(() => undefined);
+export const setMeta = (key, value) => tx("state", "readwrite", (s) => s.put(value, "meta:" + key)).catch(() => {});
 
 export function assetURL(key) {
   const blob = state.assets.get(key);

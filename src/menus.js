@@ -12,6 +12,7 @@ import { exportBoard, importBoard } from "./io.js";
 import { toggleFilter, toggleDoneFilter, clearFilters } from "./search.js";
 import { toast, VERSION } from "./main.js";
 import { play, soundsEnabled, setSoundsEnabled } from "./sounds.js";
+import { syncAvailable, syncUser, syncStatus, sendLoginEmail, verifyCode, signOut } from "./sync.js";
 import { createVariant } from "./variant.js";
 import { toList, LIST_TYPES } from "./lists.js";
 
@@ -270,8 +271,7 @@ export function openMainMenu(anchor) {
 
   const menu = openPopup(rect.right - 212, rect.bottom + 8, [
     label("Compte"),
-    action("Se connecter avec Google", () => toast("La connexion arrivera avec la synchronisation"), { disabled: true }),
-    action("Se connecter avec Apple", () => toast("La connexion arrivera avec la synchronisation"), { disabled: true }),
+    ...accountItems(),
     sep(),
     label("Thème"),
     action("Système", () => setTheme("system"), { hint: theme === "system" ? "✓" : "" }),
@@ -320,6 +320,100 @@ export function applyTheme() {
   const theme = localStorage.getItem("ctrl-theme") || "system";
   if (theme === "system") document.documentElement.removeAttribute("data-theme");
   else document.documentElement.dataset.theme = theme;
+}
+
+/* ---------- Compte et synchronisation ---------- */
+
+const STATUS_TEXT = {
+  synced: "Synchronisé",
+  syncing: "Synchronisation…",
+  pending: "Modifications en attente",
+  offline: "Hors ligne — synchronisera au retour du réseau",
+  error: "Synchronisation interrompue, nouvel essai bientôt",
+  off: "",
+};
+
+function accountItems() {
+  if (!syncAvailable()) {
+    return [el("div", { class: "label", text: "Synchronisation indisponible (hors ligne)" })];
+  }
+  const user = syncUser();
+  if (!user) {
+    return [action("Se connecter…", () => openLogin(), { hint: "par e-mail" })];
+  }
+  return [
+    el("div", { class: "account" },
+      el("span", { class: "sync-dot is-" + syncStatus() }),
+      el("div", {},
+        el("div", { class: "account-email", text: user.email }),
+        el("div", { class: "account-status", text: STATUS_TEXT[syncStatus()] || "" }))),
+    action("Se déconnecter", async () => {
+      await signOut();
+      toast("Déconnecté — le board reste sur cet appareil");
+    }),
+  ];
+}
+
+/* Connexion sans mot de passe : un lien par e-mail, ou le code à 6 chiffres
+   qu'il contient — pratique quand le mail arrive sur le téléphone. */
+export function openLogin() {
+  closeMenus();
+  const panel = el("div", { class: "popup login", role: "dialog", "aria-label": "Connexion" });
+  let email = "";
+
+  const step1 = () => {
+    const input = el("input", { type: "email", placeholder: "ton@email.com", autocomplete: "email", "aria-label": "Adresse e-mail" });
+    const submit = el("button", { type: "submit", class: "primary", text: "Recevoir le lien" });
+    const form = el("form", {
+      onsubmit: async (e) => {
+        e.preventDefault();
+        email = input.value.trim();
+        if (!email) return input.focus();
+        submit.disabled = true;
+        submit.textContent = "Envoi…";
+        try {
+          await sendLoginEmail(email);
+          step2();
+        } catch (err) {
+          submit.disabled = false;
+          submit.textContent = "Recevoir le lien";
+          toast(/rate|limit/i.test(err.message) ? "Trop d'envois, réessaie dans quelques minutes" : "Envoi impossible : " + err.message);
+        }
+      },
+    }, input, submit);
+    panel.replaceChildren(
+      el("div", { class: "login-title", text: "Synchroniser ton board" }),
+      el("p", { class: "login-text", text: "Entre ton adresse : tu reçois un lien de connexion. Aucun mot de passe." }),
+      form);
+    setTimeout(() => input.focus(), 50);
+  };
+
+  const step2 = () => {
+    const code = el("input", { inputmode: "numeric", autocomplete: "one-time-code", placeholder: "123456", maxlength: "10", "aria-label": "Code reçu" });
+    const form = el("form", {
+      onsubmit: async (e) => {
+        e.preventDefault();
+        try {
+          await verifyCode(email, code.value.replace(/\s/g, ""));
+          closeMenus();
+          toast("Connecté");
+        } catch {
+          toast("Code incorrect ou expiré");
+        }
+      },
+    }, code, el("button", { type: "submit", class: "primary", text: "Valider" }));
+    panel.replaceChildren(
+      el("div", { class: "login-title", text: "Regarde tes mails" }),
+      el("p", { class: "login-text", text: `Un lien a été envoyé à ${email}. Ouvre-le sur cet appareil — ou, s'il contient un code, tape-le ici.` }),
+      form);
+    setTimeout(() => code.focus(), 50);
+  };
+
+  step1();
+  document.body.append(panel);
+  popup = panel;
+  panel.style.left = Math.max(12, innerWidth - 340 - 18) + "px";
+  panel.style.top = "68px";
 }
 
 /* ---------- Gestionnaire de catégories ---------- */

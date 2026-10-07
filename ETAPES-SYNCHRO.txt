@@ -1,156 +1,111 @@
-CTRL.APP — CONNEXION GOOGLE ET SYNCHRONISATION
-Ce que tu dois faire, dans l'ordre. Compte 20 à 30 minutes.
-(Les noms des menus peuvent changer légèrement d'un site à l'autre ; si
-quelque chose ne correspond pas, fais une capture et envoie-la moi.)
+CTRL.APP — ACTIVER LA SYNCHRONISATION
+Ce qu'il te reste à faire, dans l'ordre. Compte 10 minutes.
+(Le code est prêt et en ligne. Les noms des menus Supabase peuvent changer
+légèrement ; si quelque chose ne correspond pas, envoie-moi une capture.)
 
 
 ==============================================================
-ÉTAPE 0 — SAUVEGARDE (à faire maintenant, 30 secondes)
+ÉTAPE 0 — SAUVEGARDE (30 secondes, avant tout)
 ==============================================================
 
-1. Ouvre ctrl.app là où se trouve ton board (le Mac).
-2. Menu ⋮ en haut à droite → « Exporter le board ».
-3. Range le fichier ctrl-board-AAAA-MM-JJ.json dans iCloud Drive ou
-   Google Drive.
-4. Refais-le de temps en temps tant que la synchro n'est pas en place.
+Sur le Mac où se trouve ton board :
+menu ⋮ → « Exporter le board » → range le fichier .json dans iCloud Drive.
 
 
 ==============================================================
-ÉTAPE 1 — SÉCURISER TES COMPTES (5 minutes)
+ÉTAPE 1 — CRÉER LA BASE (2 minutes)
 ==============================================================
 
-Tout repose sur trois comptes : GitHub, Google et Supabase. Si l'un est
-piraté, tes données le sont aussi.
+1. Supabase → ton projet ctrl.app → menu de gauche « SQL Editor ».
+2. « New query ».
+3. Ouvre le fichier supabase/schema.sql du projet (sur GitHub :
+   github.com/axelduvernay/ctrl.app, branche main-486yxj, dossier
+   supabase), copie TOUT son contenu et colle-le dans l'éditeur.
+4. « Run ». Tu dois voir « Success. No rows returned ».
 
-1. Active la double authentification (2FA) sur ton compte Google :
-   myaccount.google.com → Sécurité → Validation en deux étapes.
-2. Active-la sur GitHub : github.com → Settings → Password and
-   authentication → Two-factor authentication.
-3. Tu l'activeras aussi sur Supabase à l'étape 2.
-
-
-==============================================================
-ÉTAPE 2 — CRÉER LE PROJET SUPABASE (5 minutes)
-==============================================================
-
-1. Va sur https://supabase.com → « Start your project ».
-2. Connecte-toi avec GitHub (« Continue with GitHub »).
-3. Active la 2FA : avatar en haut à droite → Account preferences →
-   Security / Multi-factor authentication.
-4. « New project » :
-   - Name : ctrl-app
-   - Database Password : clique sur « Generate a password » et
-     enregistre-le dans ton gestionnaire de mots de passe (trousseau
-     iCloud par exemple). Tu ne me l'envoies pas.
-   - Region : West EU (Paris) ou Central EU (Frankfurt).
-   - Plan : Free.
-5. Attends que le projet soit prêt (1 à 2 minutes).
-6. Va dans Authentication → Providers (ou Sign In / Providers) → Google.
-   Ne l'active pas encore : note juste l'adresse affichée dans
-   « Callback URL (for OAuth) ». Elle ressemble à :
-       https://xxxxxxxxxxxx.supabase.co/auth/v1/callback
-   Tu en as besoin à l'étape 3.
+Ça crée : la table du board, la table des copies quotidiennes, l'espace
+privé pour les images et morceaux, et les règles qui font que chaque compte
+ne voit que ses propres données.
 
 
 ==============================================================
-ÉTAPE 3 — CRÉER L'ACCÈS GOOGLE (10 minutes)
+ÉTAPE 2 — RÉGLER LES ADRESSES (1 minute)
 ==============================================================
 
-1. Va sur https://console.cloud.google.com et connecte-toi avec ton
-   compte Google.
-2. En haut, sélecteur de projet → « Nouveau projet » → nom : ctrl-app →
-   Créer. Vérifie qu'il est bien sélectionné en haut.
-3. Menu ☰ → « API et services » → « Écran de consentement OAuth »
-   (ou « Google Auth Platform »).
-   - Type d'utilisateur : Externe.
-   - Nom de l'application : ctrl.app
-   - E-mail d'assistance et e-mail de contact : ton adresse.
-   - Enregistrer.
-4. Dans « Audience » (ou « Utilisateurs test ») :
-   - Laisse l'application en mode « Test ».
-   - Ajoute ton adresse Gmail comme utilisateur test.
-   → SÉCURITÉ : en mode Test, SEULES les adresses de cette liste peuvent
-     se connecter. Personne d'autre ne pourra créer de compte sur ton app.
-5. « Identifiants » (ou « Clients ») → « Créer des identifiants » →
-   « ID client OAuth » :
-   - Type d'application : Application Web.
-   - Nom : ctrl.app
-   - Origines JavaScript autorisées : laisse vide.
-   - URI de redirection autorisés → « Ajouter un URI » → colle la
-     Callback URL notée à l'étape 2.6.
-   - Créer.
-6. Une fenêtre affiche « ID client » et « Code secret du client ».
-   Garde-la ouverte (ou télécharge le JSON).
-
-
-==============================================================
-ÉTAPE 4 — RELIER GOOGLE À SUPABASE (3 minutes)
-==============================================================
-
-1. Retourne dans Supabase → Authentication → Providers → Google.
-2. Active « Enable Sign in with Google ».
-3. Colle l'ID client dans « Client IDs » et le code secret dans
-   « Client Secret (for OAuth) ».
-4. Save.
-5. Authentication → URL Configuration :
+Authentication → URL Configuration :
    - Site URL : https://axelduvernay.github.io/ctrl.app/
-   - Redirect URLs → « Add URL » et ajoute les deux :
+   - Redirect URLs → « Add URL », ajoute les deux :
        https://axelduvernay.github.io/ctrl.app/
        http://localhost:4321
    - Save.
 
 
 ==============================================================
-ÉTAPE 5 — M'ENVOYER LES DEUX INFOS (1 minute)
+ÉTAPE 3 — (CONSEILLÉ) UN CODE DANS LE MAIL (2 minutes)
 ==============================================================
 
-Dans Supabase → Project Settings (roue dentée) → API (ou « Data API » et
-« API Keys ») :
+Par défaut le mail ne contient qu'un lien, qui connecte l'appareil sur
+lequel tu l'ouvres. Avec un code, tu peux lire le mail sur ton téléphone
+et taper le code sur le Mac.
 
-   1. Project URL           → https://xxxxxxxxxxxx.supabase.co
-   2. Clé « anon » « public » → une longue chaîne qui commence par eyJ…
-      (ou « Publishable key » qui commence par sb_publishable_…)
+Authentication → Emails (ou Email Templates) → « Magic Link » :
+remplace le contenu par :
 
-Envoie-moi ces DEUX éléments dans la conversation. Ils sont faits pour être
-publics : ils seront dans le code du site, c'est normal.
+   <h2>Connexion à ctrl.app</h2>
+   <p>Ton code : <strong>{{ .Token }}</strong></p>
+   <p>Ou clique : <a href="{{ .ConfirmationURL }}">se connecter</a></p>
 
-   ⚠ À NE JAMAIS ENVOYER, ni à moi ni à personne, ni dans le code :
-     - la clé « service_role » (ou « Secret key », sb_secret_…)
-     - le mot de passe de la base de données
-     - le code secret du client Google
+Save.
 
 
 ==============================================================
-CE QUE JE FAIS ENSUITE
+ÉTAPE 4 — TE CONNECTER SUR LE MAC (le plus important)
 ==============================================================
 
-- Les tables et les règles de sécurité : je te donne un script SQL tout
-  prêt, que tu colles une fois dans Supabase → SQL Editor → Run.
-- Le bouton « Se connecter avec Google » dans le menu.
-- À ta première connexion, ton board actuel part dans le cloud. Rien
-  n'est écrasé.
-- La synchronisation automatique entre tes ordinateurs, images et morceaux
-  compris.
+FAIS-LE D'ABORD SUR LE MAC QUI A TON BOARD : à la première connexion,
+c'est ce board qui part dans le cloud.
+
+1. Ouvre https://axelduvernay.github.io/ctrl.app/ et fais ⌘⇧R.
+   Le menu ⋮ doit afficher en bas « v07.10 · synchro ».
+   (Si ton board est sur localhost:4321, fais d'abord git pull puis
+   python3 serve.py, et connecte-toi là.)
+2. Menu ⋮ → « Se connecter… » → ton adresse → « Recevoir le lien ».
+3. Ouvre le mail : clique le lien sur le Mac, ou tape le code.
+4. Message « Board enregistré dans le cloud ». Un petit point vert apparaît
+   sur le bouton ⋮ : synchronisé.
+
+Le point : vert = synchronisé, orange = en cours, gris = hors ligne,
+rouge = erreur (nouvel essai automatique).
 
 
 ==============================================================
-EST-CE QUE C'EST SÉCURISÉ ?
+ÉTAPE 5 — FERMER LES INSCRIPTIONS (30 secondes)
 ==============================================================
 
-Oui, pour un usage personnel c'est un bon niveau :
-- Connexion par Google : aucun mot de passe stocké chez nous.
-- Tout passe en HTTPS (chiffré pendant le transfert).
-- Règles de sécurité au niveau de la base (« Row Level Security ») :
-  chaque compte ne peut lire et écrire QUE ses propres données, même avec
-  la clé publique.
-- Les images et fichiers sont dans un espace privé, protégé de la même
-  façon.
-- En mode Test, Google refuse toute adresse qui n'est pas dans ta liste.
+Maintenant que ton compte existe :
+Authentication → Sign In / Providers (ou Settings) →
+désactive « Allow new users to sign up » → Save.
 
-Ce que ça ne fait pas :
-- Ce n'est pas du chiffrement de bout en bout : techniquement, Supabase
-  (et l'hébergeur derrière) pourrait lire les données stockées, comme
-  Google Drive ou Notion. Évite d'y mettre des mots de passe, des codes
-  bancaires ou des documents d'identité.
-- La sécurité dépend de tes comptes : d'où l'étape 1 (double
-  authentification partout).
+Plus personne d'autre ne peut créer de compte sur ton app.
+
+
+==============================================================
+ÉTAPE 6 — LES AUTRES ORDINATEURS
+==============================================================
+
+Ouvre le site, menu ⋮ → « Se connecter… », même adresse.
+Ton board arrive, images comprises. Le board d'accueil de cet appareil
+n'est pas mélangé au tien.
+
+
+==============================================================
+À SAVOIR
+==============================================================
+
+- Envoi de mails limité par Supabase (quelques-uns par heure) : si
+  « Trop d'envois », attends un peu.
+- Chaque appareil reste connecté : tu ne le fais qu'une fois par appareil.
+- Hors ligne, tout marche ; la synchro reprend au retour du réseau.
+- Une copie du board est gardée chaque jour pendant 30 jours.
+- Ne JAMAIS donner : la clé « service_role » / « secret », le mot de passe
+  de la base.

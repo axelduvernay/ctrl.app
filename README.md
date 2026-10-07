@@ -102,6 +102,11 @@ src/
   variant.js    Variantes : v2 d'un ensemble de blocs reliés
   format.js     Mise en forme du texte, barre flottante, nettoyage du HTML
   sounds.js     Sons de l'interface (fichiers dans sounds/, voir sounds/README.md)
+  sync.js       Connexion par e-mail et synchronisation avec Supabase
+  merge.js      Fusion à trois de deux versions du board
+  config.js     Adresse et clé publique du projet Supabase
+supabase/
+  schema.sql    Tables, règles de sécurité (RLS) et stockage, à lancer une fois
   welcome.js    Board d'accueil du premier lancement
   util.js       Utilitaires partagés
 ```
@@ -161,6 +166,15 @@ est relié, ou la sélection si plusieurs blocs sont choisis. La copie est posé
 à droite de l'original, avec le numéro de version suivant. Toutes les versions
 partagent une lignée, et un lien pointillé les rattache. Les rappels ne sont pas
 copiés, pour qu'une même alarme ne sonne pas deux fois.
+
+**La synchronisation fusionne, elle n'écrase pas.** Chaque appareil garde
+son board en local et marche hors ligne. Le cloud tient une copie par compte,
+avec un numéro de version : on n'écrit que si le cloud est resté à la version
+connue, sinon on récupère, on fusionne et on réessaie. La fusion est à trois
+(version commune, cet appareil, le cloud) et se fait élément par élément : ce
+qui n'a changé que d'un côté gagne, et en cas de modification des deux côtés
+la plus récente l'emporte. Images et fichiers vont dans un espace privé, un
+dossier par compte. Une copie du board est gardée chaque jour, sur 30 jours.
 
 **Les rappels sonnent tant que l'app est ouverte**, même en arrière-plan :
 notification du système si elle est autorisée, message dans l'app sinon.

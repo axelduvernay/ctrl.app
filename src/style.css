@@ -1239,3 +1239,64 @@ button { font: inherit; color: inherit; }
   color: #fff;
   box-shadow: 0 4px 12px -2px rgba(224, 109, 59, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
+
+
+/* ---------- Compte et synchronisation ---------- */
+
+/* Le point d'état sur le bouton du menu : vert synchronisé, orange en
+   attente ou en cours, gris hors ligne, rouge en erreur. Rien quand on
+   n'est pas connecté. */
+#menu-btn { position: relative; }
+#menu-btn[data-sync]:not([data-sync="off"])::after {
+  content: "";
+  position: absolute;
+  top: 7px; right: 7px;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--surface);
+  background: var(--sync-color);
+  transition: background 0.3s ease;
+}
+#menu-btn, .sync-dot { --sync-color: #4F8A72; }
+[data-sync="pending"], [data-sync="syncing"], .sync-dot.is-pending, .sync-dot.is-syncing { --sync-color: var(--accent); }
+[data-sync="offline"], .sync-dot.is-offline { --sync-color: var(--text-2); }
+[data-sync="error"], .sync-dot.is-error { --sync-color: #C4513B; }
+#menu-btn[data-sync="syncing"]::after { animation: sync-pulse 1.2s ease-in-out infinite; }
+@keyframes sync-pulse { 50% { opacity: 0.35; } }
+
+.popup .account { display: flex; align-items: center; gap: 10px; padding: 6px 10px 8px; }
+.popup .account .sync-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--sync-color); }
+.popup .account-email { font-weight: 500; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+.popup .account-status { color: var(--text-2); font-size: 12px; }
+.popup .sync-dot.is-off { display: none; }
+
+.popup.login { width: 320px; padding: 16px; }
+.login-title { font-weight: 700; font-size: 16px; letter-spacing: -0.01em; }
+.login-text { margin: 6px 0 14px; color: var(--text-2); font-size: 13px; line-height: 1.45; }
+.popup.login form { display: flex; gap: 8px; }
+.popup.login input {
+  flex: 1; min-width: 0;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.popup.login input:focus { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+.popup.login button.primary {
+  width: auto;
+  flex: none;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  justify-content: center;
+}
+.popup.login button.primary:hover { background: color-mix(in srgb, var(--accent) 88%, #000); }
+.popup.login button.primary[disabled] { opacity: 0.6; }
