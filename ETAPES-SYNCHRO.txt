@@ -1,0 +1,156 @@
+CTRL.APP — CONNEXION GOOGLE ET SYNCHRONISATION
+Ce que tu dois faire, dans l'ordre. Compte 20 à 30 minutes.
+(Les noms des menus peuvent changer légèrement d'un site à l'autre ; si
+quelque chose ne correspond pas, fais une capture et envoie-la moi.)
+
+
+==============================================================
+ÉTAPE 0 — SAUVEGARDE (à faire maintenant, 30 secondes)
+==============================================================
+
+1. Ouvre ctrl.app là où se trouve ton board (le Mac).
+2. Menu ⋮ en haut à droite → « Exporter le board ».
+3. Range le fichier ctrl-board-AAAA-MM-JJ.json dans iCloud Drive ou
+   Google Drive.
+4. Refais-le de temps en temps tant que la synchro n'est pas en place.
+
+
+==============================================================
+ÉTAPE 1 — SÉCURISER TES COMPTES (5 minutes)
+==============================================================
+
+Tout repose sur trois comptes : GitHub, Google et Supabase. Si l'un est
+piraté, tes données le sont aussi.
+
+1. Active la double authentification (2FA) sur ton compte Google :
+   myaccount.google.com → Sécurité → Validation en deux étapes.
+2. Active-la sur GitHub : github.com → Settings → Password and
+   authentication → Two-factor authentication.
+3. Tu l'activeras aussi sur Supabase à l'étape 2.
+
+
+==============================================================
+ÉTAPE 2 — CRÉER LE PROJET SUPABASE (5 minutes)
+==============================================================
+
+1. Va sur https://supabase.com → « Start your project ».
+2. Connecte-toi avec GitHub (« Continue with GitHub »).
+3. Active la 2FA : avatar en haut à droite → Account preferences →
+   Security / Multi-factor authentication.
+4. « New project » :
+   - Name : ctrl-app
+   - Database Password : clique sur « Generate a password » et
+     enregistre-le dans ton gestionnaire de mots de passe (trousseau
+     iCloud par exemple). Tu ne me l'envoies pas.
+   - Region : West EU (Paris) ou Central EU (Frankfurt).
+   - Plan : Free.
+5. Attends que le projet soit prêt (1 à 2 minutes).
+6. Va dans Authentication → Providers (ou Sign In / Providers) → Google.
+   Ne l'active pas encore : note juste l'adresse affichée dans
+   « Callback URL (for OAuth) ». Elle ressemble à :
+       https://xxxxxxxxxxxx.supabase.co/auth/v1/callback
+   Tu en as besoin à l'étape 3.
+
+
+==============================================================
+ÉTAPE 3 — CRÉER L'ACCÈS GOOGLE (10 minutes)
+==============================================================
+
+1. Va sur https://console.cloud.google.com et connecte-toi avec ton
+   compte Google.
+2. En haut, sélecteur de projet → « Nouveau projet » → nom : ctrl-app →
+   Créer. Vérifie qu'il est bien sélectionné en haut.
+3. Menu ☰ → « API et services » → « Écran de consentement OAuth »
+   (ou « Google Auth Platform »).
+   - Type d'utilisateur : Externe.
+   - Nom de l'application : ctrl.app
+   - E-mail d'assistance et e-mail de contact : ton adresse.
+   - Enregistrer.
+4. Dans « Audience » (ou « Utilisateurs test ») :
+   - Laisse l'application en mode « Test ».
+   - Ajoute ton adresse Gmail comme utilisateur test.
+   → SÉCURITÉ : en mode Test, SEULES les adresses de cette liste peuvent
+     se connecter. Personne d'autre ne pourra créer de compte sur ton app.
+5. « Identifiants » (ou « Clients ») → « Créer des identifiants » →
+   « ID client OAuth » :
+   - Type d'application : Application Web.
+   - Nom : ctrl.app
+   - Origines JavaScript autorisées : laisse vide.
+   - URI de redirection autorisés → « Ajouter un URI » → colle la
+     Callback URL notée à l'étape 2.6.
+   - Créer.
+6. Une fenêtre affiche « ID client » et « Code secret du client ».
+   Garde-la ouverte (ou télécharge le JSON).
+
+
+==============================================================
+ÉTAPE 4 — RELIER GOOGLE À SUPABASE (3 minutes)
+==============================================================
+
+1. Retourne dans Supabase → Authentication → Providers → Google.
+2. Active « Enable Sign in with Google ».
+3. Colle l'ID client dans « Client IDs » et le code secret dans
+   « Client Secret (for OAuth) ».
+4. Save.
+5. Authentication → URL Configuration :
+   - Site URL : https://axelduvernay.github.io/ctrl.app/
+   - Redirect URLs → « Add URL » et ajoute les deux :
+       https://axelduvernay.github.io/ctrl.app/
+       http://localhost:4321
+   - Save.
+
+
+==============================================================
+ÉTAPE 5 — M'ENVOYER LES DEUX INFOS (1 minute)
+==============================================================
+
+Dans Supabase → Project Settings (roue dentée) → API (ou « Data API » et
+« API Keys ») :
+
+   1. Project URL           → https://xxxxxxxxxxxx.supabase.co
+   2. Clé « anon » « public » → une longue chaîne qui commence par eyJ…
+      (ou « Publishable key » qui commence par sb_publishable_…)
+
+Envoie-moi ces DEUX éléments dans la conversation. Ils sont faits pour être
+publics : ils seront dans le code du site, c'est normal.
+
+   ⚠ À NE JAMAIS ENVOYER, ni à moi ni à personne, ni dans le code :
+     - la clé « service_role » (ou « Secret key », sb_secret_…)
+     - le mot de passe de la base de données
+     - le code secret du client Google
+
+
+==============================================================
+CE QUE JE FAIS ENSUITE
+==============================================================
+
+- Les tables et les règles de sécurité : je te donne un script SQL tout
+  prêt, que tu colles une fois dans Supabase → SQL Editor → Run.
+- Le bouton « Se connecter avec Google » dans le menu.
+- À ta première connexion, ton board actuel part dans le cloud. Rien
+  n'est écrasé.
+- La synchronisation automatique entre tes ordinateurs, images et morceaux
+  compris.
+
+
+==============================================================
+EST-CE QUE C'EST SÉCURISÉ ?
+==============================================================
+
+Oui, pour un usage personnel c'est un bon niveau :
+- Connexion par Google : aucun mot de passe stocké chez nous.
+- Tout passe en HTTPS (chiffré pendant le transfert).
+- Règles de sécurité au niveau de la base (« Row Level Security ») :
+  chaque compte ne peut lire et écrire QUE ses propres données, même avec
+  la clé publique.
+- Les images et fichiers sont dans un espace privé, protégé de la même
+  façon.
+- En mode Test, Google refuse toute adresse qui n'est pas dans ta liste.
+
+Ce que ça ne fait pas :
+- Ce n'est pas du chiffrement de bout en bout : techniquement, Supabase
+  (et l'hébergeur derrière) pourrait lire les données stockées, comme
+  Google Drive ou Notion. Évite d'y mettre des mots de passe, des codes
+  bancaires ou des documents d'identité.
+- La sécurité dépend de tes comptes : d'où l'étape 1 (double
+  authentification partout).
