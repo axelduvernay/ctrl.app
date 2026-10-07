@@ -12,7 +12,8 @@ import { exportBoard, importBoard } from "./io.js";
 import { toggleFilter, toggleDoneFilter, clearFilters } from "./search.js";
 import { toast, VERSION } from "./main.js";
 import { play, soundsEnabled, setSoundsEnabled } from "./sounds.js";
-import { syncAvailable, syncUser, syncStatus, sendLoginEmail, verifyCode, signOut } from "./sync.js";
+import { syncAvailable, syncUser, syncStatus, signOut, listSnapshots, restoreSnapshot } from "./sync.js";
+import { showLogin } from "./onboarding.js";
 import { createVariant } from "./variant.js";
 import { toList, LIST_TYPES } from "./lists.js";
 
@@ -28,9 +29,12 @@ export function openPopup(x, y, children) {
   closeMenus();
   popup = el("div", { class: "popup", role: "menu" }, ...children.filter(Boolean));
   document.body.append(popup);
-  const rect = popup.getBoundingClientRect();
-  popup.style.left = Math.min(x, innerWidth - rect.width - 12) + "px";
-  popup.style.top = Math.min(y, innerHeight - rect.height - 12) + "px";
+  // offsetWidth/Height : la taille réelle, sans l'échelle de l'animation
+  // d'ouverture. Sur un petit écran, le menu ne sort jamais du cadre.
+  const w = popup.offsetWidth;
+  const h = popup.offsetHeight;
+  popup.style.left = Math.max(12, Math.min(x, innerWidth - w - 12)) + "px";
+  popup.style.top = Math.max(12, Math.min(y, innerHeight - h - 12)) + "px";
   return popup;
 }
 
@@ -339,7 +343,7 @@ function accountItems() {
   }
   const user = syncUser();
   if (!user) {
-    return [action("Se connecter…", () => openLogin(), { hint: "par e-mail" })];
+    return [action("Se connecter…", () => showLogin(), { hint: "par e-mail" })];
   }
   return [
     el("div", { class: "account" },
@@ -347,6 +351,7 @@ function accountItems() {
       el("div", {},
         el("div", { class: "account-email", text: user.email }),
         el("div", { class: "account-status", text: STATUS_TEXT[syncStatus()] || "" }))),
+    action("Historique…", () => openHistory()),
     action("Se déconnecter", async () => {
       await signOut();
       toast("Déconnecté — le board reste sur cet appareil");
@@ -354,66 +359,35 @@ function accountItems() {
   ];
 }
 
-/* Connexion sans mot de passe : un lien par e-mail, ou le code à 6 chiffres
-   qu'il contient — pratique quand le mail arrive sur le téléphone. */
-export function openLogin() {
+/* L'historique : une copie du board par jour, sur 30 jours. Revenir à l'une
+   d'elles met d'abord le board actuel de côté. */
+async function openHistory() {
   closeMenus();
-  const panel = el("div", { class: "popup login", role: "dialog", "aria-label": "Connexion" });
-  let email = "";
-
-  const step1 = () => {
-    const input = el("input", { type: "email", placeholder: "ton@email.com", autocomplete: "email", "aria-label": "Adresse e-mail" });
-    const submit = el("button", { type: "submit", class: "primary", text: "Recevoir le lien" });
-    const form = el("form", {
-      onsubmit: async (e) => {
-        e.preventDefault();
-        email = input.value.trim();
-        if (!email) return input.focus();
-        submit.disabled = true;
-        submit.textContent = "Envoi…";
-        try {
-          await sendLoginEmail(email);
-          step2();
-        } catch (err) {
-          submit.disabled = false;
-          submit.textContent = "Recevoir le lien";
-          toast(/rate|limit/i.test(err.message) ? "Trop d'envois, réessaie dans quelques minutes" : "Envoi impossible : " + err.message);
-        }
-      },
-    }, input, submit);
-    panel.replaceChildren(
-      el("div", { class: "login-title", text: "Synchroniser ton board" }),
-      el("p", { class: "login-text", text: "Entre ton adresse : tu reçois un lien de connexion. Aucun mot de passe." }),
-      form);
-    setTimeout(() => input.focus(), 50);
-  };
-
-  const step2 = () => {
-    const code = el("input", { inputmode: "numeric", autocomplete: "one-time-code", placeholder: "123456", maxlength: "10", "aria-label": "Code reçu" });
-    const form = el("form", {
-      onsubmit: async (e) => {
-        e.preventDefault();
-        try {
-          await verifyCode(email, code.value.replace(/\s/g, ""));
-          closeMenus();
-          toast("Connecté");
-        } catch {
-          toast("Code incorrect ou expiré");
-        }
-      },
-    }, code, el("button", { type: "submit", class: "primary", text: "Valider" }));
-    panel.replaceChildren(
-      el("div", { class: "login-title", text: "Regarde tes mails" }),
-      el("p", { class: "login-text", text: `Un lien a été envoyé à ${email}. Ouvre-le sur cet appareil — ou, s'il contient un code, tape-le ici.` }),
-      form);
-    setTimeout(() => code.focus(), 50);
-  };
-
-  step1();
+  const panel = el("div", { class: "popup history", role: "dialog", "aria-label": "Historique" },
+    label("Historique"), el("div", { class: "label", text: "Chargement…" }));
   document.body.append(panel);
   popup = panel;
-  panel.style.left = Math.max(12, innerWidth - 340 - 18) + "px";
+  panel.style.left = Math.max(12, innerWidth - 300 - 18) + "px";
   panel.style.top = "68px";
+
+  let snapshots = [];
+  try { snapshots = await listSnapshots(); } catch { /* réseau */ }
+  if (popup !== panel) return;
+  const when = (iso) => new Date(iso).toLocaleString("fr-FR", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
+  panel.replaceChildren(
+    label("Historique"),
+    ...(snapshots.length
+      ? snapshots.map((s) => action(when(s.created_at), async () => {
+          if (!confirm("Revenir à la version du " + when(s.created_at) + " ?\nLe board actuel est gardé dans l'historique.")) return;
+          try {
+            await restoreSnapshot(s.id);
+            toast("Version restaurée · le board d'avant est dans l'historique");
+          } catch {
+            toast("Restauration impossible pour l'instant");
+          }
+        }))
+      : [el("div", { class: "label", text: "Aucune copie pour l'instant. La première est faite à la prochaine synchronisation, puis une par jour." })]),
+  );
 }
 
 /* ---------- Gestionnaire de catégories ---------- */

@@ -259,6 +259,31 @@ async function snapshot(doc) {
   await sb.from("board_history").delete().eq("user_id", user.id).lt("created_at", limit);
 }
 
+/* ---------- Historique ---------- */
+
+/** Les copies quotidiennes du board, de la plus récente à la plus ancienne. */
+export async function listSnapshots() {
+  if (!user) return [];
+  const { data, error } = await sb.from("board_history")
+    .select("id, created_at").eq("user_id", user.id)
+    .order("created_at", { ascending: false }).limit(KEEP_SNAPSHOTS_DAYS + 5);
+  if (error) throw error;
+  return data || [];
+}
+
+/* Revenir à une copie. Le board actuel est d'abord mis de côté dans
+   l'historique : revenir en arrière ne fait jamais rien perdre. */
+export async function restoreSnapshot(id) {
+  const { data, error } = await sb.from("board_history").select("doc").eq("id", id).maybeSingle();
+  if (error || !data) throw error || new Error("Copie introuvable");
+  await pushNow();
+  const { error: saveError } = await sb.from("board_history").insert({ user_id: user.id, doc: shareable(state.doc) });
+  if (saveError) throw saveError;
+  replaceDoc(structuredClone(data.doc));
+  render();
+  emit("change");
+}
+
 /* ---------- Fichiers ---------- */
 
 function referencedAssets() {

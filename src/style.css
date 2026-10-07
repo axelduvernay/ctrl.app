@@ -658,6 +658,8 @@ button { font: inherit; color: inherit; }
   min-width: 194px;
   padding: 6px;
   border-radius: 16px;
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
   transform-origin: top left;
   animation: pop-in 0.32s var(--spring);
 }
@@ -1300,3 +1302,244 @@ button { font: inherit; color: inherit; }
 }
 .popup.login button.primary:hover { background: color-mix(in srgb, var(--accent) 88%, #000); }
 .popup.login button.primary[disabled] { opacity: 0.6; }
+
+/* ---------- Carte d'arrivée ---------- */
+
+.onboard {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: color-mix(in srgb, var(--bg) 45%, transparent);
+  -webkit-backdrop-filter: blur(0px);
+  backdrop-filter: blur(0px);
+  opacity: 0;
+  transition: opacity 0.45s var(--soft), backdrop-filter 0.6s var(--soft), -webkit-backdrop-filter 0.6s var(--soft);
+}
+.onboard.is-open {
+  opacity: 1;
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  backdrop-filter: blur(18px) saturate(140%);
+}
+
+.ob-card {
+  width: min(360px, 100%);
+  padding: 34px 26px 16px;
+  border-radius: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  box-shadow: inset 0 1px 0 var(--glass-border), 0 0 0 0.5px var(--glass-edge), 0 30px 80px -20px rgba(20, 20, 21, 0.35);
+  transform: translateY(18px) scale(0.95);
+  transition: transform 0.7s var(--spring), opacity 0.35s ease;
+}
+.onboard.is-open .ob-card { transform: none; }
+.onboard.is-closing .ob-card { transform: scale(0.94) translateY(-6px); opacity: 0; }
+
+.ob-mark svg {
+  display: block;
+  width: 54px; height: 54px;
+  border-radius: 14px;
+  box-shadow: 0 10px 24px -8px rgba(20, 20, 21, 0.45);
+}
+
+.ob-note {
+  margin: 0;
+  min-height: 18px;
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  font-size: 13px;
+  color: var(--text-2);
+  text-align: center;
+}
+.ob-edit { border: 0; padding: 0; background: none; color: var(--accent); font: inherit; cursor: pointer; }
+
+/* Le champ e-mail et les cases du code occupent la même place : l'un se
+   replie, les autres se déplient. */
+.ob-stage { position: relative; width: 100%; height: 54px; }
+
+.ob-field {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  border-radius: 17px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+  transition: box-shadow 0.2s ease, opacity 0.3s ease, transform 0.55s var(--spring);
+}
+.ob-field:focus-within { box-shadow: inset 0 0 0 1.5px var(--accent), 0 0 0 5px var(--accent-soft); }
+
+.ob-email {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0 16px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 16px; /* 16 px au moins : iOS ne zoome pas sur le champ */
+  outline: none;
+}
+.ob-email::placeholder { color: var(--text-2); }
+
+.ob-go {
+  flex: none;
+  width: 40px; height: 40px;
+  margin-right: 7px;
+  border: 0;
+  border-radius: 13px;
+  background: var(--accent);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateX(-12px) scale(0.4);
+  pointer-events: none;
+  box-shadow: 0 6px 14px -4px rgba(224, 109, 59, 0.55);
+  transition: transform 0.55s var(--spring), opacity 0.2s ease;
+}
+.ob-card.has-email .ob-go { opacity: 1; transform: none; pointer-events: auto; }
+.ob-go:active { transform: scale(0.9); }
+.ob-card.is-busy .ob-go svg { animation: ob-wait 0.9s ease-in-out infinite; }
+@keyframes ob-wait { 50% { transform: translateX(4px); opacity: 0.5; } }
+
+.ob-code {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  pointer-events: none;
+}
+.ob-cell {
+  flex: 1;
+  max-width: 46px;
+  min-width: 0;
+  height: 54px;
+  padding: 0;
+  border: 0;
+  border-radius: 15px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+  color: var(--text);
+  font: inherit;
+  font-size: 22px;
+  font-weight: 700;
+  text-align: center;
+  outline: none;
+  opacity: 0;
+  transform: translateY(10px) scale(0.7);
+  transition:
+    transform 0.55s var(--spring) calc(var(--i) * 45ms),
+    opacity 0.3s ease calc(var(--i) * 45ms),
+    box-shadow 0.2s ease, color 0.2s ease;
+}
+.ob-cell:focus { box-shadow: inset 0 0 0 1.5px var(--accent), 0 0 0 4px var(--accent-soft); }
+
+.ob-card[data-step="code"] .ob-field { opacity: 0; transform: scale(0.9, 0.7); pointer-events: none; }
+.ob-card[data-step="code"] .ob-code { pointer-events: auto; }
+.ob-card[data-step="code"] .ob-cell { opacity: 1; transform: none; }
+
+/* Code accepté : les cases passent au vert, la carte s'efface. */
+.ob-card.is-done .ob-cell { color: #4F8A72; box-shadow: inset 0 0 0 1.5px #4F8A72, 0 0 0 4px rgba(79, 138, 114, 0.16); }
+.ob-card.is-shaking .ob-stage { animation: ob-shake 0.42s ease; }
+@keyframes ob-shake {
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(7px); }
+  60% { transform: translateX(-5px); }
+  80% { transform: translateX(3px); }
+}
+
+.ob-guest {
+  margin-top: 2px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+.ob-guest:hover { color: var(--text); }
+
+.popup.history { width: 300px; max-height: min(520px, 75vh); overflow-y: auto; }
+.popup.history button span:first-letter { text-transform: uppercase; }
+
+/* ---------- Installer sur le téléphone ---------- */
+
+.install-hint {
+  position: fixed;
+  z-index: 60;
+  left: 12px; right: 12px;
+  top: max(12px, env(safe-area-inset-top));
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px 10px 12px;
+  border-radius: 18px;
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  backdrop-filter: blur(22px) saturate(180%);
+  box-shadow: inset 0 1px 0 var(--glass-border), 0 0 0 0.5px var(--glass-edge), var(--glass-shadow);
+  font-size: 13px;
+  line-height: 1.35;
+  transform: translateY(-140%);
+  transition: transform 0.6s var(--spring);
+}
+.install-hint.is-visible { transform: none; }
+.install-hint img { width: 36px; height: 36px; border-radius: 9px; flex: none; }
+.install-hint span { flex: 1; }
+.install-hint svg { vertical-align: -3px; color: var(--accent); }
+.install-go {
+  flex: none;
+  height: 32px; padding: 0 12px;
+  border: 0; border-radius: 10px;
+  background: var(--accent); color: #fff;
+  font: inherit; font-weight: 600;
+}
+.install-close {
+  flex: none;
+  width: 28px; height: 28px;
+  border: 0; border-radius: 50%;
+  background: var(--hover); color: var(--text-2);
+  display: grid; place-items: center;
+}
+
+/* ---------- Au doigt ----------
+
+   Sur écran tactile, ce qu'on attrape grandit : poignées, case à cocher,
+   boutons. Pas de survol au doigt : ce qui n'apparaissait qu'au survol est
+   visible sur le bloc sélectionné. */
+@media (pointer: coarse) {
+  .block, .zone { -webkit-touch-callout: none; }
+  .block .connect { width: 36px; height: 36px; margin-top: -18px; right: -6px; }
+  .block .connect::after { top: 12px; right: 12px; width: 12px; height: 12px; }
+  .resize { width: 40px; height: 40px; }
+  .block .check { width: 24px; height: 24px; top: 12px; right: 12px; border-radius: 7px; }
+  .block.has-check .body { padding-right: 32px; }
+  .block.is-selected .tag-label { max-width: 120px; opacity: 1; }
+  .block .item { min-height: 40px; }
+  .block .item-btn { width: 34px; height: 34px; }
+  .popup button { padding: 11px 12px; }
+  #toolbar .tb, #toolbar .toggle { width: 42px; height: 42px; min-width: 42px; }
+  .tip { display: none; }
+}
+
+@media (max-width: 767px) {
+  #toolbar { bottom: max(14px, env(safe-area-inset-bottom)); max-width: calc(100vw - 24px); }
+  #status { bottom: calc(max(14px, env(safe-area-inset-bottom)) + 64px); left: 50%; transform: translate(-50%, 8px) scale(0.96); }
+  #status.is-visible { transform: translate(-50%, 0); }
+  .popup.history { left: 12px !important; right: 12px; width: auto; }
+}

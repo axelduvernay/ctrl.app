@@ -52,6 +52,8 @@ du code peut passer inaperçue au rechargement.
 | Sélectionner du texte pendant l'édition | Barre de mise en forme : titre, sous-titre, texte, gras, italique, souligné, barré, surligné, liste |
 | `#` ou `##` puis espace, en début de ligne | Titre ou sous-titre |
 | Flèche à gauche d'un titre | Replier ou déplier le texte qui le suit |
+| Au doigt : appui long | Le menu du clic droit |
+| Au doigt : deux tapotements sur le vide | Nouveau bloc |
 | Barre du bas | Créer au centre : texte, tâche, image, tracklist, zone ; crayon ; aligner. Le « × » la replie en un « + » |
 | `/idea` `/task` … | Catégoriser depuis le clavier |
 | `/rappel` `/echeance` | Ajouter un rappel ou une échéance à n'importe quel bloc |
@@ -102,6 +104,8 @@ src/
   variant.js    Variantes : v2 d'un ensemble de blocs reliés
   format.js     Mise en forme du texte, barre flottante, nettoyage du HTML
   sounds.js     Sons de l'interface (fichiers dans sounds/, voir sounds/README.md)
+  onboarding.js Carte d'arrivée : e-mail puis code, ou invité
+  install.js    Installation sur l'écran d'accueil, création rapide (?new=)
   sync.js       Connexion par e-mail et synchronisation avec Supabase
   merge.js      Fusion à trois de deux versions du board
   config.js     Adresse et clé publique du projet Supabase

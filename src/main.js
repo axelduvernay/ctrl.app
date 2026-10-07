@@ -18,10 +18,12 @@ import { overlaps, el } from "./util.js";
 import { save } from "./store.js";
 import { play, initSounds } from "./sounds.js";
 import { initSync } from "./sync.js";
+import { maybeOnboard } from "./onboarding.js";
+import { initInstall } from "./install.js";
 
 /* Affichée dans le menu : permet de vérifier qu'une mise à jour est arrivée.
    À changer à chaque livraison. */
-export const VERSION = "07.10 · synchro 2"
+export const VERSION = "07.10 · mobile"
 
 async function boot() {
   applyTheme();
@@ -55,7 +57,9 @@ async function boot() {
   render();
   initReminders();
   initSounds();
-  initSync();
+  // Première visite : la carte d'arrivée, une fois qu'on sait si l'on est connecté.
+  initSync().then(maybeOnboard);
+  initInstall();
   // Le petit point sur le bouton du menu dit où en est la synchronisation.
   on("sync", (s) => { document.getElementById("menu-btn").dataset.sync = s; });
 

@@ -74,6 +74,8 @@ function onWheel(e) {
 function onPointerDown(e) {
   if (e.button === 2) return; // clic droit : traité par contextmenu
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (e.pointerType === "touch" && pointers.size === 1) armLongPress(e);
+  else cancelLongPress();
 
   if (pointers.size === 2) return startPinch();
   if (pointers.size > 2) return;
@@ -249,7 +251,10 @@ function onPointerMove(e) {
   if (!gesture) return;
   const world = toWorld(e.clientX, e.clientY);
 
+  if (longPress && Math.hypot(e.clientX - longPress.x, e.clientY - longPress.y) > 8) cancelLongPress();
+
   if (gesture.mode === "pan") {
+    gesture.dist = (gesture.dist || 0) + Math.hypot(e.clientX - gesture.sx, e.clientY - gesture.sy);
     panBy(e.clientX - gesture.sx, e.clientY - gesture.sy);
     gesture.sx = e.clientX;
     gesture.sy = e.clientY;
@@ -334,6 +339,7 @@ function onPointerMove(e) {
 
 function onPointerUp(e) {
   pointers.delete(e.pointerId);
+  cancelLongPress();
   if (pinch && pointers.size < 2) {
     pinch = null;
     return;
@@ -344,6 +350,9 @@ function onPointerUp(e) {
   canvas.releasePointerCapture?.(e.pointerId);
   canvas.classList.remove("is-panning");
   marquee.hidden = true;
+
+  // Au doigt, deux tapotements rapides sur le vide créent un bloc.
+  if (g.mode === "pan" && e.pointerType === "touch" && (g.dist || 0) < 8) doubleTap(e);
 
   if (g.mode === "draw") {
     ink.replaceChildren();
@@ -790,7 +799,52 @@ function finishConnect(from, e) {
 
 /* ---------- Pincement à deux doigts ---------- */
 
+/* ---------- Gestes au doigt ----------
+
+   Pas de clic droit ni de double-clic fiable au doigt : un appui long ouvre
+   le menu contextuel (avec un petit retour haptique là où le téléphone le
+   permet), deux tapotements rapides sur le vide créent un bloc. */
+
+let longPress = null;
+let lastTap = null;
+let lastTouchCreate = 0;
+
+function armLongPress(e) {
+  cancelLongPress();
+  const at = { x: e.clientX, y: e.clientY };
+  longPress = {
+    ...at,
+    timer: setTimeout(() => {
+      longPress = null;
+      // Le glisser commencé s'arrête net : on ouvre le menu à la place.
+      if (gesture && ["drag", "resize", "draw-zone", "reorder"].includes(gesture.mode)) commit();
+      gesture = null;
+      navigator.vibrate?.(8);
+      onContextMenu({ preventDefault() {}, clientX: at.x, clientY: at.y, target: document.elementFromPoint(at.x, at.y) });
+    }, 480),
+  };
+}
+
+function cancelLongPress() {
+  if (!longPress) return;
+  clearTimeout(longPress.timer);
+  longPress = null;
+}
+
+function doubleTap(e) {
+  const now = Date.now();
+  if (lastTap && now - lastTap.t < 320 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 30) {
+    lastTap = null;
+    lastTouchCreate = now;
+    const world = toWorld(e.clientX, e.clientY);
+    createBlockAt(world.x, world.y);
+  } else {
+    lastTap = { t: now, x: e.clientX, y: e.clientY };
+  }
+}
+
 function startPinch() {
+  cancelLongPress();
   // Un geste à un doigt était peut-être commencé : on l'abandonne proprement.
   if (gesture) {
     if (["drag", "resize", "draw-zone", "reorder"].includes(gesture.mode)) commit();
@@ -890,6 +944,8 @@ function editItem(id, at) {
 }
 
 function onDoubleClick(e) {
+  // Le navigateur peut doubler notre double-tapotement d'un double-clic.
+  if (Date.now() - lastTouchCreate < 600) return;
   const node = hitTarget(e).closest("[data-id]");
 
   // Double-clic dans le fond d'une zone : un bloc naît dedans, comme sur le board.
