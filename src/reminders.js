@@ -4,20 +4,22 @@
    régulièrement les rappels échus et on les fait sonner : notification du
    système si elle est autorisée, message dans l'app dans tous les cas.
 
-   Limite assumée : application fermée, rien ne sonne. Faire sonner un appareil
-   éteint exige un serveur qui envoie la notification ; il arrivera avec la
-   synchronisation. */
+   Application fermée, c'est le serveur qui envoie la notification (voir
+   push.js). Toucher la notification ouvre le board et montre le bloc. */
 
-import { state, save, emit } from "./store.js";
+import { state, save, emit, on } from "./store.js";
 import { render } from "./render.js";
 import { centerOn } from "./viewport.js";
 import { parseLocal } from "./util.js";
 import { toast } from "./main.js";
 import { play } from "./sounds.js";
+import { syncUser, boardsList, switchBoard } from "./sync.js";
+import { pushState, enablePush } from "./push.js";
 
 const TICK = 15000;
 
 export function initReminders() {
+  openFromNotification();
   tick();
   setInterval(tick, TICK);
   addEventListener("focus", tick);
@@ -80,8 +82,51 @@ function reveal(id) {
   centerOn(block);
 }
 
-/** À appeler lors d'un geste de l'utilisateur : les navigateurs l'exigent. */
+/* Une notification touchée : ouvrir le bon board et montrer le bloc, dès
+   qu'il est là (au démarrage, la synchro peut prendre un instant). */
+let wanted = null;
+
+function openFromNotification() {
+  const params = new URLSearchParams(location.search);
+  if (params.has("rappel")) {
+    wanted = { block: params.get("rappel"), board: params.get("board") };
+    params.delete("rappel");
+    params.delete("board");
+    history.replaceState(null, "", location.pathname + (params.toString() ? "?" + params : ""));
+  }
+  navigator.serviceWorker?.addEventListener("message", (e) => {
+    if (e.data?.type !== "reveal" || !e.data.block) return;
+    wanted = { block: e.data.block, board: e.data.board };
+    follow();
+  });
+  on("board", follow);
+  on("boards", follow);
+  on("change", follow);
+  follow();
+}
+
+function follow() {
+  if (!wanted) return;
+  const { block, board } = wanted;
+  if (board && state.board.id !== board) {
+    if (syncUser() && boardsList().some((b) => b.id === board)) {
+      wanted = { block, board: null };
+      switchBoard(board).then(follow);
+    }
+    return;
+  }
+  if (!state.doc.blocks[block]) return;
+  wanted = null;
+  setTimeout(() => reveal(block), 0);
+}
+
+/** À appeler lors d'un geste de l'utilisateur : les navigateurs l'exigent.
+    Connecté, l'appareil s'abonne aussi aux notifications push. */
 export function askNotificationPermission() {
+  if (syncUser() && pushState() === "off") {
+    enablePush().catch(() => {});
+    return;
+  }
   if ("Notification" in window && Notification.permission === "default") {
     Notification.requestPermission().catch(() => {});
   }

@@ -102,6 +102,7 @@ src/
   draw.js       Lissage et vectorisation du tracé à main levée
   props.js      Panneau échéance et rappel d'un bloc
   reminders.js  Déclenchement des rappels et notifications
+  push.js       Abonnement de l'appareil aux notifications push
   archive.js    Zone « Fait » des tâches terminées
   lists.js      Blocs tracklist et dossier, lecteur audio
   variant.js    Variantes : v2 d'un ensemble de blocs reliés
@@ -194,10 +195,11 @@ n'accepte que cette zone, le reste du board ne quitte jamais le cloud. Un
 invités sans compte voient les images grâce à une copie publique, rangée
 sous un chemin impossible à deviner.
 
-**Les rappels sonnent tant que l'app est ouverte**, même en arrière-plan :
-notification du système si elle est autorisée, message dans l'app sinon.
-Application fermée, rien ne sonne — il faudra pour ça un serveur qui envoie les
-notifications, prévu avec la synchronisation.
+**Les rappels sonnent, même app fermée.** App ouverte : notification du
+système et message dans l'app. App fermée : notification push, envoyée chaque
+minute par le serveur (`supabase/push.sql` et `supabase/functions/push`) aux
+appareils abonnés (menu ⋮ → « Activer les notifications » ; sur iPhone, depuis
+l'app ajoutée à l'écran d'accueil). Mise en place : `ETAPES-NOTIFS.txt`.
 
 **Les zones sont des conteneurs.** Chaque bloc porte l'identifiant de sa
 zone (`block.zone`) : c'est l'appartenance qui compte, pas la position. Un bloc

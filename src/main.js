@@ -12,6 +12,7 @@ import { openMainMenu, closeMenus, applyTheme, duplicate } from "./menus.js";
 import { startEditing, stopEditing } from "./editor.js";
 import { align } from "./arrange.js";
 import { initReminders } from "./reminders.js";
+import { initPush } from "./push.js";
 import { categoryList } from "./store.js";
 import { seedWelcome } from "./welcome.js";
 import { overlaps, el } from "./util.js";
@@ -24,7 +25,7 @@ import { initInstall } from "./install.js";
 
 /* Affichée dans le menu : permet de vérifier qu'une mise à jour est arrivée.
    À changer à chaque livraison. */
-export const VERSION = "09.10 · boards"
+export const VERSION = "09.10 · notifs"
 
 async function boot() {
   applyTheme();
@@ -57,6 +58,7 @@ async function boot() {
   wireKeyboard();
   render();
   initReminders();
+  initPush();
   initSounds();
   // Première visite : la carte d'arrivée, une fois qu'on sait si l'on est connecté.
   initShare();

@@ -14,6 +14,7 @@ import { toast, VERSION } from "./main.js";
 import { play, soundsEnabled, setSoundsEnabled } from "./sounds.js";
 import { syncAvailable, syncUser, syncStatus, signOut, listSnapshots, restoreSnapshot, createBoard, deviceCopy, restoreDeviceCopy } from "./sync.js";
 import { showLogin } from "./onboarding.js";
+import { pushState, enablePush, disablePush, testPush } from "./push.js";
 import { openShare, canShare } from "./share.js";
 import { createVariant } from "./variant.js";
 import { toList, LIST_TYPES } from "./lists.js";
@@ -376,9 +377,47 @@ function accountItems() {
         el("div", { class: "account-status", text: STATUS_TEXT[syncStatus()] || "" }))),
     action("Nouveau board", () => createBoard()),
     !state.board.zone && ["owner", "editor"].includes(state.board.role) ? action("Historique…", () => openHistory()) : null,
+    ...pushItems(),
     action("Se déconnecter", async () => {
       await signOut();
       toast("Déconnecté — le board reste sur cet appareil");
+    }),
+  ];
+}
+
+/* Les notifications push de cet appareil : les rappels, même app fermée. */
+function pushItems() {
+  const s = pushState();
+  if (s === "unsupported") return [];
+  if (s === "install") {
+    return [action("Notifications…", () =>
+      toast("Sur iPhone : ajoute d'abord ctrl à l'écran d'accueil (Partager → Sur l'écran d'accueil), puis ouvre-le depuis son icône"),
+    { hint: "écran d'accueil" })];
+  }
+  if (s === "denied") {
+    return [action("Notifications bloquées", () =>
+      toast("Autorise les notifications de ctrl dans les Réglages de l'appareil"))];
+  }
+  if (s === "off") {
+    return [action("Activer les notifications", async () => {
+      try {
+        await enablePush();
+        await testPush().catch(() => {});
+        toast("Notifications activées · une notification de test arrive");
+      } catch (err) {
+        toast(err.message === "denied" ? "Notifications refusées"
+          : "Notifications impossibles pour l'instant : " + err.message);
+      }
+    })];
+  }
+  return [
+    action("Notifications", async () => {
+      await disablePush();
+      toast("Notifications coupées sur cet appareil");
+    }, { hint: "✓" }),
+    action("Envoyer une notification de test", async () => {
+      try { await testPush(); toast("Envoyée"); }
+      catch { toast("Envoi impossible pour l'instant"); }
     }),
   ];
 }

@@ -2,9 +2,11 @@
 
    Stratégie « réseau d'abord, cache en secours » : en développement on voit
    toujours la dernière version du code, et sans réseau l'app démarre quand même.
-   Les données, elles, ne passent jamais par ici — elles vivent dans IndexedDB. */
+   Les données, elles, ne passent jamais par ici — elles vivent dans IndexedDB.
 
-const CACHE = "ctrl-app-v14";
+   Il reçoit aussi les notifications push (les rappels, app fermée). */
+
+const CACHE = "ctrl-app-v15";
 
 const SHELL = [
   "./",
@@ -39,6 +41,7 @@ const SHELL = [
   "./src/install.js",
   "./src/table.js",
   "./src/share.js",
+  "./src/push.js",
   "./icons/icon-180.png",
   "./icons/icon-192.png",
 ];
@@ -82,4 +85,38 @@ self.addEventListener("fetch", (event) => {
         return new Response("Hors-ligne", { status: 503, statusText: "Hors-ligne" });
       })
   );
+});
+
+/* ---------- Notifications push ---------- */
+
+self.addEventListener("push", (event) => {
+  let data = {};
+  try { data = event.data ? event.data.json() : {}; } catch { data = { body: event.data && event.data.text() }; }
+  event.waitUntil(self.registration.showNotification(data.title || "ctrl.app", {
+    body: data.body || "",
+    // Même étiquette que la notification de l'app ouverte : jamais deux fois.
+    tag: data.tag || undefined,
+    icon: "icons/icon-192.png",
+    badge: "icons/icon-192.png",
+    data: { board: data.board || null, block: data.block || null },
+  }));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const { board, block } = event.notification.data || {};
+  const url = new URL("./", self.registration.scope);
+  if (block) {
+    url.searchParams.set("rappel", block);
+    if (board) url.searchParams.set("board", board);
+  }
+  event.waitUntil((async () => {
+    const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    if (windows.length) {
+      const w = windows[0];
+      if (block) w.postMessage({ type: "reveal", board, block });
+      return w.focus();
+    }
+    return self.clients.openWindow(url.href);
+  })());
 });

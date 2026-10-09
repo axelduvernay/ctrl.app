@@ -51,6 +51,8 @@ let startedFor = null;      // le compte pour lequel la synchro a déjà démarr
 export const syncUser = () => user;
 export const syncStatus = () => status;
 export const syncAvailable = () => !!sb;
+/** Le client Supabase (notifications push). */
+export const cloudClient = () => sb;
 export const boardsList = () => boards;
 
 const cloud = () => !!user && state.board.id !== "local" && !state.board.guest;

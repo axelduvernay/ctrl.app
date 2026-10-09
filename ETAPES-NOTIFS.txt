@@ -1,0 +1,73 @@
+CTRL.APP — ACTIVER LES NOTIFICATIONS PUSH (rappels, même app fermée)
+Deux choses à faire dans Supabase (5 minutes), puis une sur l'iPhone.
+Aucune clé ni aucun secret à copier : tout se crée tout seul.
+
+
+==============================================================
+ÉTAPE 1 — LA BASE (1 minute)
+==============================================================
+
+1. Supabase → ton projet → « SQL Editor » → « New query ».
+2. Ouvre le fichier supabase/push.sql (sur GitHub :
+   github.com/axelduvernay/ctrl.app, branche main-486yxj, dossier supabase),
+   copie TOUT son contenu, colle-le.
+3. « Run ». Tu dois voir une ligne de résultat (le numéro de la tâche
+   planifiée) ou « Success ».
+
+Si une erreur parle de « pg_cron » ou « pg_net » : Database → Extensions,
+active « pg_cron » puis « pg_net », et relance le script.
+
+Ce que ça fait : chaque minute, la base regarde les rappels arrivés à
+l'heure et demande à la fonction « push » (étape 2) de les envoyer.
+
+
+==============================================================
+ÉTAPE 2 — LA FONCTION D'ENVOI (3 minutes)
+==============================================================
+
+1. Supabase → « Edge Functions » → « Deploy a new function » → « Via Editor ».
+2. Nom de la fonction : push   (exactement, en minuscules)
+3. Efface le code d'exemple. Ouvre supabase/functions/push/index.ts sur
+   GitHub, copie TOUT son contenu, colle-le.
+4. « Deploy function ».
+5. Une fois déployée : onglet « Details » (ou « Settings ») de la fonction →
+   désactive « Verify JWT » / « Enforce JWT verification » → « Save ».
+   (La base l'appelle sans clé. Ce n'est pas un risque : la fonction ne fait
+   qu'envoyer les rappels déjà dus, jamais deux fois.)
+
+
+==============================================================
+ÉTAPE 3 — SUR L'IPHONE (iOS 16.4 ou plus récent)
+==============================================================
+
+1. Safari → https://axelduvernay.github.io/ctrl.app/
+2. Bouton Partager (carré avec une flèche) → « Sur l'écran d'accueil » →
+   « Ajouter ».
+3. Ouvre ctrl depuis sa nouvelle icône (pas depuis Safari).
+4. Connecte-toi (menu ⋮ → Se connecter, code reçu par e-mail) : l'app de
+   l'écran d'accueil ne partage pas la connexion de Safari.
+5. Menu ⋮ → « Activer les notifications » → « Autoriser ».
+   Une notification de test arrive dans les secondes qui suivent.
+
+Le menu ⋮ affiche en bas « v09.10 · notifs ». Sinon : ferme l'app (glisser
+vers le haut) et rouvre-la.
+
+Sur le Mac aussi : menu ⋮ → « Activer les notifications » dans Safari ou
+Chrome.
+
+
+==============================================================
+À SAVOIR
+==============================================================
+
+- Un rappel sonne sur tous les appareils où tu as activé les notifications,
+  à l'heure de l'appareil (fuseau horaire compris).
+- Sur un board partagé, le rappel sonne pour le propriétaire et pour ceux
+  qui peuvent modifier tout le board.
+- Toucher la notification ouvre le bon board et montre le bloc.
+- Couper sur un appareil : menu ⋮ → « Notifications » (la coche s'enlève).
+- Rien n'arrive ? Réglages iPhone → Notifications → ctrl : vérifie que tout
+  est autorisé, et que le mode Concentration ne les masque pas. Puis menu ⋮
+  → « Envoyer une notification de test ».
+- Le rappel part du cloud : il doit y être arrivé avant l'heure (point vert
+  « Synchronisé »). Posé hors ligne, il ne sonnera que dans l'app.
