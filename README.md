@@ -53,8 +53,12 @@ du code peut passer inaperçue au rechargement.
 | Sélectionner du texte pendant l'édition | Barre de mise en forme : titre, sous-titre, texte, gras, italique, souligné, barré, surligné, liste |
 | `#` ou `##` puis espace, en début de ligne | Titre ou sous-titre |
 | Flèche à gauche d'un titre | Replier ou déplier le texte qui le suit |
+| Au doigt : glisser (vide, bloc non sélectionné, fond de zone) | Déplacer la vue, avec élan au lâcher |
+| Au doigt : pincer | Zoomer autour des doigts ; lever un doigt continue le déplacement |
+| Au doigt : tapoter un bloc | Le sélectionner ; glisser un bloc sélectionné le déplace, le retapoter l'édite |
+| Au doigt : glisser le nom d'une zone sélectionnée | Déplacer la zone |
 | Au doigt : appui long | Le menu du clic droit |
-| Au doigt : deux tapotements sur le vide | Nouveau bloc |
+| Au doigt : deux tapotements sur le vide ou dans une zone | Nouveau bloc |
 | Barre du bas | Créer au centre : texte, tâche, image, tracklist, zone ; crayon ; aligner. Le « × » la replie en un « + » |
 | `/idee` `/tache` … | Catégoriser depuis le clavier |
 | `/rappel` `/echeance` | Ajouter un rappel ou une échéance à n'importe quel bloc |
@@ -103,6 +107,7 @@ src/
   props.js      Panneau échéance et rappel d'un bloc
   reminders.js  Déclenchement des rappels et notifications
   push.js       Abonnement de l'appareil aux notifications push
+  mobile.js     Téléphone : page immobile (pas de zoom de Safari), recalage après le clavier
   archive.js    Zone « Fait » des tâches terminées
   lists.js      Blocs tracklist et dossier, lecteur audio
   variant.js    Variantes : v2 d'un ensemble de blocs reliés

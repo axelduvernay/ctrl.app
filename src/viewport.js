@@ -13,27 +13,73 @@ const MIN_SCALE = 0.1;
 const MAX_SCALE = 4;
 const GRID = 32;
 
-let world, canvas, zoomLabel, settle;
+let world, grid, zoomLabel, settle, saving;
+let gridSize = 0;
+const GRID_MARGIN = 4 * GRID; // le calque de la grille déborde de l'écran d'au moins un pas
 
 export function initViewport() {
   world = document.getElementById("world");
-  canvas = document.getElementById("canvas");
   zoomLabel = document.getElementById("zoom-level");
+  /* La grille de points vit dans son propre calque, déplacé par une simple
+     transformation : se déplacer ne redessine rien, ce qui compte beaucoup
+     sur téléphone. (Une variable CSS sur #canvas obligeait le navigateur à
+     recalculer le style de tous les blocs à chaque image.) */
+  grid = document.createElement("div");
+  grid.id = "grid";
+  grid.style.inset = `-${GRID_MARGIN}px`;
+  document.getElementById("canvas").prepend(grid);
+  addEventListener("pagehide", saveView);
   apply();
 }
 
+const mod = (a, n) => ((a % n) + n) % n;
+
 export function apply() {
   const { x, y, scale } = state.view;
-  world.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
+  world.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${scale})`;
   world.classList.add("is-moving");
   clearTimeout(settle);
   settle = setTimeout(() => world.classList.remove("is-moving"), 160);
-  canvas.style.setProperty("--grid-size", `${GRID * scale}px`);
-  canvas.style.setProperty("--grid-x", `${x}px`);
-  canvas.style.setProperty("--grid-y", `${y}px`);
+  const g = GRID * scale;
+  if (g !== gridSize) {
+    gridSize = g;
+    grid.style.backgroundSize = `${g}px ${g}px`;
+  }
+  grid.style.transform = `translate3d(${mod(x + GRID_MARGIN, g)}px, ${mod(y + GRID_MARGIN, g)}px, 0)`;
   if (zoomLabel) zoomLabel.textContent = `${Math.round(scale * 100)} %`;
-  saveView();
+  // La vue s'enregistre au repos, pas à chaque image.
+  clearTimeout(saving);
+  saving = setTimeout(saveView, 300);
   emit("view");
+}
+
+/* ---------- Élan ----------
+
+   Au doigt, un glissé lâché en mouvement continue sur sa lancée et ralentit
+   doucement, comme une liste sur iPhone. Le moindre contact l'arrête. */
+
+let fling = 0;
+
+export function flingBy(vx, vy) {
+  stopFling();
+  // vx, vy : en pixels par milliseconde.
+  if (Math.hypot(vx, vy) < 0.25) return;
+  let last = performance.now();
+  const step = (now) => {
+    const dt = Math.min(32, now - last);
+    last = now;
+    const decay = Math.pow(0.995, dt); // ≈ 0,92 par image à 60 Hz
+    vx *= decay;
+    vy *= decay;
+    panBy(vx * dt, vy * dt);
+    fling = Math.hypot(vx, vy) > 0.02 ? requestAnimationFrame(step) : 0;
+  };
+  fling = requestAnimationFrame(step);
+}
+
+export function stopFling() {
+  cancelAnimationFrame(fling);
+  fling = 0;
 }
 
 /** Coordonnées écran (clientX/clientY) → coordonnées monde. */

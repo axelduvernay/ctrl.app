@@ -4,6 +4,7 @@ import { state, load, on, emit, mutate, removeItems, undo, redo } from "./store.
 import { initViewport, fitAll, zoomAt, apply } from "./viewport.js";
 import { initRender, render, nodeFor } from "./render.js";
 import { initInteract, createBlockAtCenter, createZoneAtCenter } from "./interact.js";
+import { initMobile } from "./mobile.js";
 import { pickImages } from "./io.js";
 import { createListAtCenter } from "./lists.js";
 import { initIO } from "./io.js";
@@ -25,7 +26,7 @@ import { initInstall } from "./install.js";
 
 /* Affichée dans le menu : permet de vérifier qu'une mise à jour est arrivée.
    À changer à chaque livraison. */
-export const VERSION = "09.10 · notifs"
+export const VERSION = "22.10 · mobile"
 
 async function boot() {
   applyTheme();
@@ -34,6 +35,7 @@ async function boot() {
   initViewport();
   initRender();
   initInteract();
+  initMobile();
   initIO();
   initSearch();
 

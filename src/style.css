@@ -127,6 +127,9 @@ html, body {
   overscroll-behavior: none;
 }
 
+/* Au doigt, un bouton répond tout de suite (pas d'attente du double-tap). */
+button, a, input, [role="button"] { touch-action: manipulation; }
+
 body {
   background: var(--bg);
   color: var(--text);
@@ -150,9 +153,16 @@ button { font: inherit; color: inherit; }
   cursor: default;
   touch-action: none;
   background-color: var(--bg);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* La grille de points : un calque à part, déplacé par transformation. */
+#grid {
+  position: absolute;
+  pointer-events: none;
   background-image: radial-gradient(circle, var(--grid) 1px, transparent 1px);
-  background-size: var(--grid-size, 32px) var(--grid-size, 32px);
-  background-position: var(--grid-x, 0) var(--grid-y, 0);
+  background-size: 32px 32px;
+  will-change: transform;
 }
 
 #canvas.is-panning { cursor: grabbing; }
@@ -1533,12 +1543,16 @@ button { font: inherit; color: inherit; }
   .block .item { min-height: 40px; }
   .block .item-btn { width: 34px; height: 34px; }
   .popup button { padding: 11px 12px; }
-  #toolbar .tb, #toolbar .toggle { width: 42px; height: 42px; min-width: 42px; }
+  #toolbar button.tb, #toolbar .toggle { width: 42px; height: 42px; min-width: 42px; }
+  /* Pas de survol au doigt : un bouton touché ne reste pas grisé. */
+  #toolbar button.tb:not(.is-active):hover, #topright button:hover { background: transparent; }
   .tip { display: none; }
 }
 
 @media (max-width: 767px) {
   #toolbar { bottom: max(14px, env(safe-area-inset-bottom)); max-width: calc(100vw - 24px); }
+  /* Toute la barre tient sur un iPhone, « + » compris. */
+  #toolbar button.tb, #toolbar .toggle { width: 40px; height: 40px; min-width: 40px; }
   #status { bottom: calc(max(14px, env(safe-area-inset-bottom)) + 64px); left: 50%; transform: translate(-50%, 8px) scale(0.96); }
   #status.is-visible { transform: translate(-50%, 0); }
   .popup.history { left: 12px !important; right: 12px; width: auto; }

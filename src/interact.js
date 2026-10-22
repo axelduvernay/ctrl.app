@@ -7,7 +7,7 @@
 
 import { state, begin, commit, mutate, addBlock, addZone, addLink, linkBetween, raise, item, emit,
          childrenOf, childZones, adopt, zoneFor, zoneOf, parentOf, descendants, isContainer } from "./store.js";
-import { toWorld, panBy, zoomAt, smoothZoom, viewCenter } from "./viewport.js";
+import { toWorld, panBy, zoomAt, smoothZoom, viewCenter, flingBy, stopFling } from "./viewport.js";
 import { render, nodeFor, curveTo } from "./render.js";
 import { moveItem, indexAt, renameItem } from "./lists.js";
 import { toggleFold } from "./format.js";
@@ -56,6 +56,12 @@ export function initInteract() {
   addEventListener("blur", () => { spaceHeld = false; canvas.classList.remove("is-panning"); });
 }
 
+/* La capture peut échouer (pointeur déjà levé, Safari) : le geste continue
+   quand même, il ne doit jamais s'interrompre pour ça. */
+function capture(id) {
+  try { canvas.setPointerCapture(id); } catch {}
+}
+
 const isTyping = (node) => node && (node.isContentEditable || node.tagName === "INPUT" || node.tagName === "TEXTAREA");
 
 /* ---------- Molette : déplacement et zoom ---------- */
@@ -74,6 +80,11 @@ function onWheel(e) {
 
 function onPointerDown(e) {
   if (e.button === 2) return; // clic droit : traité par contextmenu
+  stopFling();
+  // Premier doigt posé : aucun autre ne peut être encore à l'écran. Un
+  // lâcher perdu (Safari en perd parfois) laissait un doigt fantôme, et le
+  // geste suivant se prenait pour un pincement : plus moyen de se déplacer.
+  if (e.isPrimary) { pointers.clear(); pinch = null; }
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if (e.pointerType === "touch" && pointers.size === 1) armLongPress(e);
   else cancelLongPress();
@@ -94,8 +105,8 @@ function onPointerDown(e) {
       return;
     }
     if (target.closest("[data-action]")) return;
-    canvas.setPointerCapture(e.pointerId);
-    gesture = { mode: "pan", sx: e.clientX, sy: e.clientY };
+    capture(e.pointerId);
+    gesture = panGesture(e);
     canvas.classList.add("is-panning");
     return;
   }
@@ -122,12 +133,12 @@ function onPointerDown(e) {
   // Nom de zone en cours d'édition : laisser le curseur texte travailler.
   if (isTyping(target)) return;
 
-  canvas.setPointerCapture(e.pointerId);
+  capture(e.pointerId);
   const world = toWorld(e.clientX, e.clientY);
 
   // Déplacement de la caméra : espace enfoncé, bouton du milieu, ou deux doigts.
   if (spaceHeld || e.button === 1) {
-    gesture = { mode: "pan", sx: e.clientX, sy: e.clientY };
+    gesture = panGesture(e);
     canvas.classList.add("is-panning");
     return;
   }
@@ -193,6 +204,20 @@ function onPointerDown(e) {
 
   const node = target.closest("[data-id]");
 
+  /* Au doigt, un bloc ou une zone qui n'est pas sélectionné ne s'attrape pas :
+     le glissé déplace la vue, et un simple tapotement le sélectionne. Sur un
+     petit écran couvert de blocs, c'est ce qui permet de se déplacer. Une
+     fois sélectionné, un bloc se déplace au doigt ; une zone, par son nom
+     seulement (son fond, grand, sert toujours à se déplacer). */
+  if (node && e.pointerType === "touch") {
+    const id = node.dataset.id;
+    const zoneBody = !!state.doc.zones[id] && !target.closest("[data-zone-name]");
+    if (!state.selection.has(id) || zoneBody) {
+      gesture = { ...panGesture(e), tapSelect: id };
+      return;
+    }
+  }
+
   if (node) {
     const id = node.dataset.id;
     const additive = e.shiftKey || e.metaKey || e.ctrlKey;
@@ -247,11 +272,27 @@ function onPointerDown(e) {
   // Au doigt, un glissé sur le vide déplace la vue : le lasso à un doigt sur
   // un petit écran est plus souvent une fausse manipulation qu'une intention.
   if (e.pointerType === "touch") {
-    gesture = { mode: "pan", sx: e.clientX, sy: e.clientY };
+    gesture = panGesture(e);
     return;
   }
 
   gesture = { mode: "marquee", sx: e.clientX, sy: e.clientY, ox: world.x, oy: world.y, base: new Set(state.selection) };
+}
+
+/** Un déplacement de la vue, avec de quoi mesurer sa vitesse au lâcher. */
+function panGesture(e) {
+  return { mode: "pan", sx: e.clientX, sy: e.clientY, dist: 0, touch: e.pointerType === "touch",
+           samples: [{ x: e.clientX, y: e.clientY, t: e.timeStamp }] };
+}
+
+/** La vitesse des derniers instants du glissé, en px/ms. Un doigt resté
+    immobile avant de se lever ne lance rien. */
+function panVelocity(g, e) {
+  const recent = g.samples.filter((p) => e.timeStamp - p.t < 120);
+  if (recent.length < 2 || e.timeStamp - recent[recent.length - 1].t > 90) return { vx: 0, vy: 0 };
+  const a = recent[0], b = recent[recent.length - 1];
+  const dt = Math.max(8, b.t - a.t);
+  return { vx: (b.x - a.x) / dt, vy: (b.y - a.y) / dt };
 }
 
 /** Ce qui suit le glisser : la sélection, plus le contenu des zones sélectionnées. */
@@ -283,9 +324,15 @@ function onPointerMove(e) {
 
   if (gesture.mode === "pan") {
     gesture.dist = (gesture.dist || 0) + Math.hypot(e.clientX - gesture.sx, e.clientY - gesture.sy);
+    // Un tapotement tremble un peu : la vue ne bouge qu'au-delà de quelques pixels.
+    if (gesture.touch && !gesture.moving && gesture.dist < 6) return;
+    if (!gesture.moving) canvas.classList.add("is-panning");
+    gesture.moving = true;
     panBy(e.clientX - gesture.sx, e.clientY - gesture.sy);
     gesture.sx = e.clientX;
     gesture.sy = e.clientY;
+    gesture.samples.push({ x: e.clientX, y: e.clientY, t: e.timeStamp });
+    if (gesture.samples.length > 12) gesture.samples.shift();
     return;
   }
 
@@ -375,17 +422,30 @@ function onPointerUp(e) {
   cancelLongPress();
   if (pinch && pointers.size < 2) {
     pinch = null;
+    // Un doigt reste posé : il continue de déplacer la vue, sans à-coup.
+    const [rest] = pointers.values();
+    if (rest) gesture = { ...panGesture({ clientX: rest.x, clientY: rest.y, pointerType: "touch", timeStamp: e.timeStamp }), afterPinch: true, moving: true };
     return;
   }
+  if (pinch) return;
   if (!gesture) return;
   const g = gesture;
   gesture = null;
-  canvas.releasePointerCapture?.(e.pointerId);
+  try { canvas.releasePointerCapture(e.pointerId); } catch {}
   canvas.classList.remove("is-panning");
   marquee.hidden = true;
 
-  // Au doigt, deux tapotements rapides sur le vide créent un bloc.
-  if (g.mode === "pan" && e.pointerType === "touch" && (g.dist || 0) < 8) doubleTap(e);
+  if (g.mode === "pan" && g.touch) {
+    if (g.moving) {
+      const { vx, vy } = panVelocity(g, e);
+      flingBy(vx, vy);
+    } else if (g.tapSelect && !g.afterPinch) {
+      tapSelect(g.tapSelect, e);
+    } else if (!g.afterPinch) {
+      // Au doigt, deux tapotements rapides sur le vide créent un bloc.
+      doubleTap(e);
+    }
+  }
 
   if (g.mode === "draw") {
     ink.replaceChildren();
@@ -435,6 +495,20 @@ function onPointerUp(e) {
     if (node) startEditing(g.id, node.querySelector(".zone-name"));
   }
   if (spaceHeld) canvas.classList.add("is-panning");
+}
+
+/* Un tapotement sur un bloc ou une zone : il devient la sélection. Dans le
+   fond d'une zone, deux tapotements créent un bloc dedans, comme sur le vide. */
+function tapSelect(id, e) {
+  if (!item(id)) return;
+  if (state.doc.zones[id]) { if (doubleTap(e)) return; }
+  else lastTap = null;
+  if (state.selection.size === 1 && state.selection.has(id)) return;
+  state.selection.clear();
+  state.selection.add(id);
+  if (state.doc.blocks[id]) raise(id);
+  emit("selection");
+  render();
 }
 
 /* ---------- Tracé ---------- */
@@ -874,9 +948,10 @@ function doubleTap(e) {
     lastTouchCreate = now;
     const world = toWorld(e.clientX, e.clientY);
     createBlockAt(world.x, world.y);
-  } else {
-    lastTap = { t: now, x: e.clientX, y: e.clientY };
+    return true;
   }
+  lastTap = { t: now, x: e.clientX, y: e.clientY };
+  return false;
 }
 
 function startPinch() {

@@ -6,7 +6,7 @@
 
    Il reçoit aussi les notifications push (les rappels, app fermée). */
 
-const CACHE = "ctrl-app-v15";
+const CACHE = "ctrl-app-v16";
 
 const SHELL = [
   "./",
@@ -42,6 +42,7 @@ const SHELL = [
   "./src/table.js",
   "./src/share.js",
   "./src/push.js",
+  "./src/mobile.js",
   "./icons/icon-180.png",
   "./icons/icon-192.png",
 ];
