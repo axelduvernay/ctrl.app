@@ -110,7 +110,8 @@ export function showLogin({ firstVisit = false, link = null } = {}) {
   function toCode(length = CODE_LENGTH) {
     note.replaceChildren(
       el("span", { text: `Code envoyé à ${email}` }),
-      el("button", { type: "button", class: "ob-edit", text: "modifier", onclick: toEmail }));
+      el("button", { type: "button", class: "ob-edit", text: "modifier", onclick: toEmail }),
+      el("span", { class: "ob-hint", text: "Tape le code du mail ici : le lien, lui, s'ouvre dans un autre navigateur." }));
     cells.replaceChildren(...Array.from({ length }, (_, i) => {
       const c = el("input", {
         class: "ob-cell", inputmode: "numeric", autocomplete: i ? "off" : "one-time-code",

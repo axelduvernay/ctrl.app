@@ -26,7 +26,7 @@ import { initInstall } from "./install.js";
 
 /* Affichée dans le menu : permet de vérifier qu'une mise à jour est arrivée.
    À changer à chaque livraison. */
-export const VERSION = "22.10 · mobile"
+export const VERSION = "24.10 · code"
 
 async function boot() {
   applyTheme();
@@ -307,13 +307,13 @@ function wireKeyboard() {
 
 let toastTimer = null;
 
-export function toast(message) {
+export function toast(message, ms = 2600) {
   const node = document.getElementById("status");
   if (!node) return;
   node.textContent = message;
   node.classList.add("is-visible");
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => node.classList.remove("is-visible"), 2600);
+  toastTimer = setTimeout(() => node.classList.remove("is-visible"), ms);
 }
 
 boot();

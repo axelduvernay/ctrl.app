@@ -1363,12 +1363,15 @@ button { font: inherit; color: inherit; }
   margin: 0;
   min-height: 18px;
   display: flex;
-  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2px 6px;
   align-items: baseline;
   font-size: 13px;
   color: var(--text-2);
   text-align: center;
 }
+.ob-hint { flex-basis: 100%; font-size: 12px; opacity: 0.8; }
 .ob-edit { border: 0; padding: 0; background: none; color: var(--accent); font: inherit; cursor: pointer; }
 
 /* Le champ e-mail et les cases du code occupent la même place : l'un se

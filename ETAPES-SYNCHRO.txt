@@ -41,14 +41,16 @@ Authentication → URL Configuration :
 
 
 ==============================================================
-ÉTAPE 3 — (CONSEILLÉ) UN CODE DANS LE MAIL (2 minutes)
+ÉTAPE 3 — UN CODE DANS LE MAIL (2 minutes, INDISPENSABLE SUR IPHONE)
 ==============================================================
 
-Par défaut le mail ne contient qu'un lien, qui connecte l'appareil sur
-lequel tu l'ouvres. Avec un code, tu peux lire le mail sur ton téléphone
-et taper le code sur le Mac.
+Par défaut le mail ne contient qu'un lien, qui connecte seulement le
+navigateur où tu l'ouvres. Sur iPhone, il s'ouvre dans Safari ou Chrome,
+jamais dans l'app de l'écran d'accueil : sans code, l'app ne peut pas se
+connecter. Avec un code, tu tapes les 6 chiffres dans l'app.
 
-Authentication → Emails (ou Email Templates) → « Magic Link » :
+Authentication → Emails (ou Email Templates). À faire dans DEUX modèles,
+« Magic Link » ET « Confirm signup » (le premier mail d'un nouveau compte) :
 remplace le contenu par :
 
    <h2>Connexion à ctrl.app</h2>

@@ -139,7 +139,14 @@ export async function initSync() {
   });
   setInterval(() => !document.hidden && cloud() && queue(reconcile), POLL);
 
+  // Ouvert depuis le lien du mail ? (Il ne connecte que le navigateur qui a
+  // demandé le mail : sur iPhone, l'app de l'écran d'accueil n'en est pas un.)
+  const fromEmail = params.has("code") || /error_description|otp_expired/.test(location.hash + location.search);
   const { data } = await sb.auth.getSession();
+  if (fromEmail) history.replaceState(null, "", location.pathname);
+  if (fromEmail && !data?.session?.user) {
+    toast("Ce lien ne marche que dans le navigateur qui l'a demandé : retourne dans ctrl et tape le code à 6 chiffres du mail", 9000);
+  }
   if (data?.session?.user) {
     if (data.session.user.id !== startedFor) {
       startedFor = data.session.user.id;
