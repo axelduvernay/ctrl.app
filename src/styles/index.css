@@ -115,3 +115,14 @@
     background: var(--texte);
   }
 }
+
+/* Grille de points du board (et aperçu dans la liste des boards). */
+@layer components {
+  .grille-board,
+  .tableau-points {
+    background-image: radial-gradient(circle, var(--grille) 1px, transparent 1.5px);
+  }
+  .tableau-points {
+    background-size: 20px 20px;
+  }
+}

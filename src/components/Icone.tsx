@@ -25,6 +25,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Send,
+  Ellipsis,
+  Scan,
 } from "lucide-react";
 import { personnalisees } from "./icones/personnalisees";
 
@@ -57,6 +59,8 @@ const librairie = {
   precedent: ChevronLeft,
   suivant: ChevronRight,
   envoyer: Send,
+  menu: Ellipsis,
+  toutVoir: Scan,
 } as const;
 
 export type NomIcone = keyof typeof librairie;

@@ -45,10 +45,10 @@ Un lot à la fois. Cocher quand le lot est fait et commité ; Axel valide au fil
 - [x] Suivi (envoyé, ouvert, relance) + relance en tâche
 
 ## Lot 6 - Boards
-- [ ] Analyse du prototype `axelduvernay/ctrl.app` et proposition de reprise
-- [ ] Canvas infini, grille de points, zoom
-- [ ] Blocs : note, tâche, tracklist, zone + liens
-- [ ] Nœuds liés aux morceaux, contacts et tâches
+- [x] Analyse du prototype `axelduvernay/ctrl.mind` et proposition de reprise (voir `BOARDS-ANALYSE.md`)
+- [x] Canvas infini, grille de points, zoom
+- [x] Blocs : note, tâche, tracklist, zone + liens
+- [x] Nœuds liés aux morceaux, contacts et tâches
 
 ## Lot 7 - Transverse
 - [x] Bouton Capturer : mémo vocal, note, tâche

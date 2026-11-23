@@ -11,6 +11,7 @@ import { ReseauPage } from "@/features/reseau/ReseauPage";
 import { ContactPage } from "@/features/reseau/ContactPage";
 import { EnvoiPage } from "@/features/reseau/EnvoiPage";
 import { BoardsPage } from "@/features/boards/BoardsPage";
+import { BoardPage } from "@/features/boards/BoardPage";
 import { ReglagesPage } from "@/features/reglages/ReglagesPage";
 import { OnboardingPage } from "@/features/onboarding/OnboardingPage";
 import { ParcoursPage } from "@/features/parcours/ParcoursPage";
@@ -32,6 +33,7 @@ export function App() {
         <Route path="/reseau/envoi" element={<EnvoiPage />} />
         <Route path="/reseau/:id" element={<ContactPage />} />
         <Route path="/boards" element={<BoardsPage />} />
+        <Route path="/boards/:id" element={<BoardPage />} />
         <Route path="/reglages" element={<ReglagesPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
