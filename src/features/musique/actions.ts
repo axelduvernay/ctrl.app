@@ -137,15 +137,14 @@ export async function definirProjet(morceauId: Id, projetId: Id | null) {
   if (!morceau || morceau.projetId === projetId) return;
   if (morceau.projetId) await retirerDuProjet(morceau.projetId, morceauId);
   if (projetId) {
-    const projet = await depots.projets.obtenir(projetId);
-    if (projet) await depots.projets.modifier(projetId, { morceauIds: [...projet.morceauIds, morceauId] });
+    await depots.projets.transformer(projetId, (p) => ({ morceauIds: [...p.morceauIds.filter((x) => x !== morceauId), morceauId] }));
   }
   await depots.morceaux.modifier(morceauId, { projetId });
 }
 
 async function retirerDuProjet(projetId: Id, morceauId: Id) {
-  const projet = await depots.projets.obtenir(projetId);
-  if (projet) await depots.projets.modifier(projetId, { morceauIds: projet.morceauIds.filter((id) => id !== morceauId) });
+  if (await depots.projets.obtenir(projetId))
+    await depots.projets.transformer(projetId, (p) => ({ morceauIds: p.morceauIds.filter((id) => id !== morceauId) }));
 }
 
 export async function deplacerDansProjet(projetId: Id, index: number, sens: -1 | 1) {

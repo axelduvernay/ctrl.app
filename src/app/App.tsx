@@ -5,6 +5,8 @@ import { MusiquePage } from "@/features/musique/MusiquePage";
 import { FicheMorceau } from "@/features/musique/FicheMorceau";
 import { ProjetPage } from "@/features/musique/ProjetPage";
 import { SortiesPage } from "@/features/sorties/SortiesPage";
+import { SortiePage } from "@/features/sorties/SortiePage";
+import { DistributionPage } from "@/features/sorties/DistributionPage";
 import { ReseauPage } from "@/features/reseau/ReseauPage";
 import { BoardsPage } from "@/features/boards/BoardsPage";
 import { ReglagesPage } from "@/features/reglages/ReglagesPage";
@@ -22,6 +24,8 @@ export function App() {
         <Route path="/musique/projets/:id" element={<ProjetPage />} />
         <Route path="/musique/:id" element={<FicheMorceau />} />
         <Route path="/sorties" element={<SortiesPage />} />
+        <Route path="/sorties/distribution" element={<DistributionPage />} />
+        <Route path="/sorties/:id" element={<SortiePage />} />
         <Route path="/reseau" element={<ReseauPage />} />
         <Route path="/boards" element={<BoardsPage />} />
         <Route path="/reglages" element={<ReglagesPage />} />

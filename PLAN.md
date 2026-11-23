@@ -33,10 +33,10 @@ Un lot à la fois. Cocher quand le lot est fait et commité ; Axel valide au fil
 - [x] Stats (états vides et connexion simulée)
 
 ## Lot 4 - Sorties
-- [ ] Calendrier
-- [ ] Checklist de sortie adaptée au niveau
-- [ ] Métadonnées
-- [ ] Écran Distribution « bientôt »
+- [x] Calendrier
+- [x] Checklist de sortie adaptée au niveau
+- [x] Métadonnées
+- [x] Écran Distribution « bientôt »
 
 ## Lot 5 - Réseau (CRM)
 - [ ] Contacts

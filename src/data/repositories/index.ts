@@ -35,6 +35,9 @@ export interface Repo<T extends Entite> {
   trouver<K extends keyof T>(champ: K, valeur: T[K]): Promise<T[]>;
   creer(donnees: Nouveau<T>): Promise<T>;
   modifier(id: Id, modifications: Modification<T>): Promise<T>;
+  /** Modification calculée à partir de la version la plus récente, sans
+      risque d’écraser une écriture faite juste avant (listes, objets imbriqués). */
+  transformer(id: Id, calcul: (actuel: T) => Modification<T>): Promise<T>;
   supprimer(id: Id): Promise<void>;
 }
 

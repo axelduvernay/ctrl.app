@@ -42,13 +42,16 @@ export function creerDepotsLocaux(): Depots {
         signaler(collection);
         return objet;
       },
-      async modifier(id: Id, modifications: Modification<T>) {
+      modifier(id: Id, modifications: Modification<T>) {
+        return this.transformer(id, () => modifications);
+      },
+      async transformer(id: Id, calcul: (actuel: T) => Modification<T>) {
         // Lecture et écriture dans la même transaction : deux modifications
         // rapprochées (ex. BPM puis tonalité) ne s’écrasent pas.
         const objet = await db.transaction("rw", table, async () => {
           const actuel = await table.get(id);
           if (!actuel) throw new Error(`Introuvable : ${collection} ${id}`);
-          const nouvel = { ...actuel, ...modifications, id, updatedAt: maintenant() } as T;
+          const nouvel = { ...actuel, ...calcul(actuel), id, updatedAt: maintenant() } as T;
           await table.put(nouvel);
           return nouvel;
         });

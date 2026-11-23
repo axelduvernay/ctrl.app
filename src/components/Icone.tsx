@@ -22,6 +22,9 @@ import {
   ChevronUp,
   ChevronDown,
   ListMusic,
+  ChevronLeft,
+  ChevronRight,
+  Send,
 } from "lucide-react";
 import { personnalisees } from "./icones/personnalisees";
 
@@ -51,6 +54,9 @@ const librairie = {
   monter: ChevronUp,
   descendre: ChevronDown,
   tracklist: ListMusic,
+  precedent: ChevronLeft,
+  suivant: ChevronRight,
+  envoyer: Send,
 } as const;
 
 export type NomIcone = keyof typeof librairie;
