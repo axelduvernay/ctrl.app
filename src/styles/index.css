@@ -1,0 +1,77 @@
+@import "tailwindcss";
+@import "./tokens.css";
+
+@theme inline {
+  --font-sans: "Satoshi", ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  --color-fond: var(--fond);
+  --color-surface: var(--surface);
+  --color-filet: var(--filet);
+  --color-texte: var(--texte);
+  --color-texte-2: var(--texte-2);
+  --color-accent: var(--accent);
+  --color-sur-accent: var(--sur-accent);
+  --color-inverse: var(--inverse);
+  --color-sur-inverse: var(--sur-inverse);
+  --color-grille: var(--grille);
+  --color-idee: var(--statut-idee);
+  --color-maquette: var(--statut-maquette);
+  --color-finition: var(--statut-finition);
+  --color-pret: var(--statut-pret);
+  --color-sorti: var(--statut-sorti);
+
+  /* Rayons : 12, 18, 28, pilule. */
+  --radius-12: 12px;
+  --radius-18: 18px;
+  --radius-28: 28px;
+
+  /* Échelle typo du dossier. */
+  --text-display: 140px;
+  --text-display--line-height: 0.9;
+  --text-display--font-weight: 300;
+  --text-display--letter-spacing: -0.04em;
+  --text-titre: 64px;
+  --text-titre--line-height: 1.05;
+  --text-titre--font-weight: 500;
+  --text-titre--letter-spacing: -0.03em;
+  --text-texte: 16px;
+  --text-texte--line-height: 1.45;
+  --text-texte--font-weight: 500;
+  --text-libelle: 14px;
+  --text-libelle--line-height: 1.4;
+  --text-libelle--font-weight: 400;
+}
+
+@layer base {
+  html {
+    background: var(--fond);
+    color: var(--texte);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    font-weight: 500;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    min-height: 100dvh;
+  }
+  ::selection {
+    background: color-mix(in srgb, var(--accent) 35%, transparent);
+  }
+  :focus-visible {
+    outline: 2px solid var(--texte-2);
+    outline-offset: 2px;
+  }
+  button {
+    cursor: pointer;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0ms !important;
+  }
+}

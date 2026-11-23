@@ -1,0 +1,63 @@
+/* Tokens de la direction artistique de ctrl.app.
+   Une seule source : les variables CSS ci-dessous. Tailwind les lit via
+   @theme (voir index.css). Mode sombre par défaut, clair au choix. */
+
+@font-face {
+  font-family: "Satoshi";
+  src: url("/fonts/Satoshi-Variable.woff2") format("woff2");
+  font-weight: 300 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Satoshi";
+  src: url("/fonts/Satoshi-VariableItalic.woff2") format("woff2");
+  font-weight: 300 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+:root,
+[data-theme="sombre"] {
+  color-scheme: dark;
+  --fond: #141415;
+  --surface: #1e1e21;
+  --filet: #26262a;
+  --texte: #f4f0ea;
+  --texte-2: #8a857e;
+  /* Bouton principal : pilule claire sur fond sombre. */
+  --inverse: #f4f0ea;
+  --sur-inverse: #141415;
+  /* Point de la grille du board. */
+  --grille: #2c2c31;
+}
+
+[data-theme="clair"] {
+  color-scheme: light;
+  --fond: #e9ecef;
+  --surface: #ffffff;
+  --filet: #d9dce0;
+  --texte: #1e1e20;
+  --texte-2: #5e5a55;
+  /* Bouton principal : pilule sombre sur fond clair. */
+  --inverse: #1e1e20;
+  --sur-inverse: #ffffff;
+  --grille: #cfd3d8;
+}
+
+:root {
+  /* Identiques dans les deux modes. */
+  --accent: #e06d3b;
+  /* Libellé sur un bouton orange : jamais blanc, toujours ce gris très foncé. */
+  --sur-accent: #1e1e20;
+
+  /* Statuts d’un morceau (distincts de l’accent). */
+  --statut-idee: #8a857e;
+  --statut-maquette: #d9a441;
+  --statut-finition: #b48ef0;
+  --statut-pret: #6fa8dc;
+  --statut-sorti: #6bbf8a;
+
+  /* Transitions courtes, rien en boucle. */
+  --duree: 150ms;
+}
