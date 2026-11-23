@@ -30,6 +30,8 @@
   --sur-inverse: #141415;
   /* Point de la grille du board. */
   --grille: #2c2c31;
+  /* Petits numéros (« 01 Profil ») : orange sur fond sombre seulement. */
+  --numero: #e06d3b;
 }
 
 [data-theme="clair"] {
@@ -43,6 +45,8 @@
   --inverse: #1e1e20;
   --sur-inverse: #ffffff;
   --grille: #cfd3d8;
+  /* Pas de petit texte orange sur fond clair (contraste). */
+  --numero: #1e1e20;
 }
 
 :root {

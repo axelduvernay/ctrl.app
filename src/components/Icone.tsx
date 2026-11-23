@@ -10,6 +10,10 @@ import {
   Plus,
   Search,
   ArrowRight,
+  ArrowLeft,
+  Check,
+  Minus,
+  X,
 } from "lucide-react";
 import { personnalisees } from "./icones/personnalisees";
 
@@ -27,6 +31,10 @@ const librairie = {
   plus: Plus,
   recherche: Search,
   fleche: ArrowRight,
+  retour: ArrowLeft,
+  valide: Check,
+  moins: Minus,
+  fermer: X,
 } as const;
 
 export type NomIcone = keyof typeof librairie;

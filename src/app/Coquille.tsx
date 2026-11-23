@@ -1,8 +1,14 @@
-import { Outlet } from "react-router";
+import { Navigate, Outlet } from "react-router";
+import { depots, useRequete } from "@/data";
 import { BarreLaterale } from "./BarreLaterale";
 
-/** Coquille de l’app : barre latérale à gauche, écran courant à droite. */
+/** Coquille de l’app : barre latérale à gauche, écran courant à droite.
+    Sans profil (premier lancement ou après réinitialisation) : onboarding. */
 export function Coquille() {
+  const { donnees: profils, chargement } = useRequete(() => depots.profils.lister());
+  if (chargement) return <div className="min-h-dvh bg-fond" />;
+  if (!profils?.some((p) => p.onboardingTermineAt)) return <Navigate to="/bienvenue" replace />;
+
   return (
     <div className="flex min-h-dvh bg-fond">
       <BarreLaterale />

@@ -14,10 +14,11 @@ Un lot à la fois. Cocher quand le lot est fait et commité ; Axel valide au fil
 - [x] Icônes Lucide personnalisables, mise en ligne GitHub Pages, nettoyage de l’ancien service worker
 
 ## Lot 1 - Onboarding et parcours
-- [ ] Questionnaire en 4 étapes
-- [ ] Règles de génération du niveau et du parcours (cas A / cas B)
-- [ ] Fichier de contenu des étapes (`src/content/parcours.ts`)
-- [ ] Redirection vers l'onboarding si aucun profil
+- [x] Questionnaire en 4 étapes
+- [x] Règles de génération du niveau et du parcours (cas A / cas B)
+- [x] Fichier de contenu des étapes (`src/content/parcours.ts`)
+- [x] Redirection vers l'onboarding si aucun profil
+- [x] Écran de résultat et écran Parcours (explication, action, valider l’étape, niveau)
 
 ## Lot 2 - Musique
 - [ ] Catalogue + filtres par statut

@@ -14,6 +14,7 @@
   --color-inverse: var(--inverse);
   --color-sur-inverse: var(--sur-inverse);
   --color-grille: var(--grille);
+  --color-numero: var(--numero);
   --color-idee: var(--statut-idee);
   --color-maquette: var(--statut-maquette);
   --color-finition: var(--statut-finition);

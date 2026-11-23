@@ -1,4 +1,4 @@
-import { NavLink } from "react-router";
+import { NavLink, useLocation } from "react-router";
 import { Chevron } from "@/components/Logo";
 import { Icone, type NomIcone } from "@/components/Icone";
 import { useTheme } from "@/stores/theme";
@@ -32,6 +32,8 @@ function classeOnglet({ isActive }: { isActive: boolean }) {
 
 export function BarreLaterale() {
   const { theme, basculer } = useTheme();
+  // Le parcours fait partie de l’Accueil : l’onglet reste allumé.
+  const surParcours = useLocation().pathname === "/parcours";
   const prochain = theme === "sombre" ? "Mode clair" : "Mode sombre";
 
   return (
@@ -46,7 +48,12 @@ export function BarreLaterale() {
       <ul className="flex flex-col gap-2">
         {onglets.map((o) => (
           <li key={o.vers}>
-            <NavLink to={o.vers} end={o.vers === "/"} aria-label={o.libelle} className={classeOnglet}>
+            <NavLink
+              to={o.vers}
+              end={o.vers === "/"}
+              aria-label={o.libelle}
+              className={({ isActive }) => classeOnglet({ isActive: isActive || (o.vers === "/" && surParcours) })}
+            >
               <Icone nom={o.nom} />
               <Infobulle texte={o.libelle} />
             </NavLink>

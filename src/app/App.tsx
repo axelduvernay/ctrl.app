@@ -7,6 +7,7 @@ import { ReseauPage } from "@/features/reseau/ReseauPage";
 import { BoardsPage } from "@/features/boards/BoardsPage";
 import { ReglagesPage } from "@/features/reglages/ReglagesPage";
 import { OnboardingPage } from "@/features/onboarding/OnboardingPage";
+import { ParcoursPage } from "@/features/parcours/ParcoursPage";
 
 export function App() {
   return (
@@ -14,6 +15,7 @@ export function App() {
       <Route path="/bienvenue" element={<OnboardingPage />} />
       <Route element={<Coquille />}>
         <Route index element={<AccueilPage />} />
+        <Route path="/parcours" element={<ParcoursPage />} />
         <Route path="/musique" element={<MusiquePage />} />
         <Route path="/sorties" element={<SortiesPage />} />
         <Route path="/reseau" element={<ReseauPage />} />
