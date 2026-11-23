@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router";
 import { Bouton } from "@/components/Bouton";
 import { EnTete } from "@/components/EnTete";
@@ -141,8 +141,14 @@ function Comptes() {
 
 function Affichage() {
   const { theme, choisir } = useTheme();
+  const [pleinEcran, setPleinEcran] = useState(!!document.fullscreenElement);
+  useEffect(() => {
+    const suivre = () => setPleinEcran(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", suivre);
+    return () => document.removeEventListener("fullscreenchange", suivre);
+  }, []);
   return (
-    <Section titre="Mode d’affichage">
+    <Section titre="Mode d’affichage" texte="Le plein écran masque le navigateur : idéal au stand. Échap pour en sortir.">
       <div role="radiogroup" aria-label="Mode d’affichage" className="inline-flex w-fit gap-1 rounded-full border border-filet p-1">
         {modes.map((m) => (
           <button
@@ -160,6 +166,16 @@ function Affichage() {
           </button>
         ))}
       </div>
+      {document.fullscreenEnabled && (
+        <Bouton
+          variante="contour"
+          icone="toutVoir"
+          className="self-start"
+          onClick={() => void (pleinEcran ? document.exitFullscreen() : document.documentElement.requestFullscreen())}
+        >
+          {pleinEcran ? "Quitter le plein écran" : "Passer en plein écran"}
+        </Bouton>
+      )}
     </Section>
   );
 }

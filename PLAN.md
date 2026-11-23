@@ -69,8 +69,8 @@ Un lot à la fois. Cocher quand le lot est fait et commité ; Axel valide au fil
 - [ ] Fichiers audio et covers dans le stockage Supabase
 
 ## Lot 10 - Prêt pour le stand
-- [ ] Parcours complet testé de l'onboarding à une sortie planifiée
-- [ ] Vérification DA sur tous les écrans (sombre et clair)
-- [ ] États vides partout
-- [ ] Mode plein écran, performance, aucune erreur console
+- [x] Parcours complet testé de l'onboarding à une sortie planifiée
+- [ ] Vérification DA sur tous les écrans (sombre et clair) : contrôlée par Claude, à valider par Axel
+- [x] États vides partout
+- [x] Mode plein écran, performance, aucune erreur console
 - [ ] Build de production qui tourne hors ligne
