@@ -23,7 +23,7 @@ Puis ouvrir <http://localhost:5173/ctrl.app/>.
 
 Chaque push sur `main` publie l’app sur <https://axelduvernay.github.io/ctrl.app/>.
 Réglage à faire une seule fois sur GitHub : Settings → Pages → Source :
-« GitHub Actions ».
+« Deploy from a branch », Branch : `gh-pages`, dossier `/ (root)`, Save.
 
 ## Logo
 

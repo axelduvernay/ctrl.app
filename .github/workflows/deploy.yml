@@ -1,5 +1,7 @@
 # Publie l’app sur GitHub Pages à chaque push sur main.
-# Réglage à faire une fois : Settings → Pages → Source : « GitHub Actions ».
+# L’app construite (dossier dist) est poussée sur la branche gh-pages.
+# Réglage à faire une fois : Settings → Pages → Source : « Deploy from a
+# branch », Branch : gh-pages, dossier / (root), Save.
 name: Mise en ligne
 
 on:
@@ -8,16 +10,14 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
   group: pages
   cancel-in-progress: true
 
 jobs:
-  build:
+  publier:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -27,16 +27,13 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Pousser dist sur gh-pages
+        working-directory: dist
+        env:
+          JETON: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          touch .nojekyll
+          git init -q -b gh-pages
+          git add -A
+          git -c user.name="github-actions" -c user.email="github-actions@users.noreply.github.com" commit -q -m "Mise en ligne ${GITHUB_SHA::7}"
+          git push -q -f "https://x-access-token:${JETON}@github.com/${GITHUB_REPOSITORY}.git" gh-pages
