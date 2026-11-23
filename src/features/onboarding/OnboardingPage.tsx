@@ -4,7 +4,7 @@ import { Logo } from "@/components/Logo";
 import { Bouton } from "@/components/Bouton";
 import { ChampTexte, Compteur, Option, Segmente } from "@/components/Champs";
 import { Progression } from "@/components/Progression";
-import { useRequete } from "@/data";
+import { depots, useRequete } from "@/data";
 import { integrations } from "@/integrations";
 import { terminerOnboarding, type ReponsesOnboarding } from "@/features/parcours/actions";
 import { genererParcours, deuxChiffres } from "@/features/parcours/regles";
@@ -45,6 +45,9 @@ const TOTAL = 4;
 
 export function OnboardingPage() {
   const naviguer = useNavigate();
+  // Questionnaire refait depuis Réglages : on peut revenir sans rien changer.
+  const { donnees: profils } = useRequete(() => depots.profils.lister());
+  const dejaInscrit = !!profils?.some((p) => p.onboardingTermineAt);
   const [etape, setEtape] = useState(1);
   const [termine, setTermine] = useState(false);
   const [envoi, setEnvoi] = useState(false);
@@ -94,9 +97,16 @@ export function OnboardingPage() {
         <>
           <div className="flex items-center justify-between">
             <Logo taille={22} />
-            <p className="text-libelle text-texte-2 tabular-nums">
-              {deuxChiffres(etape)} /{deuxChiffres(TOTAL)}
-            </p>
+            <div className="flex items-center gap-6">
+              {dejaInscrit && !termine && (
+                <button type="button" onClick={() => naviguer("/reglages")} className="text-libelle text-texte-2 hover:text-texte">
+                  Annuler
+                </button>
+              )}
+              <p className="text-libelle text-texte-2 tabular-nums">
+                {deuxChiffres(etape)} /{deuxChiffres(TOTAL)}
+              </p>
+            </div>
           </div>
           <Progression total={TOTAL} faites={etape - 1} className="mt-6" />
         </>

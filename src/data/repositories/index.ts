@@ -62,7 +62,7 @@ export type LiensRepo = Repo<Lien>;
 export type ConnexionsRepo = Repo<Connexion>;
 
 /** Nom de chaque collection, utilisé pour signaler les changements. */
-export type Collection = keyof Omit<Depots, "abonner" | "toutEffacer" | "proprietaire">;
+export type Collection = keyof Omit<Depots, "abonner" | "toutEffacer" | "proprietaire" | "exporter" | "importer">;
 
 export interface Depots {
   utilisateurs: UtilisateursRepo;
@@ -91,4 +91,8 @@ export interface Depots {
   abonner(ecouteur: (collection: Collection) => void): () => void;
   /** Efface tout : retour à l’onboarding (« Réinitialiser l’app »). */
   toutEffacer(): Promise<void>;
+  /** Toutes les données, fichiers audio et images compris, dans un fichier .json. */
+  exporter(): Promise<Blob>;
+  /** Remplace toutes les données par celles d’un export. Lève une erreur si le fichier n’est pas un export ctrl.app. */
+  importer(fichier: Blob): Promise<void>;
 }

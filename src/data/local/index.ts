@@ -8,6 +8,16 @@ import { BaseLocale } from "./db";
 type Ecouteur = (collection: Collection) => void;
 
 const maintenant = () => new Date().toISOString();
+const FORMAT_EXPORT = "ctrl.app";
+
+function versDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resoudre, rejeter) => {
+    const lecteur = new FileReader();
+    lecteur.onload = () => resoudre(lecteur.result as string);
+    lecteur.onerror = () => rejeter(lecteur.error);
+    lecteur.readAsDataURL(blob);
+  });
+}
 
 export function creerDepotsLocaux(): Depots {
   const db = new BaseLocale();
@@ -90,6 +100,41 @@ export function creerDepotsLocaux(): Depots {
     abonner(ecouteur) {
       ecouteurs.add(ecouteur);
       return () => ecouteurs.delete(ecouteur);
+    },
+    async exporter() {
+      const tables: Record<string, unknown[]> = {};
+      for (const table of db.tables) {
+        const lignes = await table.toArray();
+        tables[table.name] = await Promise.all(
+          lignes.map(async (l) => (l.blob instanceof Blob ? { ...l, blob: await versDataUrl(l.blob) } : l)),
+        );
+      }
+      const contenu = { format: FORMAT_EXPORT, version: 1, exporteLe: maintenant(), tables };
+      return new Blob([JSON.stringify(contenu)], { type: "application/json" });
+    },
+    async importer(fichier: Blob) {
+      let contenu: { format?: string; tables?: Record<string, Record<string, unknown>[]> };
+      try {
+        contenu = JSON.parse(await fichier.text());
+      } catch {
+        throw new Error("Ce fichier n’est pas un export ctrl.app.");
+      }
+      if (contenu.format !== FORMAT_EXPORT || !contenu.tables) throw new Error("Ce fichier n’est pas un export ctrl.app.");
+      const tables = contenu.tables;
+      const lignes: Record<string, unknown[]> = {};
+      for (const table of db.tables) {
+        lignes[table.name] = await Promise.all(
+          (tables[table.name] ?? []).map(async (l) => (typeof l.blob === "string" ? { ...l, blob: await (await fetch(l.blob)).blob() } : l)),
+        );
+      }
+      await db.transaction("rw", db.tables, async () => {
+        for (const table of db.tables) {
+          await table.clear();
+          await table.bulkAdd(lignes[table.name] ?? []);
+        }
+      });
+      proprietaire = null;
+      for (const table of db.tables) signaler(table.name as Collection);
     },
     async toutEffacer() {
       await db.transaction("rw", db.tables, async () => {

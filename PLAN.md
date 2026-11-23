@@ -55,11 +55,11 @@ Un lot à la fois. Cocher quand le lot est fait et commité ; Axel valide au fil
 - [x] Recherche globale ⌘K
 
 ## Lot 8 - Réglages
-- [ ] Profil et niveau (refaire le questionnaire)
-- [ ] Comptes connectés (simulés)
-- [ ] Mode d'affichage
-- [ ] Export / import des données
-- [ ] Réinitialiser l'app
+- [x] Profil et niveau (refaire le questionnaire)
+- [x] Comptes connectés (simulés)
+- [x] Mode d'affichage
+- [x] Export / import des données
+- [x] Réinitialiser l'app
 
 ## Lot 9 - Comptes et synchronisation (Supabase)
 - [ ] Projet Supabase dédié (séparé de ctrl.mind), schéma et règles d’accès
