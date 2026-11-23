@@ -152,7 +152,7 @@ export function OnboardingPage() {
                     aria-pressed={actif}
                     onClick={() => basculerReseau(p)}
                     className={`h-11 rounded-full border px-5 text-[15px] transition-colors duration-150 ${
-                      actif ? "border-texte bg-texte text-sur-inverse" : "border-filet text-texte hover:bg-surface"
+                      actif ? "border-texte-2 bg-surface text-texte" : "border-filet text-texte-2 hover:text-texte"
                     }`}
                   >
                     {p}

@@ -3,3 +3,4 @@
 export type * from "./repositories";
 export { depots } from "./depots";
 export { useRequete } from "./useRequete";
+export { useUrlFichier } from "./useUrlFichier";

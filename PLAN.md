@@ -21,10 +21,10 @@ Un lot à la fois. Cocher quand le lot est fait et commité ; Axel valide au fil
 - [x] Écran de résultat et écran Parcours (explication, action, valider l’étape, niveau)
 
 ## Lot 2 - Musique
-- [ ] Catalogue + filtres par statut
-- [ ] Création et édition d'un morceau
-- [ ] Fiche morceau : versions audio (import, lecture, version validée), notes, infos, cover
-- [ ] Projets (EP, tracklists)
+- [x] Catalogue + filtres par statut
+- [x] Création et édition d'un morceau
+- [x] Fiche morceau : versions audio (import, lecture, version validée), notes, infos, cover
+- [x] Projets (EP, tracklists)
 
 ## Lot 3 - Accueil
 - [ ] Bloc parcours (étape en cours, action suivante)

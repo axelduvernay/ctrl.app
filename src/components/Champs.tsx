@@ -1,6 +1,6 @@
 /* Champs de formulaire partagés : surfaces pleines, filets de 1 px. */
 
-import type { InputHTMLAttributes, ReactNode } from "react";
+import { useEffect, useRef, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from "react";
 import { Icone } from "./Icone";
 
 const baseChamp =
@@ -117,7 +117,7 @@ export function Segmente<T extends string>({ libelle, options, valeur, onChange 
             aria-checked={valeur === o.valeur}
             onClick={() => onChange(o.valeur)}
             className={`h-11 rounded-full border px-5 text-[15px] transition-colors duration-150 ${
-              valeur === o.valeur ? "border-texte bg-texte text-sur-inverse" : "border-filet text-texte hover:bg-surface"
+              valeur === o.valeur ? "border-texte-2 bg-surface text-texte" : "border-filet text-texte-2 hover:text-texte"
             }`}
           >
             {o.libelle}
@@ -125,5 +125,65 @@ export function Segmente<T extends string>({ libelle, options, valeur, onChange 
         ))}
       </div>
     </div>
+  );
+}
+
+interface ChampSelectProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>, "onChange"> {
+  libelle: string;
+  valeur: string;
+  options: { valeur: string; libelle: string }[];
+  onChange(valeur: string): void;
+}
+
+export function ChampSelect({ libelle, valeur, options, onChange, className = "", ...props }: ChampSelectProps) {
+  return (
+    <label className={`flex flex-col gap-2 ${className}`}>
+      <span className="text-libelle text-texte-2">{libelle}</span>
+      <span className="relative">
+        <select className={`${baseChamp} appearance-none pr-11`} value={valeur} onChange={(e) => onChange(e.target.value)} {...props}>
+          {options.map((o) => (
+            <option key={o.valeur} value={o.valeur}>
+              {o.libelle}
+            </option>
+          ))}
+        </select>
+        <Icone nom="descendre" taille={16} className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-texte-2" />
+      </span>
+    </label>
+  );
+}
+
+interface ZoneTexteProps {
+  valeur: string;
+  onChange(valeur: string): void;
+  onBlur?(): void;
+  onFocus?(): void;
+  placeholder?: string;
+  libelle: string;
+  autoFocus?: boolean;
+}
+
+/** Zone de texte qui grandit avec son contenu. */
+export function ZoneTexte({ valeur, onChange, onBlur, onFocus, placeholder, libelle, autoFocus }: ZoneTexteProps) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    const t = ref.current;
+    if (!t) return;
+    t.style.height = "auto";
+    t.style.height = `${t.scrollHeight}px`;
+  }, [valeur]);
+  return (
+    <textarea
+      ref={ref}
+      aria-label={libelle}
+      rows={3}
+      autoFocus={autoFocus}
+      value={valeur}
+      placeholder={placeholder}
+      onChange={(e) => onChange(e.target.value)}
+      onBlur={onBlur}
+      onFocus={onFocus}
+      className="min-h-24 w-full resize-none rounded-18 border border-filet bg-surface px-5 py-4 leading-relaxed text-texte placeholder:text-texte-2 focus:border-texte-2 focus:outline-none"
+    />
   );
 }

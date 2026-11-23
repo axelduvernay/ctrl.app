@@ -14,6 +14,14 @@ import {
   Check,
   Minus,
   X,
+  Play,
+  Pause,
+  Upload,
+  ImagePlus,
+  Trash2,
+  ChevronUp,
+  ChevronDown,
+  ListMusic,
 } from "lucide-react";
 import { personnalisees } from "./icones/personnalisees";
 
@@ -35,6 +43,14 @@ const librairie = {
   valide: Check,
   moins: Minus,
   fermer: X,
+  lecture: Play,
+  pause: Pause,
+  importer: Upload,
+  image: ImagePlus,
+  supprimer: Trash2,
+  monter: ChevronUp,
+  descendre: ChevronDown,
+  tracklist: ListMusic,
 } as const;
 
 export type NomIcone = keyof typeof librairie;

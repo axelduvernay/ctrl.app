@@ -76,3 +76,42 @@
     transition-duration: 0ms !important;
   }
 }
+
+/* Barre de lecture : filet fin, avance en couleur du texte. */
+@layer components {
+  .lecteur {
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+  }
+  .lecteur::-webkit-slider-runnable-track {
+    height: 2px;
+    border-radius: 999px;
+    background: linear-gradient(to right, var(--texte) var(--avance), var(--filet) var(--avance));
+  }
+  .lecteur::-moz-range-track {
+    height: 2px;
+    border-radius: 999px;
+    background: var(--filet);
+  }
+  .lecteur::-moz-range-progress {
+    height: 2px;
+    border-radius: 999px;
+    background: var(--texte);
+  }
+  .lecteur::-webkit-slider-thumb {
+    appearance: none;
+    width: 10px;
+    height: 10px;
+    margin-top: -4px;
+    border-radius: 999px;
+    background: var(--texte);
+  }
+  .lecteur::-moz-range-thumb {
+    width: 10px;
+    height: 10px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--texte);
+  }
+}

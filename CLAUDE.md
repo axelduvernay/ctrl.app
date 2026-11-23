@@ -56,6 +56,7 @@ src/
   content/        textes éditables (parcours, modèles de mails)
   app/            coquille, barre latérale, routes
   stores/         état d’interface (Zustand), ex. thème
+  lib/            utilitaires sans écran (formats de date, durée, taille)
   styles/         tokens et thème
 brand/            logo vectorisé (SVG) et icône d’app, hors de l’app
 ```
