@@ -28,7 +28,7 @@ export async function supprimerMorceau(morceau: Morceau) {
     await depots.fichiers.supprimer(v.fichierId);
     await depots.versions.supprimer(v.id);
   }
-  for (const n of await depots.notes.trouver("morceauId", morceau.id)) await depots.notes.supprimer(n.id);
+  for (const n of await depots.notes.trouver("morceauId", morceau.id)) await supprimerNote(n.id);
   if (morceau.coverFichierId) await depots.fichiers.supprimer(morceau.coverFichierId);
   if (morceau.projetId) await retirerDuProjet(morceau.projetId, morceau.id);
   await depots.morceaux.supprimer(morceau.id);
@@ -117,8 +117,11 @@ export function modifierNote(id: Id, contenu: string) {
   return depots.notes.modifier(id, { contenu });
 }
 
-export function supprimerNote(id: Id) {
-  return depots.notes.supprimer(id);
+/** Supprime la note et son mémo vocal s’il y en a un. */
+export async function supprimerNote(id: Id) {
+  const n = await depots.notes.obtenir(id);
+  if (n?.fichierId) await depots.fichiers.supprimer(n.fichierId);
+  await depots.notes.supprimer(id);
 }
 
 /* ---------- Projets ---------- */

@@ -65,3 +65,12 @@ export async function lireParcours() {
     : [];
   return { profil, parcours, etapes, enCours: etapes.find((e) => e.statut === "en-cours") };
 }
+
+/** Le son que l’artiste sort avec ce parcours : relié à toutes les étapes. */
+export async function definirSonDuParcours(morceauId: string | null) {
+  const [parcours] = await depots.parcours.lister();
+  if (!parcours) return;
+  for (const e of await depots.etapes.trouver("parcoursId", parcours.id)) {
+    if (e.morceauId !== morceauId) await depots.etapes.modifier(e.id, { morceauId });
+  }
+}

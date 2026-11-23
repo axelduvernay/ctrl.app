@@ -10,6 +10,7 @@ import { typesProjet } from "@/content/statuts";
 import type { Morceau, Projet, Version } from "@/types";
 import { definirProjet, deplacerDansProjet, supprimerProjet } from "./actions";
 import { ChampEnregistre, Vignette } from "./communs";
+import { ActionsEnTete } from "@/app/ActionsEnTete";
 
 /** Projet : liste ordonnée de morceaux, à écouter dans l’ordre. */
 export function ProjetPage() {
@@ -46,6 +47,7 @@ export function ProjetPage() {
   return (
     <div className="flex flex-col gap-12">
       <div className="flex flex-col gap-6">
+        <div className="flex items-center justify-between gap-6">
         <nav aria-label="Fil d’Ariane" className="flex items-center gap-2 text-libelle text-texte-2">
           <Link to="/musique" className="hover:text-texte">
             Musique
@@ -57,6 +59,8 @@ export function ProjetPage() {
           <span aria-hidden>/</span>
           <span className="truncate text-texte">{projet.titre}</span>
         </nav>
+          <ActionsEnTete />
+        </div>
         <div className="flex items-start justify-between gap-6">
           <ChampEnregistre
             libelle="Titre du projet"

@@ -32,3 +32,39 @@ export function taille(octets: number): string {
   if (octets < 1024 * 1024) return `${Math.max(1, Math.round(octets / 1024))} Ko`;
   return `${(octets / (1024 * 1024)).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} Mo`;
 }
+
+/** Jour local au format « 2026-12-04 ». */
+export function jourIso(d = new Date()): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** Date d’un jour « 2026-12-04 », à midi pour éviter les décalages d’heure. */
+export function depuisJour(jour: string): Date {
+  const [a, m, j] = jour.split("-").map(Number);
+  return new Date(a!, (m ?? 1) - 1, j ?? 1, 12);
+}
+
+export function ajouterJours(jour: string, n: number): string {
+  const d = depuisJour(jour);
+  d.setDate(d.getDate() + n);
+  return jourIso(d);
+}
+
+/** « Aujourd’hui », « Demain », « Jeudi », ou « 12 déc. ». */
+export function libelleJour(jour: string, maintenant = new Date()): string {
+  const ecart = Math.round((depuisJour(jour).getTime() - depuisJour(jourIso(maintenant)).getTime()) / (24 * 3600 * 1000));
+  if (ecart === 0) return "Aujourd’hui";
+  if (ecart === 1) return "Demain";
+  if (ecart === -1) return "Hier";
+  if (ecart > 1 && ecart < 7) {
+    const nom = new Intl.DateTimeFormat("fr-FR", { weekday: "long" }).format(depuisJour(jour));
+    return nom.charAt(0).toUpperCase() + nom.slice(1);
+  }
+  return new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" }).format(depuisJour(jour));
+}
+
+/** « samedi 31 octobre » avec majuscule. */
+export function dateLongue(d = new Date()): string {
+  const t = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long" }).format(d);
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}

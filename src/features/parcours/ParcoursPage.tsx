@@ -1,5 +1,4 @@
 import { useNavigate } from "react-router";
-import { EnTete } from "@/components/EnTete";
 import { Bouton } from "@/components/Bouton";
 import { Icone } from "@/components/Icone";
 import { NumeroEtape, Progression } from "@/components/Progression";
@@ -8,6 +7,7 @@ import { contenuEtape } from "@/content/parcours";
 import type { Etape } from "@/types";
 import { lireParcours, rouvrirEtape, validerEtape } from "./actions";
 import { deuxChiffres } from "./regles";
+import { ActionsEnTete } from "@/app/ActionsEnTete";
 
 /** Le parcours complet : chaque étape, son explication et son action. */
 export function ParcoursPage() {
@@ -21,8 +21,14 @@ export function ParcoursPage() {
 
   return (
     <div className="flex flex-col gap-12">
+      <div className="flex justify-end">
+        <ActionsEnTete />
+      </div>
       <div className="flex items-end justify-between gap-8">
-        <EnTete surtitre="Ton parcours" titre={parcours.titre} />
+        <header>
+          <p className="mb-1 text-libelle text-texte-2">Ton parcours</p>
+          <h1 className="text-[40px] leading-tight font-medium tracking-[-0.03em]">{parcours.titre}</h1>
+        </header>
         <NumeroEtape numero={deuxChiffres(termine ? etapes.length : faites + 1)} total={total} taille={112} />
       </div>
       <Progression total={etapes.length} faites={faites} enCours={!termine} />

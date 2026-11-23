@@ -25,6 +25,8 @@ import {
   supprimerVersion,
 } from "./actions";
 import { ChampEnregistre, ChoixStatut, DepotFichiers, Vignette } from "./communs";
+import { ActionsEnTete } from "@/app/ActionsEnTete";
+import { definirSonDuParcours, lireParcours } from "@/features/parcours/actions";
 
 export function FicheMorceau() {
   const { id = "" } = useParams();
@@ -58,13 +60,16 @@ export function FicheMorceau() {
   return (
     <div className="flex flex-col gap-12">
       <div className="flex flex-col gap-6">
-        <nav aria-label="Fil d’Ariane" className="flex items-center gap-2 text-libelle text-texte-2">
-          <Link to="/musique" className="hover:text-texte">
-            Musique
-          </Link>
-          <span aria-hidden>/</span>
-          <span className="truncate text-texte">{morceau.titre}</span>
-        </nav>
+        <div className="flex items-center justify-between gap-6">
+          <nav aria-label="Fil d’Ariane" className="flex items-center gap-2 text-libelle text-texte-2">
+            <Link to="/musique" className="hover:text-texte">
+              Musique
+            </Link>
+            <span aria-hidden>/</span>
+            <span className="truncate text-texte">{morceau.titre}</span>
+          </nav>
+          <ActionsEnTete />
+        </div>
         <ChampEnregistre
           libelle="Titre"
           valeur={morceau.titre}
@@ -269,7 +274,8 @@ function BlocNote({ note, libelle, placeholder, autoFocus }: { note: Note; libel
   }, [texte, note.id, note.contenu]);
 
   return (
-    <div className="group relative">
+    <div className="group relative flex flex-col gap-2">
+      {note.fichierId && <LecteurAudio fichierId={note.fichierId} libelle="le mémo vocal" />}
       <ZoneTexte
         libelle={libelle}
         valeur={texte}
@@ -279,7 +285,7 @@ function BlocNote({ note, libelle, placeholder, autoFocus }: { note: Note; libel
         onFocus={() => (enEdition.current = true)}
         onBlur={() => {
           enEdition.current = false;
-          if (!texte.trim()) void supprimerNote(note.id);
+          if (!texte.trim() && !note.fichierId) void supprimerNote(note.id);
           else if (texte !== note.contenu) void modifierNote(note.id, texte);
         }}
       />
@@ -301,6 +307,7 @@ function Infos({ morceau, projets }: { morceau: Morceau; projets: { id: string; 
 
   return (
     <aside aria-label="Infos" className="flex flex-col gap-6">
+      <SonDuParcours morceauId={morceau.id} />
       <h2 className="text-libelle text-texte-2">Infos</h2>
 
       <DepotFichiers
@@ -392,5 +399,33 @@ function Infos({ morceau, projets }: { morceau: Morceau; projets: { id: string; 
         <p className="text-texte-2">Ses versions, ses notes et sa cover seront effacées de l’app.</p>
       </Modale>
     </aside>
+  );
+}
+
+/* ---------- Lien avec le parcours ---------- */
+
+/** Désigne le morceau que l’artiste sort avec son parcours (affiché sur l’Accueil). */
+function SonDuParcours({ morceauId }: { morceauId: string }) {
+  const { donnees } = useRequete(lireParcours);
+  if (!donnees?.parcours || donnees.parcours.cas !== "A") return null;
+  const actuel = donnees.etapes[0]?.morceauId ?? null;
+
+  if (actuel === morceauId)
+    return (
+      <div className="flex items-center justify-between gap-3 rounded-18 border border-filet px-4 py-3">
+        <span className="flex items-center gap-2 text-libelle">
+          <Icone nom="valide" taille={16} className="text-accent" />
+          Le son de ton parcours
+        </span>
+        <button type="button" onClick={() => void definirSonDuParcours(null)} className="text-libelle text-texte-2 hover:text-texte">
+          Retirer
+        </button>
+      </div>
+    );
+
+  return (
+    <Bouton variante="contour" className="w-full" onClick={() => void definirSonDuParcours(morceauId)}>
+      {actuel ? "Sortir celui-ci à la place" : "C’est le son que je sors"}
+    </Bouton>
   );
 }

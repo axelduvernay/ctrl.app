@@ -117,6 +117,8 @@ export interface Note extends Entite {
   morceauId: Id | null;
   type: TypeNote;
   contenu: string;
+  /** Mémo vocal enregistré dans le navigateur (facultatif). */
+  fichierId?: Id | null;
 }
 
 export type TypeProjet = "ep" | "album" | "mixtape" | "tracklist";

@@ -12,12 +12,20 @@ import { dateRelative } from "@/lib/format";
 import type { Morceau, StatutMorceau, TypeProjet } from "@/types";
 import { creerMorceau, creerProjet } from "./actions";
 import { ChoixStatut, Vignette } from "./communs";
+import { Captures } from "./Captures";
 
-type Vue = "catalogue" | "projets";
+type Vue = "catalogue" | "projets" | "captures";
+
+const vues: { valeur: Vue; libelle: string }[] = [
+  { valeur: "catalogue", libelle: "Catalogue" },
+  { valeur: "projets", libelle: "Projets" },
+  { valeur: "captures", libelle: "Captures" },
+];
 
 export function MusiquePage() {
   const [params, setParams] = useSearchParams();
-  const vue: Vue = params.get("vue") === "projets" ? "projets" : "catalogue";
+  const brut = params.get("vue");
+  const vue: Vue = brut === "projets" || brut === "captures" ? brut : "catalogue";
   const [creation, setCreation] = useState(false);
 
   return (
@@ -25,29 +33,33 @@ export function MusiquePage() {
       <EnTete
         titre="Musique"
         actions={
-          <Bouton icone="plus" onClick={() => setCreation(true)}>
-            {vue === "catalogue" ? "Nouveau morceau" : "Nouveau projet"}
-          </Bouton>
+          vue !== "captures" && (
+            <Bouton icone="plus" onClick={() => setCreation(true)}>
+              {vue === "catalogue" ? "Nouveau morceau" : "Nouveau projet"}
+            </Bouton>
+          )
         }
       />
 
       <div role="tablist" aria-label="Vue" className="flex gap-6 border-b border-filet">
-        {(["catalogue", "projets"] as const).map((v) => (
+        {vues.map(({ valeur: v, libelle }) => (
           <button
             key={v}
             role="tab"
             aria-selected={vue === v}
-            onClick={() => setParams(v === "projets" ? { vue: v } : {})}
+            onClick={() => setParams(v === "catalogue" ? {} : { vue: v })}
             className={`-mb-px border-b pb-3 transition-colors duration-150 ${
               vue === v ? "border-texte text-texte" : "border-transparent text-texte-2 hover:text-texte"
             }`}
           >
-            {v === "catalogue" ? "Catalogue" : "Projets"}
+            {libelle}
           </button>
         ))}
       </div>
 
-      {vue === "catalogue" ? <Catalogue onCreer={() => setCreation(true)} /> : <Projets onCreer={() => setCreation(true)} />}
+      {vue === "catalogue" && <Catalogue onCreer={() => setCreation(true)} />}
+      {vue === "projets" && <Projets onCreer={() => setCreation(true)} />}
+      {vue === "captures" && <Captures />}
 
       {vue === "catalogue" ? (
         <NouveauMorceau ouverte={creation} onFermer={() => setCreation(false)} />

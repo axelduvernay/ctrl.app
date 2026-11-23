@@ -27,10 +27,10 @@ Un lot à la fois. Cocher quand le lot est fait et commité ; Axel valide au fil
 - [x] Projets (EP, tracklists)
 
 ## Lot 3 - Accueil
-- [ ] Bloc parcours (étape en cours, action suivante)
-- [ ] Cette semaine (tâches)
-- [ ] En cours (morceaux)
-- [ ] Stats (états vides et connexion simulée)
+- [x] Bloc parcours (étape en cours, action suivante)
+- [x] Cette semaine (tâches)
+- [x] En cours (morceaux)
+- [x] Stats (états vides et connexion simulée)
 
 ## Lot 4 - Sorties
 - [ ] Calendrier
@@ -51,8 +51,8 @@ Un lot à la fois. Cocher quand le lot est fait et commité ; Axel valide au fil
 - [ ] Nœuds liés aux morceaux, contacts et tâches
 
 ## Lot 7 - Transverse
-- [ ] Bouton Capturer : mémo vocal, note, tâche
-- [ ] Recherche globale ⌘K
+- [x] Bouton Capturer : mémo vocal, note, tâche
+- [x] Recherche globale ⌘K
 
 ## Lot 8 - Réglages
 - [ ] Profil et niveau (refaire le questionnaire)
