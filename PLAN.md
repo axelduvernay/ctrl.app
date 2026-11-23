@@ -39,10 +39,10 @@ Un lot à la fois. Cocher quand le lot est fait et commité ; Axel valide au fil
 - [x] Écran Distribution « bientôt »
 
 ## Lot 5 - Réseau (CRM)
-- [ ] Contacts
-- [ ] Modèles de mails selon le profil
-- [ ] Envoi simulé + historique
-- [ ] Suivi (envoyé, ouvert, relance) + relance en tâche
+- [x] Contacts
+- [x] Modèles de mails selon le profil
+- [x] Envoi simulé + historique
+- [x] Suivi (envoyé, ouvert, relance) + relance en tâche
 
 ## Lot 6 - Boards
 - [ ] Analyse du prototype `axelduvernay/ctrl.app` et proposition de reprise
