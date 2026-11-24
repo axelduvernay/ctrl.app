@@ -11,3 +11,8 @@ createRoot(document.getElementById("racine")!).render(
     </BrowserRouter>
   </StrictMode>,
 );
+
+// Hors ligne : en production seulement (en développement, le cache gênerait).
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  void navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`);
+}

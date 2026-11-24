@@ -33,7 +33,7 @@ function classeOnglet({ isActive }: { isActive: boolean }) {
 export function BarreLaterale() {
   const { theme, basculer } = useTheme();
   // Le parcours fait partie de l’Accueil : l’onglet reste allumé.
-  const surParcours = useLocation().pathname === "/parcours";
+  const surParcours = ["/parcours", "/taches"].includes(useLocation().pathname);
   const prochain = theme === "sombre" ? "Mode clair" : "Mode sombre";
 
   return (

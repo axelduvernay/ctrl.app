@@ -108,9 +108,14 @@ function CetteSemaine({ taches, morceaux }: { taches: Tache[]; morceaux: Morceau
 
   return (
     <section aria-labelledby="titre-semaine" className="flex flex-col gap-5">
-      <h2 id="titre-semaine" className="text-libelle text-texte-2">
-        Cette semaine
-      </h2>
+      <div className="flex items-baseline justify-between">
+        <h2 id="titre-semaine" className="text-libelle text-texte-2">
+          Cette semaine
+        </h2>
+        <Link to="/taches" className="text-libelle text-texte hover:underline underline-offset-4">
+          Tout voir
+        </Link>
+      </div>
       {liste.length === 0 ? (
         <p className="text-texte-2">{fr("Rien de prévu. Ajoute une tâche avec « Capturer ».")}</p>
       ) : (

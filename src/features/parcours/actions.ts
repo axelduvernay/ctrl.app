@@ -16,19 +16,22 @@ export async function terminerOnboarding(reponses: ReponsesOnboarding) {
   for (const p of await depots.parcours.lister()) await depots.parcours.supprimer(p.id);
 
   const parcours = await depots.parcours.creer({ cas, titre });
+  // Distributeur déjà choisi : l’étape « Choisir un distributeur » est validée d’office.
+  const dejaFaite = (cle: string) => cle === "distributeur" && reponses.distributeur === "oui";
   await Promise.all(
     etapes.map((cle, i) =>
       depots.etapes.creer({
         parcoursId: parcours.id,
         cle,
         ordre: i + 1,
-        statut: i === 0 ? "en-cours" : "a-faire",
+        statut: dejaFaite(cle) ? "validee" : "a-faire",
         morceauId: null,
-        valideeAt: null,
+        valideeAt: dejaFaite(cle) ? new Date().toISOString() : null,
       }),
     ),
   );
   await depots.profils.creer({ ...reponses, niveau: 1, onboardingTermineAt: new Date().toISOString() });
+  await recalculer(parcours.id);
 }
 
 /** Valide une étape : la suivante passe en cours, le niveau monte. */

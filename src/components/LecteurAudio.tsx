@@ -8,7 +8,10 @@ import { Icone } from "./Icone";
 let enCours: HTMLAudioElement | null = null;
 
 interface Props {
-  fichierId: string;
+  /** Fichier stocké dans l’app… */
+  fichierId?: string;
+  /** …ou adresse directe (ex. mémo pas encore enregistré). */
+  source?: string | null;
   /** Durée connue à l’import, affichée avant le chargement. */
   dureeConnue?: number | null;
   /** Version compacte (tracklist) : bouton seul. */
@@ -16,14 +19,16 @@ interface Props {
   libelle: string;
 }
 
-export function LecteurAudio({ fichierId, dureeConnue, compact = false, libelle }: Props) {
-  const url = useUrlFichier(fichierId);
+export function LecteurAudio({ fichierId, source, dureeConnue, compact = false, libelle }: Props) {
+  const urlStockee = useUrlFichier(source ? null : fichierId);
+  const url = source ?? urlStockee;
   const audio = useRef<HTMLAudioElement>(null);
   const [lecture, setLecture] = useState(false);
   const [position, setPosition] = useState(0);
   const [total, setTotal] = useState(dureeConnue ?? 0);
 
   useEffect(() => () => audio.current?.pause(), []);
+  useEffect(() => setTotal(dureeConnue ?? 0), [dureeConnue, url]);
 
   function basculer() {
     const a = audio.current;

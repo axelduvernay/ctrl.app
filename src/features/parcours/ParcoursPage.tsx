@@ -29,7 +29,7 @@ export function ParcoursPage() {
           <p className="mb-1 text-libelle text-texte-2">Ton parcours</p>
           <h1 className="text-[40px] leading-tight font-medium tracking-[-0.03em]">{parcours.titre}</h1>
         </header>
-        <NumeroEtape numero={deuxChiffres(termine ? etapes.length : faites + 1)} total={total} taille={112} />
+        <NumeroEtape numero={deuxChiffres(termine ? etapes.length : (enCours?.ordre ?? 1))} total={total} taille={112} />
       </div>
       <Progression total={etapes.length} faites={faites} enCours={!termine} />
 

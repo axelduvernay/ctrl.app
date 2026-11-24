@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Bouton } from "@/components/Bouton";
 import { ChampSelect, ChampTexte, ZoneTexte } from "@/components/Champs";
 import { Modale } from "@/components/Modale";
+import { LecteurAudio } from "@/components/LecteurAudio";
 import { depots, useRequete } from "@/data";
 import { fr } from "@/content/typo";
 import { duree } from "@/lib/format";
@@ -207,7 +208,7 @@ function Enregistreur({ memo, onMemo }: { memo: { blob: Blob; duree: number } | 
           {etat === "enregistrement" ? `Enregistrement… ${duree(secondes)}` : memo ? `Mémo de ${duree(memo.duree)}` : "Le son reste sur cet appareil."}
         </span>
       </div>
-      {url && <audio src={url} controls className="w-full" />}
+      {url && memo && <LecteurAudio source={url} dureeConnue={memo.duree} libelle="le mémo" />}
     </div>
   );
 }

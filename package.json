@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -p tsconfig.json && vite build && cp dist/index.html dist/404.html",
+    "build": "tsc -p tsconfig.json && vite build && node scripts/apres-build.mjs",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json"
   },

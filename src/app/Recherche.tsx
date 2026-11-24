@@ -42,7 +42,7 @@ export function Recherche() {
         groupe: "Tâches",
         titre: t.titre,
         detail: t.faite ? "Faite" : "À faire",
-        vers: t.morceauId ? `/musique/${t.morceauId}` : t.contactId ? `/reseau/${t.contactId}` : "/",
+        vers: t.morceauId ? `/musique/${t.morceauId}` : t.contactId ? `/reseau/${t.contactId}` : "/taches",
       })),
       ...boards.map((b) => ({ id: b.id, groupe: "Boards", titre: b.titre, detail: "Board", vers: `/boards/${b.id}` })),
     ];

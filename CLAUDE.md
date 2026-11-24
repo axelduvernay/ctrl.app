@@ -23,7 +23,7 @@ Le détail des fonctionnalités est dans `SPEC.md`. L'ordre de travail est dans 
 Le premier prototype (whiteboard) s’appelait ctrl.app ; il est devenu **ctrl.mind** (repo `axelduvernay/ctrl.mind`). Les deux apps partagent l’origine `axelduvernay.github.io` :
 - base IndexedDB de ctrl.app : `ctrlapp-donnees` (ctrl.mind utilise `ctrl-app`) ;
 - clés localStorage de ctrl.app préfixées `ctrlapp.` (ctrl.mind utilise `ctrl-…`) ;
-- `public/sw.js` désinstalle l’ancien service worker resté sur `/ctrl.app/`. Ne pas le supprimer.
+- `public/sw.js` est le service worker de ctrl.app (mode hors ligne) ; il remplace celui de l’ancienne app resté sur `/ctrl.app/` et efface ses caches `ctrl-app-…`. Ne pas le supprimer. La liste des fichiers à mettre en cache est injectée par `scripts/apres-build.mjs`.
 
 ## Stack
 

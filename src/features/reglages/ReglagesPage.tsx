@@ -51,8 +51,7 @@ function Profil() {
   const [confirmer, setConfirmer] = useState(false);
   const { donnees } = useRequete(lireParcours);
   if (!donnees?.profil) return null;
-  const { profil, parcours, etapes } = donnees;
-  const faites = etapes.filter((e) => e.statut === "validee").length;
+  const { profil, parcours, etapes, enCours } = donnees;
 
   return (
     <Section titre="Profil et niveau" texte="Tes réponses au questionnaire ont généré ton parcours.">
@@ -65,7 +64,7 @@ function Profil() {
           <>
             <dt className="text-libelle text-texte-2">Parcours</dt>
             <dd>
-              {parcours.titre} · étape {deuxChiffres(Math.min(faites + 1, etapes.length))} /{deuxChiffres(etapes.length)}
+              {parcours.titre} · étape {deuxChiffres(enCours?.ordre ?? etapes.length)} /{deuxChiffres(etapes.length)}
             </dd>
           </>
         )}

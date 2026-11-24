@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router";
 import { Coquille } from "./Coquille";
+const TachesPage = lazy(() => import("@/features/taches/TachesPage").then((m) => ({ default: m.TachesPage })));
 const ParcoursPage = lazy(() => import("@/features/parcours/ParcoursPage").then((m) => ({ default: m.ParcoursPage })));
 const ReglagesPage = lazy(() => import("@/features/reglages/ReglagesPage").then((m) => ({ default: m.ReglagesPage })));
 const BoardPage = lazy(() => import("@/features/boards/BoardPage").then((m) => ({ default: m.BoardPage })));
@@ -25,6 +26,7 @@ export function App() {
       <Route path="/bienvenue" element={<OnboardingPage />} />
       <Route element={<Coquille />}>
         <Route index element={<AccueilPage />} />
+        <Route path="/taches" element={<TachesPage />} />
         <Route path="/parcours" element={<ParcoursPage />} />
         <Route path="/musique" element={<MusiquePage />} />
         <Route path="/musique/projets/:id" element={<ProjetPage />} />
