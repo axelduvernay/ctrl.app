@@ -5,6 +5,7 @@ import { useUi } from "@/stores/ui";
 import { BarreLaterale } from "./BarreLaterale";
 import { Capture } from "./Capture";
 import { Recherche } from "./Recherche";
+import { Rappels } from "./Rappels";
 
 /** Coquille de l’app : barre latérale à gauche, écran courant à droite.
     Sans profil (premier lancement ou après réinitialisation) : onboarding. */
@@ -37,6 +38,7 @@ export function Coquille() {
       </main>
       <Capture />
       <Recherche />
+      <Rappels />
     </div>
   );
 }

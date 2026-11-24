@@ -72,6 +72,10 @@ export function creerDepotsLocaux(): Depots {
         await table.delete(id);
         signaler(collection);
       },
+      async remplacer(objet: T) {
+        await table.put(objet);
+        signaler(collection);
+      },
     };
   }
 

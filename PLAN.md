@@ -50,6 +50,8 @@ Un lot à la fois. Cocher quand le lot est fait et commité ; Axel valide au fil
 - [x] Blocs : note, tâche, tracklist, zone + liens
 - [x] Nœuds liés aux morceaux, contacts et tâches
 
+- [x] Tout le board du prototype ctrl.mind (texte riche, commandes /, catégories, échéance et rappel, images, dessin, tableaux, dossiers, variantes, zone « Fait », lasso, aimant, sous-zones, annuler / rétablir, recherche, filtres, raccourcis) : voir `BOARDS-ANALYSE.md`
+
 ## Lot 7 - Transverse
 - [x] Bouton Capturer : mémo vocal, note, tâche
 - [x] Recherche globale ⌘K

@@ -240,9 +240,21 @@ export interface VueBoard {
   zoom: number;
 }
 
+/** Catégorie d’un board (Idée, Question…) : renommable, recolorable.
+    « cochable » ajoute une case à cocher aux blocs qui la portent. */
+export interface Categorie {
+  id: Id;
+  nom: string;
+  couleur: string;
+  commande: string;
+  cochable: boolean;
+}
+
 export interface Board extends Entite {
   titre: string;
   vue: VueBoard;
+  /** Absent sur un board créé avant les catégories : valeurs par défaut. */
+  categories?: Categorie[];
 }
 
 export type TypeBloc =
@@ -250,6 +262,10 @@ export type TypeBloc =
   | "tache"
   | "tracklist"
   | "zone"
+  | "image"
+  | "dessin"
+  | "tableau"
+  | "dossier"
   /* Nœuds liés : le même objet que dans les autres onglets. */
   | "morceau"
   | "contact";
@@ -271,12 +287,33 @@ export interface Bloc extends Entite {
   refId: Id | null;
   /** Tracklist : morceaux numérotés, dans l’ordre. */
   morceauIds: Id[];
+  /* Champs facultatifs (ajoutés avec le board complet). */
+  categorieId?: Id | null;
+  /** Case cochée (catégorie cochable). */
+  fait?: boolean;
+  echeance?: Jour | null;
+  rappel?: DateIso | null;
+  rappelVu?: boolean;
+  /** Image importée. */
+  fichierId?: Id | null;
+  /** Dossier : fichiers rangés dans l’ordre. */
+  fichierIds?: Id[];
+  /** Dessin : tracé vectoriel (attribut d de SVG) et taille d’origine. */
+  trace?: { d: string; w: number; h: number } | null;
+  /** Tableau : lignes de cellules, la première sert d’en-tête. */
+  cellules?: string[][];
+  /** Zone : teinte du fond. */
+  couleur?: string | null;
+  /** Variante : même lignée, numéro de version. */
+  variante?: { lignee: Id; numero: number } | null;
 }
 
 export interface Lien extends Entite {
   boardId: Id;
   deBlocId: Id;
   versBlocId: Id;
+  /** « variante » : lien pointillé entre deux versions. */
+  type?: "variante" | null;
 }
 
 /* ---------- Intégrations (simulées pour l’instant) ---------- */

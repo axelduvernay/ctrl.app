@@ -126,3 +126,66 @@
     background-size: 20px 20px;
   }
 }
+
+/* Texte riche des notes du board. */
+@layer components {
+  .texte-riche {
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+  .texte-riche > * + * {
+    margin-top: 0.35em;
+  }
+  .texte-riche h1 {
+    font-size: 22px;
+    line-height: 1.2;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+  .texte-riche h2 {
+    font-size: 17px;
+    line-height: 1.3;
+    font-weight: 500;
+  }
+  .texte-riche b {
+    font-weight: 700;
+  }
+  .texte-riche mark {
+    background: color-mix(in srgb, var(--statut-maquette) 35%, transparent);
+    color: inherit;
+    border-radius: 3px;
+    padding: 0 2px;
+  }
+  .texte-riche ul,
+  .texte-riche ol {
+    padding-left: 1.2em;
+    list-style: disc;
+  }
+  .texte-riche ol {
+    list-style: decimal;
+  }
+  /* Titres repliables : flèche à gauche, au survol. */
+  .texte-riche.affichage :is(h1, h2) {
+    position: relative;
+  }
+  .texte-riche.affichage :is(h1, h2)::before {
+    content: "";
+    position: absolute;
+    left: -16px;
+    top: 0.45em;
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 6px solid var(--texte-2);
+    opacity: 0;
+    transition: opacity 150ms;
+  }
+  .texte-riche.affichage :is(h1, h2)[data-replie]::before {
+    opacity: 1;
+    transform: rotate(-90deg);
+  }
+  .group:hover .texte-riche.affichage :is(h1, h2)::before {
+    opacity: 1;
+  }
+}

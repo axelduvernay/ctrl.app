@@ -70,3 +70,79 @@ export function contient(zone: Rect, r: Rect) {
   const cy = r.y + r.h / 2;
   return cx > zone.x && cx < zone.x + zone.w && cy > zone.y && cy < zone.y + zone.h;
 }
+
+export function seCroisent(a: Rect, b: Rect) {
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+
+export function englobant(rects: Rect[]): Rect {
+  const x1 = Math.min(...rects.map((r) => r.x));
+  const y1 = Math.min(...rects.map((r) => r.y));
+  const x2 = Math.max(...rects.map((r) => r.x + r.w));
+  const y2 = Math.max(...rects.map((r) => r.y + r.h));
+  return { x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
+}
+
+export const ECART = 24;
+
+/* Aimant : bords ou centres alignés, ou côte à côte avec un écart régulier.
+   Renvoie le décalage à appliquer et les guides à dessiner. */
+export function aimanter(moi: Rect, voisins: Rect[], seuil: number) {
+  let meilleurX: { d: number; guide: number } | null = null;
+  let meilleurY: { d: number; guide: number } | null = null;
+  const xs = (r: Rect) => [r.x, r.x + r.w / 2, r.x + r.w];
+  const ys = (r: Rect) => [r.y, r.y + r.h / 2, r.y + r.h];
+  for (const v of voisins) {
+    if (Math.abs(v.y + v.h / 2 - (moi.y + moi.h / 2)) > 800 || Math.abs(v.x + v.w / 2 - (moi.x + moi.w / 2)) > 800) continue;
+    // Alignements de bords et de centres.
+    for (const [i, a] of xs(moi).entries())
+      for (const b of xs(v)) {
+        const d = b - a;
+        if (Math.abs(d) < seuil && (!meilleurX || Math.abs(d) < Math.abs(meilleurX.d))) meilleurX = { d, guide: b };
+        void i;
+      }
+    for (const a of ys(moi))
+      for (const b of ys(v)) {
+        const d = b - a;
+        if (Math.abs(d) < seuil && (!meilleurY || Math.abs(d) < Math.abs(meilleurY.d))) meilleurY = { d, guide: b };
+      }
+    // Côte à côte avec l’écart régulier.
+    for (const d of [v.x + v.w + ECART - moi.x, v.x - ECART - (moi.x + moi.w)])
+      if (Math.abs(d) < seuil && (!meilleurX || Math.abs(d) < Math.abs(meilleurX.d))) meilleurX = { d, guide: Number.NaN };
+    for (const d of [v.y + v.h + ECART - moi.y, v.y - ECART - (moi.y + moi.h)])
+      if (Math.abs(d) < seuil && (!meilleurY || Math.abs(d) < Math.abs(meilleurY.d))) meilleurY = { d, guide: Number.NaN };
+  }
+  return {
+    dx: meilleurX?.d ?? 0,
+    dy: meilleurY?.d ?? 0,
+    guideX: meilleurX && Number.isFinite(meilleurX.guide) ? meilleurX.guide : null,
+    guideY: meilleurY && Number.isFinite(meilleurY.guide) ? meilleurY.guide : null,
+  };
+}
+
+/* Aligner : rangées et colonnes nettes, sans chevauchement, sans rien ramener
+   au centre. Les blocs gardent leur ordre de lecture (haut en bas, gauche à
+   droite). Renvoie les nouvelles positions. */
+export function aligner(rects: (Rect & { id: string })[], origine?: { x: number; y: number }) {
+  if (rects.length === 0) return [];
+  const tries = [...rects].sort((a, b) => a.y - b.y || a.x - b.x);
+  const rangees: (Rect & { id: string })[][] = [];
+  for (const r of tries) {
+    const rangee = rangees.find((g) => g.some((x) => r.y < x.y + x.h * 0.6 && r.y + r.h * 0.6 > x.y));
+    if (rangee) rangee.push(r);
+    else rangees.push([r]);
+  }
+  const depart = origine ?? { x: Math.min(...rects.map((r) => r.x)), y: Math.min(...rects.map((r) => r.y)) };
+  const positions: { id: string; x: number; y: number }[] = [];
+  let y = depart.y;
+  for (const rangee of rangees) {
+    rangee.sort((a, b) => a.x - b.x);
+    let x = depart.x;
+    for (const r of rangee) {
+      positions.push({ id: r.id, x, y });
+      x += r.w + ECART;
+    }
+    y += Math.max(...rangee.map((r) => r.h)) + ECART;
+  }
+  return positions;
+}

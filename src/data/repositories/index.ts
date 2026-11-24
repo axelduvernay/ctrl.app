@@ -39,6 +39,8 @@ export interface Repo<T extends Entite> {
       risque d’écraser une écriture faite juste avant (listes, objets imbriqués). */
   transformer(id: Id, calcul: (actuel: T) => Modification<T>): Promise<T>;
   supprimer(id: Id): Promise<void>;
+  /** Réécrit un objet complet, tel quel (annuler / rétablir). */
+  remplacer(objet: T): Promise<void>;
 }
 
 export type UtilisateursRepo = Repo<Utilisateur>;
