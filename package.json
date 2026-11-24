@@ -10,6 +10,7 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.119.2",
     "dexie": "^4.4.7",
     "lucide-react": "^1.78.0",
     "react": "^19.3.1",

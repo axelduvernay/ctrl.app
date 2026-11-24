@@ -64,11 +64,11 @@ Un lot à la fois. Cocher quand le lot est fait et commité ; Axel valide au fil
 - [x] Réinitialiser l'app
 
 ## Lot 9 - Comptes et synchronisation (Supabase)
-- [ ] Projet Supabase dédié (séparé de ctrl.mind), schéma et règles d’accès
-- [ ] Implémentation `src/data/remote` des repositories
-- [ ] Étape « Garde ta progression » à la fin de l’onboarding : mail + code à 6 chiffres, « Continuer sans compte »
-- [ ] Compte dans Réglages : se connecter, se déconnecter, état de la synchro
-- [ ] Fichiers audio et covers dans le stockage Supabase
+- [x] Projet Supabase dédié (séparé de ctrl.mind), schéma et règles d’accès (`supabase/schema.sql`, à lancer par Axel)
+- [x] Synchronisation « local d’abord » dans `src/data/remote` (journal des changements, envoi, réception, la modification la plus récente gagne)
+- [x] Étape « Garde ta progression » à la fin de l’onboarding : mail + code à 6 chiffres, « Continuer sans compte »
+- [x] Compte dans Réglages : se connecter, se déconnecter, état de la synchro
+- [x] Fichiers audio et covers dans le stockage Supabase
 
 ## Lot 10 - Prêt pour le stand
 - [x] Parcours complet testé de l'onboarding à une sortie planifiée

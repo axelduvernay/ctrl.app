@@ -45,7 +45,7 @@ src/
   data/
     repositories/ interfaces : MorceauxRepo, ContactsRepo, etc.
     local/        implémentation IndexedDB (utilisée maintenant)
-    remote/       implémentation Supabase (plus tard, vide pour l'instant)
+    remote/       synchronisation avec Supabase (comptes par code mail, envoi et réception des changements)
   integrations/
     gmail/        interface + adaptateur simulé
     instagram/    interface + adaptateur simulé
@@ -67,7 +67,7 @@ Règles :
 - **Les écrans n'accèdent jamais directement au stockage.** Ils passent par les repositories.
 - Chaque entité a `id` (uuid), `createdAt`, `updatedAt` et `ownerId`, pour que la synchronisation et les comptes soient faciles à brancher plus tard.
 - Les intégrations simulées ne font semblant de rien : elles disent clairement « connexion simulée » dans l'interface. Aucun faux chiffre de stats.
-- Un seul utilisateur local tant que les comptes (lot 9) ne sont pas branchés.
+- « Local d’abord » : les écrans lisent et écrivent dans IndexedDB ; chaque écriture est notée dans un journal que `src/data/remote/sync.ts` envoie à Supabase quand un compte est connecté. Seule la synchronisation utilise `moteurLocal`. Schéma serveur : `supabase/schema.sql`.
 
 ## Direction artistique
 

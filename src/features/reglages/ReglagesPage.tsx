@@ -11,6 +11,9 @@ import { jourIso } from "@/lib/format";
 import { lireParcours } from "@/features/parcours/actions";
 import { deuxChiffres } from "@/features/parcours/regles";
 import { useTheme, type Theme } from "@/stores/theme";
+import { useCompte } from "@/stores/compte";
+import { ConnexionCompte } from "@/app/ConnexionCompte";
+import { deconnecter, synchroniser } from "@/data/remote/sync";
 
 const modes: { valeur: Theme; libelle: string }[] = [
   { valeur: "sombre", libelle: "Sombre" },
@@ -24,6 +27,7 @@ export function ReglagesPage() {
     <div className="flex flex-col gap-12">
       <EnTete titre="Réglages" />
       <Profil />
+      <Compte />
       <Comptes />
       <Affichage />
       <Donnees />
@@ -88,6 +92,86 @@ function Profil() {
         <p className="text-texte-2">
           {fr("Ton parcours sera recalculé à partir de tes nouvelles réponses, et sa progression repartira de l’étape 01. Tes morceaux, contacts et sorties ne bougent pas.")}
         </p>
+      </Modale>
+    </Section>
+  );
+}
+
+/* ---------- Compte et synchronisation ---------- */
+
+function Compte() {
+  const { session, etat, erreur, derniere, attente } = useCompte();
+  const [message, setMessage] = useState<string | null>(null);
+  const [confirmer, setConfirmer] = useState(false);
+  const naviguer = useNavigate();
+
+  if (!session)
+    return (
+      <Section
+        titre="Compte et synchronisation"
+        texte="Connecte-toi avec ton mail pour sauvegarder tes données et les retrouver sur tes autres appareils. Sans compte, tout reste sur cet appareil."
+      >
+        <ConnexionCompte onConnecte={({ compteExistant }) => setMessage(compteExistant ? "Connecté. Ton compte avait déjà un parcours : il remplace celui de cet appareil. Le reste est réuni." : "Connecté. Tes données sont envoyées sur ton compte.")} />
+        {message && <p role="status" className="text-libelle text-texte-2">{fr(message)}</p>}
+      </Section>
+    );
+
+  const libelleEtat =
+    etat === "en-cours"
+      ? "Synchronisation…"
+      : etat === "hors-ligne"
+        ? "Hors ligne : les changements partiront au retour du réseau."
+        : etat === "erreur"
+          ? `Synchronisation impossible : ${erreur ?? "erreur inconnue"}`
+          : derniere
+            ? `À jour · ${new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" }).format(new Date(derniere))}`
+            : "Pas encore synchronisé";
+
+  return (
+    <Section titre="Compte et synchronisation" texte="Tes données sont sauvegardées sur ton compte et te suivent sur tes autres appareils.">
+      <dl className="grid gap-x-8 gap-y-3 sm:grid-cols-[160px_1fr]">
+        <dt className="text-libelle text-texte-2">Compte</dt>
+        <dd>{session.email}</dd>
+        <dt className="text-libelle text-texte-2">Synchronisation</dt>
+        <dd className="flex items-center gap-2">
+          {etat === "ok" && <Icone nom="valide" taille={16} className="text-accent" />}
+          {fr(libelleEtat)}
+          {attente > 0 && etat !== "en-cours" && <span className="text-libelle text-texte-2">· {attente} en attente</span>}
+        </dd>
+      </dl>
+      <div className="flex flex-wrap items-center gap-3">
+        <Bouton variante="contour" disabled={etat === "en-cours"} onClick={() => void synchroniser()}>
+          Synchroniser maintenant
+        </Bouton>
+        <Bouton variante="lien" onClick={() => void deconnecter()}>
+          Se déconnecter
+        </Bouton>
+        <button type="button" onClick={() => setConfirmer(true)} className="text-libelle text-texte-2 hover:text-texte">
+          Se déconnecter et effacer cet appareil
+        </button>
+      </div>
+      <Modale
+        ouverte={confirmer}
+        titre="Effacer cet appareil ?"
+        onFermer={() => setConfirmer(false)}
+        actions={
+          <>
+            <Bouton variante="lien" onClick={() => setConfirmer(false)}>
+              Annuler
+            </Bouton>
+            <Bouton
+              onClick={async () => {
+                await synchroniser();
+                await deconnecter(true);
+                naviguer("/bienvenue", { replace: true });
+              }}
+            >
+              Effacer cet appareil
+            </Bouton>
+          </>
+        }
+      >
+        <p className="text-texte-2">{fr("Tes données restent sur ton compte : tu les retrouves en te reconnectant. Cet appareil revient au questionnaire (pratique au stand).")}</p>
       </Modale>
     </Section>
   );
@@ -211,7 +295,7 @@ function Donnees() {
   return (
     <Section
       titre="Données"
-      texte="Tout est enregistré sur cet appareil. La synchronisation entre appareils arrivera avec les comptes ; en attendant, exporte tes données dans un fichier."
+      texte="Une copie de toutes tes données (fichiers audio et images compris) dans un fichier .json, à garder ou à importer sur un autre appareil."
     >
       <div className="flex flex-wrap gap-3">
         <Bouton variante="contour" icone="importer" className="[&_svg]:rotate-180" onClick={() => void exporter()}>
@@ -259,6 +343,8 @@ function Reinitialiser() {
   const [confirmer, setConfirmer] = useState(false);
 
   async function reinitialiser() {
+    // Un compte connecté est déconnecté (ses données restent sur le compte).
+    if (useCompte.getState().session) await deconnecter();
     await depots.toutEffacer();
     choisir("sombre");
     naviguer("/bienvenue", { replace: true });

@@ -45,6 +45,8 @@ export class BaseLocale extends Dexie {
   blocs!: Table<Bloc, string>;
   liens!: Table<Lien, string>;
   connexions!: Table<Connexion, string>;
+  _attente!: Table<{ cle: string; collection: string; id: string; supprime: boolean; at: string }, string>;
+  _meta!: Table<{ cle: string; valeur: unknown }, string>;
 
   constructor() {
     super(NOM_BASE);
@@ -68,6 +70,11 @@ export class BaseLocale extends Dexie {
       blocs: "id, boardId, refId",
       liens: "id, boardId",
       connexions: "id, service",
+    });
+    // Synchronisation : changements à envoyer, et réglages internes.
+    this.version(2).stores({
+      _attente: "cle",
+      _meta: "cle",
     });
   }
 }

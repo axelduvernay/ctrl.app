@@ -10,6 +10,9 @@ import { terminerOnboarding, type ReponsesOnboarding } from "@/features/parcours
 import { genererParcours, deuxChiffres } from "@/features/parcours/regles";
 import { contenuEtape, parcoursParCas } from "@/content/parcours";
 import { fr } from "@/content/typo";
+import { Icone } from "@/components/Icone";
+import { ConnexionCompte } from "@/app/ConnexionCompte";
+import { useCompte } from "@/stores/compte";
 import type { DejaPublie, Distributeur, Objectif, ReseauSocial, Role } from "@/types";
 
 /* Questionnaire du premier lancement, en 4 étapes, puis le résultat. */
@@ -41,10 +44,11 @@ const objectifs: { valeur: Objectif; titre: string }[] = [
   { valeur: "developper-reseau", titre: "Développer mon réseau" },
 ];
 
-const TOTAL = 4;
+const TOTAL = 5;
 
 export function OnboardingPage() {
   const naviguer = useNavigate();
+  const session = useCompte((c) => c.session);
   // Questionnaire refait depuis Réglages : on peut revenir sans rien changer.
   const { donnees: profils } = useRequete(() => depots.profils.lister());
   const dejaInscrit = !!profils?.some((p) => p.onboardingTermineAt);
@@ -64,7 +68,7 @@ export function OnboardingPage() {
     (etape === 1 && role !== null && nomArtiste.trim() !== "") ||
     (etape === 2 && dejaPublie !== null && distributeur !== null) ||
     (etape === 3 && choix.length > 0) ||
-    etape === 4;
+    etape >= 4;
 
   async function suivant() {
     if (!peutContinuer || envoi) return;
@@ -121,7 +125,7 @@ export function OnboardingPage() {
             <span />
           )}
           <Bouton onClick={suivant} disabled={!peutContinuer || envoi}>
-            {etape === TOTAL ? "Voir mon parcours" : "Continuer"}
+            {etape === TOTAL ? (session ? "Voir mon parcours" : "Continuer sans compte") : "Continuer"}
           </Bouton>
         </>
       }
@@ -219,6 +223,29 @@ export function OnboardingPage() {
           sousTitre="Facultatif, modifiable plus tard dans Réglages. Les connexions sont simulées pour l’instant : aucune donnée n’est récupérée."
         >
           <Connexions />
+        </Question>
+      )}
+
+      {etape === 5 && (
+        <Question
+          numero="05"
+          theme="Compte"
+          titre="Garde ta progression"
+          sousTitre="Facultatif. Avec ton mail, ton parcours, tes morceaux et tes boards sont sauvegardés et te suivent sur tes autres appareils. Pas de mot de passe : tu reçois un code."
+        >
+          {session ? (
+            <p className="flex items-center gap-2">
+              <Icone nom="valide" taille={18} className="text-accent" />
+              Connecté avec {session.email}
+            </p>
+          ) : (
+            <ConnexionCompte
+              onConnecte={({ compteExistant }) => {
+                // Le compte avait déjà un parcours : on le retrouve tel quel.
+                if (compteExistant) naviguer("/", { replace: true });
+              }}
+            />
+          )}
         </Question>
       )}
     </Cadre>
