@@ -74,6 +74,10 @@ export interface Etape extends Entite {
   /** Morceau concerné par l’étape (ex. « Finaliser le mix » d’Après minuit). */
   morceauId: Id | null;
   valideeAt: DateIso | null;
+  /** Textes réécrits par l’artiste (sinon, ceux de src/content/parcours.ts).
+      Une étape ajoutée à la main a la clé « perso ». */
+  titrePerso?: string | null;
+  explicationPerso?: string | null;
 }
 
 /* ---------- Musique ---------- */

@@ -12,7 +12,8 @@ import { fr } from "./typo";
 export interface ContenuEtape {
   titre: string;
   explication: string;
-  action: { libelle: string; vers: string };
+  /** Absent pour une étape ajoutée à la main. */
+  action?: { libelle: string; vers: string };
 }
 
 export const etapes = {
@@ -117,6 +118,17 @@ export const parcoursParCas: Record<CasParcours, { titre: string; etapes: CleEta
     etapes: ["rythme-regulier", "playlists", "stats-sorties", "developper-reseau"],
   },
 };
+
+/** Contenu affiché d’une étape : le texte proposé, ou celui réécrit par
+    l’artiste s’il l’a modifié. */
+export function contenuDe(etape: { cle: string; titrePerso?: string | null; explicationPerso?: string | null }): ContenuEtape {
+  const base = contenuEtape(etape.cle);
+  return {
+    titre: fr(etape.titrePerso?.trim() || base?.titre || "Étape"),
+    explication: fr(etape.explicationPerso?.trim() || base?.explication || ""),
+    action: base?.action,
+  };
+}
 
 export function contenuEtape(cle: string): ContenuEtape | undefined {
   const c = (etapes as Record<string, ContenuEtape>)[cle];

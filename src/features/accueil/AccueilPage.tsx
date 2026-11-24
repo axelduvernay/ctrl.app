@@ -4,7 +4,7 @@ import { NumeroEtape, Progression } from "@/components/Progression";
 import { PastilleStatut } from "@/components/PastilleStatut";
 import { depots, useRequete } from "@/data";
 import { integrations } from "@/integrations";
-import { contenuEtape } from "@/content/parcours";
+import { contenuDe } from "@/content/parcours";
 import { fr } from "@/content/typo";
 import { ajouterJours, dateLongue, dateRelative, jourIso, libelleJour } from "@/lib/format";
 import { lireParcours } from "@/features/parcours/actions";
@@ -62,7 +62,7 @@ function BlocParcours({ donnees }: { donnees: Donnees }) {
 
   const faites = etapes.filter((e) => e.statut === "validee").length;
   const total = deuxChiffres(etapes.length);
-  const contenu = enCours && contenuEtape(enCours.cle);
+  const contenu = enCours && contenuDe(enCours);
   const morceau = morceaux.find((m) => m.id === (enCours ?? etapes[0])?.morceauId);
 
   if (!enCours || !contenu)
@@ -91,8 +91,10 @@ function BlocParcours({ donnees }: { donnees: Donnees }) {
       </div>
       <Progression total={etapes.length} faites={faites} />
       <div className="flex flex-wrap items-center gap-6">
-        <Bouton onClick={() => naviguer(cibleAction(contenu.action.vers, morceau, sorties))}>{contenu.action.libelle}</Bouton>
-        <Bouton variante="lien" iconeApres="fleche" onClick={() => naviguer("/parcours")}>
+        {contenu.action && (
+          <Bouton onClick={() => naviguer(cibleAction(contenu.action!.vers, morceau, sorties))}>{contenu.action.libelle}</Bouton>
+        )}
+        <Bouton variante={contenu.action ? "lien" : "principal"} iconeApres="fleche" onClick={() => naviguer("/parcours")}>
           Voir le parcours
         </Bouton>
       </div>

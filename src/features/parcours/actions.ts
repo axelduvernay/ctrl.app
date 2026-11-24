@@ -46,9 +46,16 @@ export async function rouvrirEtape(etape: Etape) {
   await recalculer(etape.parcoursId);
 }
 
-/** Une seule étape en cours : la première non validée. Le niveau suit. */
+/** Une seule étape en cours : la première non validée. Le niveau suit.
+    Les numéros sont remis à 1, 2, 3… dans l’ordre. */
 async function recalculer(parcoursId: string) {
   const etapes = (await depots.etapes.trouver("parcoursId", parcoursId)).sort((a, b) => a.ordre - b.ordre);
+  for (const [i, e] of etapes.entries()) {
+    if (e.ordre !== i + 1) {
+      await depots.etapes.modifier(e.id, { ordre: i + 1 });
+      e.ordre = i + 1;
+    }
+  }
   const premiere = etapes.find((e) => e.statut !== "validee");
   for (const e of etapes) {
     if (e.statut === "validee") continue;
@@ -76,4 +83,70 @@ export async function definirSonDuParcours(morceauId: string | null) {
   for (const e of await depots.etapes.trouver("parcoursId", parcours.id)) {
     if (e.morceauId !== morceauId) await depots.etapes.modifier(e.id, { morceauId });
   }
+}
+
+/* ---------- Parcours sur mesure ---------- */
+
+export function renommerParcours(id: string, titre: string) {
+  return depots.parcours.modifier(id, { titre: titre.trim() });
+}
+
+export function modifierEtape(id: string, modifs: { titrePerso?: string | null; explicationPerso?: string | null }) {
+  return depots.etapes.modifier(id, modifs);
+}
+
+export async function deplacerEtape(etape: Etape, sens: -1 | 1) {
+  const etapes = (await depots.etapes.trouver("parcoursId", etape.parcoursId)).sort((a, b) => a.ordre - b.ordre);
+  const i = etapes.findIndex((e) => e.id === etape.id);
+  const voisine = etapes[i + sens];
+  if (!voisine) return;
+  await depots.etapes.modifier(etape.id, { ordre: voisine.ordre });
+  await depots.etapes.modifier(voisine.id, { ordre: etape.ordre });
+  await recalculer(etape.parcoursId);
+}
+
+export async function retirerEtape(etape: Etape) {
+  await depots.etapes.supprimer(etape.id);
+  await recalculer(etape.parcoursId);
+}
+
+/** Ajoute une étape à la fin : proposée (clé du contenu) ou écrite à la main (« perso »). */
+export async function ajouterEtape(parcoursId: string, cle: string, titrePerso: string | null = null) {
+  const etapes = await depots.etapes.trouver("parcoursId", parcoursId);
+  const e = await depots.etapes.creer({
+    parcoursId,
+    cle,
+    ordre: Math.max(0, ...etapes.map((x) => x.ordre)) + 1,
+    statut: "a-faire",
+    morceauId: etapes[0]?.morceauId ?? null,
+    valideeAt: null,
+    titrePerso,
+    explicationPerso: null,
+  });
+  await recalculer(parcoursId);
+  return e;
+}
+
+/** Revient au parcours proposé à partir des réponses au questionnaire.
+    Le son du parcours est gardé. */
+export async function revenirAuParcoursPropose() {
+  const [profil] = await depots.profils.lister();
+  const [parcours] = await depots.parcours.lister();
+  if (!profil || !parcours) return;
+  const anciennes = await depots.etapes.trouver("parcoursId", parcours.id);
+  const morceauId = anciennes[0]?.morceauId ?? null;
+  for (const e of anciennes) await depots.etapes.supprimer(e.id);
+  const { titre, etapes } = genererParcours(profil.dejaPublie);
+  await depots.parcours.modifier(parcours.id, { titre });
+  const dejaFaite = (cle: string) => cle === "distributeur" && profil.distributeur === "oui";
+  for (const [i, cle] of etapes.entries())
+    await depots.etapes.creer({
+      parcoursId: parcours.id,
+      cle,
+      ordre: i + 1,
+      statut: dejaFaite(cle) ? "validee" : "a-faire",
+      morceauId,
+      valideeAt: dejaFaite(cle) ? new Date().toISOString() : null,
+    });
+  await recalculer(parcours.id);
 }
