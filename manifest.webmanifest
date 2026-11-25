@@ -1,0 +1,16 @@
+{
+  "name": "ctrl.app",
+  "short_name": "ctrl.app",
+  "description": "Le CRM des musiciens indépendants : de la maquette au morceau publié.",
+  "lang": "fr",
+  "start_url": "/ctrl.app/",
+  "scope": "/ctrl.app/",
+  "display": "standalone",
+  "background_color": "#141415",
+  "theme_color": "#141415",
+  "icons": [
+    { "src": "/ctrl.app/icones/icone-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/ctrl.app/icones/icone-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/ctrl.app/icones/icone-masquable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

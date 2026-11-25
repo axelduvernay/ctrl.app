@@ -1,0 +1,1 @@
+import{L as e,ht as t,pt as n}from"./actions-zZIjJgsM.js";import{nt as r}from"./index-PcR5MDcP.js";var i=t(n(),1),a=null;function o(){let t=e();return(0,i.useEffect)(()=>{a??=r().finally(()=>setTimeout(()=>a=null,0)),a.then(e=>t(`/boards/${e.id}`,{replace:!0}))},[t]),null}export{o as BoardsPage};

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="fr" data-theme="sombre">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#141415" />
+    <meta name="description" content="Le CRM des musiciens indépendants : de la maquette au morceau publié." />
+    <title>ctrl.app</title>
+    <link rel="icon" type="image/svg+xml" href="/ctrl.app/favicon.svg" />
+    <!-- Installer l’app sur l’écran d’accueil (iPhone, Android). -->
+    <link rel="manifest" href="/ctrl.app/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/ctrl.app/icones/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="ctrl.app" />
+    <link rel="preload" href="/ctrl.app/fonts/Satoshi-Variable.woff2" as="font" type="font/woff2" crossorigin />
+    <script>
+      // Applique le thème avant l’affichage, pour éviter un flash.
+      try {
+        if (localStorage.getItem("ctrlapp.theme") === "clair") {
+          document.documentElement.dataset.theme = "clair";
+          document.querySelector('meta[name="theme-color"]').setAttribute("content", "#e9ecef");
+        }
+      } catch (e) {}
+    </script>
+    <script type="module" crossorigin src="/ctrl.app/assets/index-PcR5MDcP.js"></script>
+    <link rel="modulepreload" crossorigin href="/ctrl.app/assets/actions-zZIjJgsM.js">
+    <link rel="modulepreload" crossorigin href="/ctrl.app/assets/ActionsEnTete-Dr5H_qIs.js">
+    <link rel="modulepreload" crossorigin href="/ctrl.app/assets/format-BwpnR64x.js">
+    <link rel="stylesheet" crossorigin href="/ctrl.app/assets/index-KuNSWOLC.css">
+  </head>
+  <body>
+    <div id="racine"></div>
+  </body>
+</html>
