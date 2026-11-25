@@ -63,6 +63,16 @@ export function libelleJour(jour: string, maintenant = new Date()): string {
   return new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" }).format(depuisJour(jour));
 }
 
+/** Nombre de jours entre aujourd’hui et le jour donné (négatif s’il est passé). */
+export function joursAvant(jour: string, maintenant = new Date()): number {
+  return Math.round((depuisJour(jour).getTime() - depuisJour(jourIso(maintenant)).getTime()) / (24 * 3600 * 1000));
+}
+
+/** « vendredi 4 décembre ». */
+export function jourLong(jour: string): string {
+  return new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long" }).format(depuisJour(jour));
+}
+
 /** « samedi 31 octobre » avec majuscule. */
 export function dateLongue(d = new Date()): string {
   const t = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long" }).format(d);

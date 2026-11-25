@@ -86,3 +86,8 @@ Un lot à la fois. Cocher quand le lot est fait et commité ; Axel valide au fil
 - [x] Boards : un board ouvert d’office ; une tracklist du board = un projet de la librairie
 - [x] Bouton retour à côté du fil d’Ariane
 - [x] Numéro de version dans Réglages
+
+## Lot 12 - Dates objectifs du parcours
+- [x] Date objectif par étape (fixer, changer, retirer)
+- [x] « Planifier mes étapes » au rythme choisi
+- [x] Compte à rebours sur l’Accueil, objectif dans « Cette semaine » et dans le calendrier

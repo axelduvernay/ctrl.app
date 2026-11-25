@@ -10,7 +10,9 @@ import { depots, useRequete } from "@/data";
 import { plateformesPost } from "@/content/checklist";
 import { fr } from "@/content/typo";
 import { depuisJour, jourIso, libelleJour } from "@/lib/format";
-import type { Evenement, Morceau, PostReseau, Sortie } from "@/types";
+import type { Etape, Evenement, Morceau, PostReseau, Sortie } from "@/types";
+import { contenuDe } from "@/content/parcours";
+import { lireParcours } from "@/features/parcours/actions";
 import { creerSortie, enregistrerPost, estFait, modifierEvenement, pointsAutomatiques, supprimerEvenement, supprimerPost } from "./actions";
 
 const joursSemaine = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
@@ -41,10 +43,11 @@ export function SortiesPage() {
       depots.morceaux.lister(),
       depots.evenements.lister(),
     ]);
-    return { sorties, posts, morceaux, evenements };
+    const objectifs = (await lireParcours()).etapes.filter((e) => e.objectif && e.statut !== "validee");
+    return { sorties, posts, morceaux, evenements, objectifs };
   });
   if (!donnees) return null;
-  const { sorties, posts, morceaux, evenements } = donnees;
+  const { sorties, posts, morceaux, evenements, objectifs } = donnees;
 
   return (
     <div className="flex flex-col gap-10">
@@ -64,6 +67,7 @@ export function SortiesPage() {
           sorties={sorties}
           posts={posts}
           evenements={evenements}
+          objectifs={objectifs}
           onEvenement={setEvenement}
           morceaux={morceaux}
           onJour={(date) => setPost({ date, plateforme: "Instagram", description: "", sortieId: null })}
@@ -93,6 +97,7 @@ function Calendrier({
   sorties,
   posts,
   evenements,
+  objectifs,
   onEvenement,
   morceaux,
   onJour,
@@ -103,6 +108,7 @@ function Calendrier({
   sorties: Sortie[];
   posts: PostReseau[];
   evenements: Evenement[];
+  objectifs: Etape[];
   onEvenement(e: Evenement): void;
   morceaux: Morceau[];
   onJour(jour: string): void;
@@ -172,6 +178,21 @@ function Calendrier({
                   {morceaux.find((m) => m.id === s.morceauId)?.titre ?? s.metadonnees.titre}
                 </button>
               ))}
+              {objectifs
+                .filter((o) => o.objectif === jour)
+                .map((o) => (
+                  <button
+                    key={o.id}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      naviguer("/parcours");
+                    }}
+                    className="truncate px-2 py-0.5 text-left text-[13px] text-texte-2 hover:text-texte"
+                  >
+                    Objectif · {contenuDe(o).titre}
+                  </button>
+                ))}
               {evenementsDuJour.map((ev) => (
                 <button
                   key={ev.id}

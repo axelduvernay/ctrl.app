@@ -78,6 +78,8 @@ export interface Etape extends Entite {
       Une étape ajoutée à la main a la clé « perso ». */
   titrePerso?: string | null;
   explicationPerso?: string | null;
+  /** Date objectif fixée par l’artiste pour finir l’étape. */
+  objectif?: Jour | null;
 }
 
 /* ---------- Musique ---------- */

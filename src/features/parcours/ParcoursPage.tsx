@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { Bouton, BoutonIcone } from "@/components/Bouton";
-import { ChampSelect, ZoneTexte } from "@/components/Champs";
+import { ChampSelect, Segmente, ZoneTexte } from "@/components/Champs";
 import { Icone } from "@/components/Icone";
 import { Modale } from "@/components/Modale";
 import { NumeroEtape, Progression } from "@/components/Progression";
@@ -12,11 +12,14 @@ import type { Etape } from "@/types";
 import { ActionsEnTete } from "@/app/ActionsEnTete";
 import { FilAriane } from "@/components/FilAriane";
 import { ChampEnregistre } from "@/features/musique/communs";
+import { jourIso } from "@/lib/format";
+import { ObjectifEtape } from "./ObjectifEtape";
 import {
   ajouterEtape,
   deplacerEtape,
   lireParcours,
   modifierEtape,
+  planifierParcours,
   renommerParcours,
   retirerEtape,
   revenirAuParcoursPropose,
@@ -30,6 +33,7 @@ import { deuxChiffres } from "./regles";
 export function ParcoursPage() {
   const [modification, setModification] = useState(false);
   const [confirmer, setConfirmer] = useState(false);
+  const [planifier, setPlanifier] = useState(false);
   const { donnees } = useRequete(lireParcours);
   if (!donnees?.parcours) return null;
 
@@ -62,13 +66,20 @@ export function ParcoursPage() {
           ) : (
             <h1 className="text-[40px] leading-tight font-medium tracking-[-0.03em]">{parcours.titre}</h1>
           )}
-          <div>
+          <div className="flex flex-wrap items-center gap-3">
             {modification ? (
               <Bouton onClick={() => setModification(false)}>Terminé</Bouton>
             ) : (
-              <Bouton variante="contour" onClick={() => setModification(true)}>
-                Modifier le parcours
-              </Bouton>
+              <>
+                {!termine && etapes.length > 0 && (
+                  <Bouton icone="echeance" onClick={() => setPlanifier(true)}>
+                    Planifier mes étapes
+                  </Bouton>
+                )}
+                <Bouton variante="contour" onClick={() => setModification(true)}>
+                  Modifier le parcours
+                </Bouton>
+              </>
             )}
           </div>
         </header>
@@ -119,6 +130,8 @@ export function ParcoursPage() {
         </section>
       )}
 
+      <Planification ouverte={planifier} onFermer={() => setPlanifier(false)} etapes={etapes} />
+
       <Modale
         ouverte={confirmer}
         titre="Revenir au parcours proposé ?"
@@ -154,6 +167,7 @@ function LigneEtape({ etape, total, ouverte }: { etape: Etape; total: string; ou
         <div className="flex flex-1 flex-col gap-4">
           <div className="flex items-baseline justify-between gap-4">
             <h2 className={`text-[22px] tracking-[-0.01em] ${validee || ouverte ? "text-texte" : "text-texte-2"}`}>{contenu.titre}</h2>
+            {!validee && !ouverte && etape.objectif && <ObjectifEtape etape={etape} className="shrink-0" />}
             {validee && (
               <span className="flex items-center gap-3 text-libelle text-texte-2">
                 <span className="flex items-center gap-1.5 text-texte">
@@ -168,6 +182,7 @@ function LigneEtape({ etape, total, ouverte }: { etape: Etape; total: string; ou
           </div>
           {ouverte && (
             <>
+              <ObjectifEtape etape={etape} />
               {contenu.explication && <p className="max-w-[640px] text-texte-2">{contenu.explication}</p>}
               <div className="flex flex-wrap items-center gap-3">
                 <Bouton onClick={() => void validerEtape(etape)}>Valider l’étape</Bouton>
@@ -230,5 +245,43 @@ function EtapeModifiable({ etape, total, premiere, derniere }: { etape: Etape; t
         <BoutonIcone icone="supprimer" libelle="Retirer l’étape" onClick={() => void retirerEtape(etape)} className="size-9 border-transparent" />
       </div>
     </li>
+  );
+}
+
+/* ---------- Planifier : une date objectif par étape ---------- */
+
+const rythmes = [
+  { valeur: "3", libelle: "Tous les 3 jours" },
+  { valeur: "7", libelle: "Chaque semaine" },
+  { valeur: "14", libelle: "Toutes les 2 semaines" },
+];
+
+function Planification({ ouverte, onFermer, etapes }: { ouverte: boolean; onFermer(): void; etapes: Etape[] }) {
+  const [rythme, setRythme] = useState("7");
+  const restantes = etapes.filter((e) => e.statut !== "validee");
+  const datees = restantes.filter((e) => e.objectif).length;
+  return (
+    <Modale
+      ouverte={ouverte}
+      titre="Planifier mes étapes"
+      onFermer={onFermer}
+      actions={
+        <>
+          <Bouton variante="lien" onClick={onFermer}>
+            Annuler
+          </Bouton>
+          <Bouton onClick={() => void planifierParcours(jourIso(), Number(rythme)).then(onFermer)}>Planifier</Bouton>
+        </>
+      }
+    >
+      <p className="text-texte-2">
+        {fr(
+          `Une date objectif pour chacune de tes ${restantes.length} étapes à faire, à partir d’aujourd’hui. Tu pourras changer chaque date ensuite.${
+            datees ? " Les dates déjà fixées seront remplacées." : ""
+          }`,
+        )}
+      </p>
+      <Segmente libelle="Rythme" options={rythmes} valeur={rythme} onChange={setRythme} />
+    </Modale>
   );
 }

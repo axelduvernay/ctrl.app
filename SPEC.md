@@ -62,6 +62,13 @@ Le niveau évolue quand une étape est validée. Progression visible, jamais de 
 
 Le contenu exact des explications reste à rédiger : prévoir les textes dans un fichier séparé (`src/content/parcours.ts`) pour qu'ils soient faciles à modifier.
 
+### Dates objectifs
+
+- Chaque étape peut avoir une **date objectif**, fixée en un clic (calendrier du navigateur), modifiable ou retirée
+- « Planifier mes étapes » : une date pour chaque étape à faire, à partir d’aujourd’hui, au rythme choisi (3 jours, 1 semaine, 2 semaines)
+- L’objectif de l’étape en cours s’affiche sur l’Accueil avec un compte à rebours (« dans 7 jours »), dans « Cette semaine » s’il approche, et dans le calendrier
+- Date passée : « Prévu le … · Choisir une nouvelle date ». Jamais de reproche
+
 ## 1. Accueil
 
 - Date du jour + « Bonjour <nom> »

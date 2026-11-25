@@ -11,11 +11,13 @@ import { contenuDe } from "@/content/parcours";
 import { fr } from "@/content/typo";
 import { ajouterJours, dateLongue, dateRelative, jourIso, libelleJour } from "@/lib/format";
 import { definirSonDuParcours, lireParcours } from "@/features/parcours/actions";
+import { ObjectifEtape } from "@/features/parcours/ObjectifEtape";
 import { deuxChiffres } from "@/features/parcours/regles";
 import { basculerTache, tachesDeLaSemaine } from "@/features/taches/actions";
 import { cibleAction } from "./cible";
 import { ActionsEnTete } from "@/app/ActionsEnTete";
-import type { Morceau, Sortie, Tache } from "@/types";
+import type { Etape, Morceau, Sortie, Tache } from "@/types";
+import { Icone } from "@/components/Icone";
 
 export function AccueilPage() {
   const { donnees } = useRequete(async () => {
@@ -43,7 +45,7 @@ export function AccueilPage() {
       <BlocParcours donnees={donnees} />
 
       <div className="grid gap-12 border-t border-filet pt-10 lg:grid-cols-[1.1fr_1fr_1fr]">
-        <CetteSemaine taches={donnees.taches} morceaux={donnees.morceaux} />
+        <CetteSemaine taches={donnees.taches} morceaux={donnees.morceaux} etape={donnees.enCours} />
         <EnCours morceaux={donnees.morceaux} />
         <Stats />
       </div>
@@ -90,6 +92,7 @@ function BlocParcours({ donnees }: { donnees: Donnees }) {
             {contenu.titre}
             {morceau && <span className="block truncate text-texte-2">{morceau.titre}</span>}
           </h2>
+          <ObjectifEtape etape={enCours} />
           {parcours.cas === "A" && morceaux.length > 0 && (
             <button type="button" onClick={() => setChoix(true)} className="self-start text-libelle text-texte-2 hover:text-texte">
               {morceau ? "Changer de son" : "Choisir le son que tu sors"}
@@ -135,9 +138,11 @@ function BlocParcours({ donnees }: { donnees: Donnees }) {
 
 /* ---------- Cette semaine ---------- */
 
-function CetteSemaine({ taches, morceaux }: { taches: Tache[]; morceaux: Morceau[] }) {
+function CetteSemaine({ taches, morceaux, etape }: { taches: Tache[]; morceaux: Morceau[]; etape?: Etape }) {
   const aujourdHui = jourIso();
   const liste = tachesDeLaSemaine(taches, aujourdHui, ajouterJours(aujourdHui, 7)).slice(0, 6);
+  // L’objectif de l’étape en cours, s’il tombe dans les 7 jours (ou est passé).
+  const objectif = etape?.objectif && etape.objectif <= ajouterJours(aujourdHui, 7) ? etape : undefined;
 
   return (
     <section aria-labelledby="titre-semaine" className="flex flex-col gap-5">
@@ -149,7 +154,18 @@ function CetteSemaine({ taches, morceaux }: { taches: Tache[]; morceaux: Morceau
           Tout voir
         </Link>
       </div>
-      {liste.length === 0 ? (
+      {objectif && (
+        <Link to="/parcours" className="flex items-start gap-3 rounded-12">
+          <Icone nom="echeance" taille={20} className="shrink-0 text-texte-2" />
+          <span className="flex min-w-0 flex-col">
+            <span className="hover:underline underline-offset-4">{contenuDe(objectif).titre}</span>
+            <span className="text-libelle text-texte-2">
+              {objectif.objectif! < aujourdHui ? "Objectif passé · choisis une nouvelle date" : `Objectif du parcours · ${libelleJour(objectif.objectif!)}`}
+            </span>
+          </span>
+        </Link>
+      )}
+      {liste.length === 0 && !objectif ? (
         <p className="text-texte-2">{fr("Rien de prévu. Ajoute une tâche avec le bouton +.")}</p>
       ) : (
         <ul className="flex flex-col gap-4">

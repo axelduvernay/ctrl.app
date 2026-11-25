@@ -2,6 +2,7 @@
 
 import { depots } from "@/data";
 import type { Etape, Nouveau, Profil } from "@/types";
+import { ajouterJours } from "@/lib/format";
 import { genererParcours, niveauDepuis } from "./regles";
 
 export type ReponsesOnboarding = Omit<Nouveau<Profil>, "niveau" | "onboardingTermineAt">;
@@ -149,4 +150,22 @@ export async function revenirAuParcoursPropose() {
       valideeAt: dejaFaite(cle) ? new Date().toISOString() : null,
     });
   await recalculer(parcours.id);
+}
+
+/* ---------- Dates objectifs ---------- */
+
+export function definirObjectif(etapeId: string, objectif: string | null) {
+  return depots.etapes.modifier(etapeId, { objectif });
+}
+
+/** Donne une date à chaque étape pas encore validée : la première après
+    « rythme » jours à partir de « depuis », puis une tous les « rythme » jours. */
+export async function planifierParcours(depuis: string, rythme: number) {
+  const { etapes } = await lireParcours();
+  let n = 0;
+  for (const e of etapes) {
+    if (e.statut === "validee") continue;
+    n++;
+    await depots.etapes.modifier(e.id, { objectif: ajouterJours(depuis, n * rythme) });
+  }
 }

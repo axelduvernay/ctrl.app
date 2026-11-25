@@ -3,6 +3,7 @@
 Idées hors du lot en cours. On en parle avant de les coder.
 
 ## Idées
+- **App « intelligente »** (question d’Axel du 25 nov.) : d’abord un moteur de règles local (suggestions selon les morceaux bloqués, les dates passées, le rythme réel), puis éventuellement un petit modèle de langage. À décider ensemble.
 - Lecteur : aléatoire, boucle et volume (visibles sur la référence Untitled), si utile.
 - Glisser un morceau de la librairie directement dans un projet.
 - Ludification légère (citée dans la mind map du mémoire, absente de SPEC.md) : à discuter.
