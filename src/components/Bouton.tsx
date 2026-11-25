@@ -27,7 +27,7 @@ export function Bouton({ variante = "principal", icone, iconeApres, className = 
   return (
     <button
       type="button"
-      className={`inline-flex items-center justify-center gap-2 text-[15px] font-medium transition-colors duration-150 disabled:opacity-40 ${styles[variante]} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 text-[15px] font-medium whitespace-nowrap transition-colors duration-150 disabled:opacity-40 ${styles[variante]} ${className}`}
       {...props}
     >
       {icone && <Icone nom={icone} taille={18} className={variante === "secondaire" ? "text-accent" : ""} />}

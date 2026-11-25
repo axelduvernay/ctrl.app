@@ -27,14 +27,19 @@
   --radius-28: 28px;
 
   /* Échelle typo du dossier. */
-  --text-display: 140px;
+  /* Tailles fluides : réduites sur téléphone, valeurs de la DA sur ordinateur. */
+  --text-display: clamp(72px, 9vw + 12px, 140px);
   --text-display--line-height: 0.9;
   --text-display--font-weight: 300;
   --text-display--letter-spacing: -0.04em;
-  --text-titre: 64px;
+  --text-titre: clamp(34px, 3.6vw + 20px, 64px);
   --text-titre--line-height: 1.05;
   --text-titre--font-weight: 500;
   --text-titre--letter-spacing: -0.03em;
+  --text-page: clamp(28px, 1.6vw + 22px, 40px);
+  --text-page--line-height: 1.15;
+  --text-page--font-weight: 500;
+  --text-page--letter-spacing: -0.03em;
   --text-texte: 16px;
   --text-texte--line-height: 1.45;
   --text-texte--font-weight: 500;
@@ -186,6 +191,14 @@
     transform: rotate(-90deg);
   }
   .group:hover .texte-riche.affichage :is(h1, h2)::before {
+    opacity: 1;
+  }
+}
+
+/* Écrans tactiles : pas de survol, donc ce qui n’apparaît qu’au survol
+   (menus « … », boutons de ligne) reste visible. */
+@media (hover: none) {
+  main [class*="group-hover:opacity-100"] {
     opacity: 1;
   }
 }

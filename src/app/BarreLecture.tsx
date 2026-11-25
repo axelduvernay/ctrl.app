@@ -31,9 +31,11 @@ export function BarreLecture() {
     <div
       role="region"
       aria-label="Lecture"
-      className="fixed right-0 bottom-0 left-[88px] z-30 flex h-[72px] items-center gap-6 border-t border-filet bg-fond px-8"
+      className="fixed right-0 bottom-0 left-[88px] z-30 flex h-[72px] items-center gap-6 border-t border-filet bg-fond px-8 max-md:bottom-[calc(64px+env(safe-area-inset-bottom))] max-md:left-0 max-md:h-14 max-md:gap-2 max-md:px-4"
     >
-      <div className="flex w-56 min-w-0 shrink-0 items-center gap-3">
+      {/* Téléphone : un trait d’avancement en haut de la barre remplace la forme d’onde. */}
+      <span aria-hidden className="absolute top-0 left-0 h-0.5 bg-texte md:hidden" style={{ width: `${total ? (position / total) * 100 : 0}%` }} />
+      <div className="flex w-56 min-w-0 shrink-0 items-center gap-3 max-md:w-auto max-md:flex-1">
         <Vignette fichierId={piste.coverFichierId ?? null} taille={40} arrondi="rounded-[8px]" />
         <div className="flex min-w-0 flex-col">
           {piste.morceauId ? (
@@ -47,15 +49,17 @@ export function BarreLecture() {
         </div>
       </div>
       <div className="flex items-center gap-1">
-        {bouton("precedentPiste", "Précédent", precedent)}
+        <span className="max-md:hidden">{bouton("precedentPiste", "Précédent", precedent)}</span>
         {bouton(lecture ? "pause" : "lecture", lecture ? "Pause" : "Lecture", basculer, false, true)}
         {bouton("suivantPiste", "Suivant", suivant, index + 1 >= file.length && !aleatoire && boucle !== "tout")}
       </div>
-      <FormeOnde pics={pics} avance={total ? position / total : 0} onAller={(r) => aller(r * total)} hauteur={40} libelle={piste.titre} />
-      <span className="w-24 shrink-0 text-right text-libelle text-texte-2 tabular-nums">
+      <div className="flex min-w-0 flex-1 max-md:hidden">
+        <FormeOnde pics={pics} avance={total ? position / total : 0} onAller={(r) => aller(r * total)} hauteur={40} libelle={piste.titre} />
+      </div>
+      <span className="w-24 shrink-0 text-right text-libelle text-texte-2 tabular-nums max-md:hidden">
         {duree(position)} / {duree(total)}
       </span>
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1 max-md:hidden">
         <Bascule icone="aleatoire" libelle="Lecture aléatoire" actif={aleatoire} onClick={basculerAleatoire} />
         <Bascule
           icone={boucle === "un" ? "boucleUn" : "boucle"}

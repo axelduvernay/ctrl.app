@@ -350,12 +350,54 @@ function Canvas({ board, blocs, liens, morceaux, contacts, taches, versions, fic
     cadre.current!.setPointerCapture(e.pointerId);
   }
 
+  /* Au doigt : un doigt sur le fond fait glisser le board, deux doigts
+     zooment (pincer) et déplacent en même temps. */
+  const doigts = useRef(new Map<number, Point>());
+  const pince = useRef<{ d0: number; c0: Point; vue0: VueBoard } | null>(null);
+  const milieu = () => {
+    const [a, b] = [...doigts.current.values()];
+    const r = cadre.current!.getBoundingClientRect();
+    return { c: { x: (a!.x + b!.x) / 2 - r.left, y: (a!.y + b!.y) / 2 - r.top }, d: Math.hypot(a!.x - b!.x, a!.y - b!.y) || 1 };
+  };
+  function doigtPose(e: React.PointerEvent) {
+    if (e.pointerType !== "touch") return;
+    doigts.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (doigts.current.size === 2) {
+      e.stopPropagation();
+      setGeste(null);
+      setPositions(new Map());
+      const { c, d } = milieu();
+      pince.current = { d0: d, c0: c, vue0: vue };
+    }
+  }
+  function doigtBouge(e: React.PointerEvent) {
+    if (e.pointerType !== "touch" || !doigts.current.has(e.pointerId)) return;
+    doigts.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const p = pince.current;
+    if (!p || doigts.current.size < 2) return;
+    e.stopPropagation();
+    const { c, d } = milieu();
+    const zoom = borner(p.vue0.zoom * (d / p.d0), ZOOM_MIN, ZOOM_MAX);
+    const monde = { x: (p.c0.x - p.vue0.x) / p.vue0.zoom, y: (p.c0.y - p.vue0.y) / p.vue0.zoom };
+    zoomBrut.current = zoom;
+    setVue({ zoom, x: c.x - monde.x * zoom, y: c.y - monde.y * zoom });
+  }
+  function doigtLeve(e: React.PointerEvent) {
+    if (e.pointerType !== "touch") return;
+    doigts.current.delete(e.pointerId);
+    if (pince.current) {
+      e.stopPropagation();
+      if (doigts.current.size === 0) pince.current = null;
+    }
+  }
+
   function debutFond(e: React.PointerEvent) {
     if (e.button === 2) return;
     setMenu(null);
     setLienChoisi(null);
     capturer(e);
-    if (e.button === 1 || espace) return setGeste({ type: "vue", ex: e.clientX, ey: e.clientY, vue });
+    if (e.button === 1 || espace || (e.pointerType === "touch" && outil === "selection"))
+      return setGeste({ type: "vue", ex: e.clientX, ey: e.clientY, vue });
     const p = pointMonde(e);
     if (outil === "crayon") {
       tracer.current = [p];
@@ -941,7 +983,7 @@ function Canvas({ board, blocs, liens, morceaux, contacts, taches, versions, fic
   return (
     <BoardCtx.Provider value={ctx}>
       <div
-        className="fixed inset-y-0 right-0 left-[88px] overflow-hidden bg-fond"
+        className="fixed inset-y-0 right-0 left-[88px] overflow-hidden bg-fond max-md:bottom-[calc(64px+env(safe-area-inset-bottom))] max-md:left-0"
         // Un champ qui prend le focus près du bord ferait défiler le board : on l’empêche.
         onScroll={(e) => {
           e.currentTarget.scrollLeft = 0;
@@ -955,6 +997,10 @@ function Canvas({ board, blocs, liens, morceaux, contacts, taches, versions, fic
             e.currentTarget.scrollLeft = 0;
             e.currentTarget.scrollTop = 0;
           }}
+          onPointerDownCapture={doigtPose}
+          onPointerMoveCapture={doigtBouge}
+          onPointerUpCapture={doigtLeve}
+          onPointerCancelCapture={doigtLeve}
           onPointerDown={debutFond}
           onPointerMove={mouvement}
           onPointerUp={(e) => void fin(e)}
@@ -1037,28 +1083,29 @@ function Canvas({ board, blocs, liens, morceaux, contacts, taches, versions, fic
           </div>
 
           {blocs.length === 0 && (
-            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 text-center">
+            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 px-16 text-center">
               <p className="text-[22px]">Ton board est vide.</p>
-              <p className="max-w-sm text-texte-2">
+              <p className="max-w-sm text-texte-2 max-md:hidden">
                 {fr("Double-clic sur le fond pour écrire, ou crée un bloc avec la barre du bas. « / » ouvre les commandes, clic droit pour les options.")}
               </p>
+              <p className="max-w-sm text-texte-2 md:hidden">{fr("Crée un bloc avec la barre du bas. Un doigt fait glisser le board, deux doigts zooment.")}</p>
             </div>
           )}
         </div>
 
         {/* Barre du haut */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-6 px-8 pt-8 lg:px-[72px]">
-          <div className="pointer-events-auto flex items-center gap-2 rounded-full bg-fond/90 py-1 pr-2 text-libelle text-texte-2">
-            <span>Boards</span>
-            <span aria-hidden>/</span>
+        <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-3 px-4 pt-[calc(16px+env(safe-area-inset-top))] md:gap-6 md:px-8 md:pt-8 lg:px-[72px]">
+          <div className="pointer-events-auto flex min-w-0 items-center gap-2 rounded-full bg-fond/90 py-1 pr-2 text-libelle text-texte-2">
+            <span className="max-md:hidden">Boards</span>
+            <span aria-hidden className="max-md:hidden">/</span>
             <SelecteurBoards board={board} boards={boards} onSupprime={onQuitter} onOuvrir={(id) => naviguer(`/boards/${id}`)} />
           </div>
           <div className="pointer-events-auto flex flex-col items-end gap-2">
             <div className="flex items-center gap-2">
               <BoutonIcone icone="partager" libelle="Partager ce board" onClick={() => setPartage(true)} className="bg-fond" />
               <ActionsEnTete />
-              <BoutonIcone icone="annuler" libelle="Annuler (⌘Z)" onClick={annuler} className="bg-fond" />
-              <BoutonIcone icone="retablir" libelle="Rétablir (⌘⇧Z)" onClick={retablir} className="bg-fond" />
+              <BoutonIcone icone="annuler" libelle="Annuler (⌘Z)" onClick={annuler} className="bg-fond max-md:hidden" />
+              <BoutonIcone icone="retablir" libelle="Rétablir (⌘⇧Z)" onClick={retablir} className="bg-fond max-md:hidden" />
             </div>
             {(filtre || recherche) && (
               <div className="flex items-center gap-2 rounded-full border border-filet bg-surface py-1 pr-1 pl-4">
@@ -1104,7 +1151,7 @@ function Canvas({ board, blocs, liens, morceaux, contacts, taches, versions, fic
         </div>
 
         {/* Outils à gauche */}
-        <div className="absolute top-1/2 left-6 flex -translate-y-1/2 flex-col gap-1 rounded-full border border-filet bg-fond p-1">
+        <div className="absolute top-1/2 left-3 flex -translate-y-1/2 flex-col gap-1 rounded-full border border-filet bg-fond p-1 md:left-6">
           {(
             [
               ["selection", "selection", "Sélection (V)"],
@@ -1140,7 +1187,8 @@ function Canvas({ board, blocs, liens, morceaux, contacts, taches, versions, fic
         />
 
         {/* Zoom */}
-        <div className="absolute right-8 bottom-8 flex items-center gap-1 rounded-full border border-filet bg-fond px-2 py-1 lg:right-[72px]">
+        {/* Sur téléphone, on zoome en pinçant : pas de boutons de zoom. */}
+        <div className="absolute right-8 bottom-8 flex items-center gap-1 rounded-full border border-filet bg-fond px-2 py-1 max-md:hidden lg:right-[72px]">
           <BoutonIcone icone="moins" libelle="Dézoomer (⌘−)" onClick={() => zoomerCentre(1 / 1.2)} className="size-9 border-transparent" />
           <button type="button" onClick={() => zoomExact(1)} className="w-14 text-center text-[15px] tabular-nums" title="Revenir à 100 % (⌘0)">
             {Math.round(vue.zoom * 100)} %

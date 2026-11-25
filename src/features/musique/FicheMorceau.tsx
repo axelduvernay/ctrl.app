@@ -77,8 +77,8 @@ export function FicheMorceau() {
           <FilAriane liens={parents} courant={morceau.titre} />
           <ActionsEnTete />
         </div>
-        <div className="flex items-start justify-between gap-6">
-          <div className="flex min-w-0 flex-1 items-center gap-6">
+        <div className="flex items-start justify-between gap-4 md:gap-6">
+          <div className="flex min-w-0 flex-1 items-center gap-4 md:gap-6">
             {morceau.coverFichierId && <Vignette fichierId={morceau.coverFichierId} taille={88} arrondi="rounded-18" />}
             <div className="flex min-w-0 flex-1 flex-col gap-2">
               <ChampEnregistre
@@ -86,7 +86,7 @@ export function FicheMorceau() {
                 valeur={morceau.titre}
                 onEnregistrer={(t) => t.trim() && void modifierMorceau(morceau.id, { titre: t.trim() })}
                 className="[&>span]:sr-only"
-                classeChamp="-mx-2 w-full rounded-12 bg-transparent px-2 text-[40px] leading-tight font-medium tracking-[-0.03em] text-texte hover:bg-surface focus:bg-surface focus:outline-none"
+                classeChamp="-mx-2 w-full rounded-12 bg-transparent px-2 text-page text-texte hover:bg-surface focus:bg-surface focus:outline-none"
               />
               <div className="flex flex-wrap items-center gap-4 text-libelle text-texte-2">
                 <ChoixStatut morceau={morceau} />
@@ -95,8 +95,8 @@ export function FicheMorceau() {
               </div>
             </div>
           </div>
-          <Bouton variante="contour" icone="details" onClick={() => setDetails(true)}>
-            Détails
+          <Bouton variante="contour" icone="details" onClick={() => setDetails(true)} aria-label="Détails" className="max-md:w-11 max-md:px-0">
+            <span className="max-md:hidden">Détails</span>
           </Bouton>
         </div>
       </div>

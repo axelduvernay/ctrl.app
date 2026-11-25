@@ -52,7 +52,7 @@ export function ParcoursPage() {
         <FilAriane liens={[{ libelle: "Accueil", vers: "/" }]} courant="Parcours" />
         <ActionsEnTete />
       </div>
-      <div className="flex items-end justify-between gap-8">
+      <div className="flex items-end justify-between gap-8 max-md:flex-col-reverse max-md:items-start max-md:gap-4">
         <header className="flex min-w-0 flex-1 flex-col gap-3">
           <p className="text-libelle text-texte-2">Ton parcours</p>
           {modification ? (
@@ -61,10 +61,10 @@ export function ParcoursPage() {
               valeur={parcours.titre}
               onEnregistrer={(t) => t.trim() && void renommerParcours(parcours.id, t)}
               className="[&>span]:sr-only"
-              classeChamp="-mx-2 w-full rounded-12 bg-surface px-2 text-[40px] leading-tight font-medium tracking-[-0.03em] text-texte focus:outline-none"
+              classeChamp="-mx-2 w-full rounded-12 bg-surface px-2 text-page text-texte focus:outline-none"
             />
           ) : (
-            <h1 className="text-[40px] leading-tight font-medium tracking-[-0.03em]">{parcours.titre}</h1>
+            <h1 className="text-page">{parcours.titre}</h1>
           )}
           <div className="flex flex-wrap items-center gap-3">
             {modification ? (
@@ -160,12 +160,12 @@ function LigneEtape({ etape, total, ouverte }: { etape: Etape; total: string; ou
 
   return (
     <li className="border-t border-filet py-6">
-      <div className="flex items-baseline gap-6">
+      <div className="flex items-baseline gap-4 md:gap-6">
         <span className={`w-14 shrink-0 text-libelle tabular-nums ${ouverte ? "text-numero" : "text-texte-2"}`}>
           {deuxChiffres(etape.ordre)} /{total}
         </span>
         <div className="flex flex-1 flex-col gap-4">
-          <div className="flex items-baseline justify-between gap-4">
+          <div className="flex items-baseline justify-between gap-4 max-md:flex-col max-md:gap-2">
             <h2 className={`text-[22px] tracking-[-0.01em] ${validee || ouverte ? "text-texte" : "text-texte-2"}`}>{contenu.titre}</h2>
             {!validee && !ouverte && etape.objectif && <ObjectifEtape etape={etape} className="shrink-0" />}
             {validee && (

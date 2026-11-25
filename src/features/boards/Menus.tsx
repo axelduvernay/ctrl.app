@@ -483,7 +483,7 @@ export function BarreBas({
       aria-label={libelle}
       aria-pressed={actif || undefined}
       onClick={onClick}
-      className={`flex h-10 items-center gap-2 rounded-full px-3 text-[14px] transition-colors duration-150 ${actif ? "bg-surface text-texte" : "text-texte hover:bg-surface"}`}
+      className={`flex h-10 shrink-0 items-center gap-2 rounded-full px-3 text-[14px] transition-colors duration-150 ${actif ? "bg-surface text-texte" : "text-texte hover:bg-surface"}`}
     >
       <Icone nom={icone} taille={17} />
       <span className="hidden min-[1680px]:inline">{libelle}</span>
@@ -491,9 +491,10 @@ export function BarreBas({
   );
 
   return (
-    <div className="absolute bottom-8 left-1/2 flex -translate-x-1/2 items-center gap-2">
+    <div className="absolute bottom-8 left-1/2 flex -translate-x-1/2 items-center gap-2 max-md:right-3 max-md:bottom-4 max-md:left-3 max-md:translate-x-0 max-md:justify-end">
       {!repliee && (
-        <div role="toolbar" aria-label="Créer" className="flex items-center gap-0.5 rounded-full border border-filet bg-fond p-1">
+        // Sur téléphone, la barre défile au doigt si elle est plus large que l’écran.
+        <div role="toolbar" aria-label="Créer" className="flex items-center gap-0.5 rounded-full border border-filet bg-fond p-1 max-md:min-w-0 max-md:flex-1 max-md:overflow-x-auto">
           {bouton("texte", "Texte", () => onCreer("note"))}
           {bouton("tacheBloc", "Tâche", () => onCreer("tache"))}
           {bouton("imageBloc", "Image", () => input.current?.click())}

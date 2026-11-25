@@ -64,7 +64,7 @@ export function SortiePage() {
           <div className="flex items-center gap-5">
             {morceau && <Vignette fichierId={morceau.coverFichierId} taille={72} arrondi="rounded-18" />}
             <div>
-              <h1 className="text-[40px] leading-tight font-medium tracking-[-0.03em]">{titre}</h1>
+              <h1 className="text-page">{titre}</h1>
               <p className="text-texte-2">
                 {sortie.date
                   ? ecart! > 0

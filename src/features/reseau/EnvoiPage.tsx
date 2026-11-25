@@ -61,7 +61,7 @@ export function EnvoiPage() {
         <ActionsEnTete />
       </div>
 
-      <h1 className="text-[40px] leading-tight font-medium tracking-[-0.03em]">Écrire un mail</h1>
+      <h1 className="text-page">Écrire un mail</h1>
 
       {!donnees.gmail && (
         <p className="max-w-[720px] rounded-18 border border-filet px-5 py-4 text-texte-2">

@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { Navigate, Outlet } from "react-router";
 import { depots, useRequete } from "@/data";
 import { useUi } from "@/stores/ui";
-import { BarreLaterale } from "./BarreLaterale";
+import { BarreLaterale, BarreOnglets } from "./BarreLaterale";
 import { Ajout } from "./Ajout";
 import { BarreLecture } from "./BarreLecture";
 import { useLecteur } from "@/stores/lecteur";
@@ -40,13 +40,19 @@ export function Coquille() {
   return (
     <div className="flex min-h-dvh bg-fond">
       <BarreLaterale />
-      <main className={`min-w-0 flex-1 px-8 pt-16 lg:px-[72px] ${lecteur ? "pb-32" : "pb-16"}`}>
+      {/* Sur téléphone : marges réduites, et de la place en bas pour les onglets (et le lecteur). */}
+      <main
+        className={`min-w-0 flex-1 px-5 pt-[calc(24px+env(safe-area-inset-top))] md:px-8 md:pt-16 lg:px-[72px] ${
+          lecteur ? "pb-[calc(152px+env(safe-area-inset-bottom))] md:pb-32" : "pb-[calc(96px+env(safe-area-inset-bottom))] md:pb-16"
+        }`}
+      >
         <div className="mx-auto max-w-[1200px]">
           <Outlet />
         </div>
       </main>
       <Ajout />
       <BarreLecture />
+      <BarreOnglets />
       <Recherche />
       <Rappels />
     </div>

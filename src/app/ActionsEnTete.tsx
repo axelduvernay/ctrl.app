@@ -31,6 +31,14 @@ export function ActionsEnTete() {
         <span className="flex-1 text-left text-[15px]">Rechercher</span>
         <kbd className="font-sans text-libelle">{mac ? "⌘K" : "Ctrl K"}</kbd>
       </button>
+      <button
+        type="button"
+        onClick={ouvrirRecherche}
+        aria-label="Rechercher"
+        className="flex size-11 items-center justify-center rounded-full border border-filet text-texte-2 transition-colors duration-150 hover:text-texte md:hidden"
+      >
+        <Icone nom="recherche" taille={18} />
+      </button>
       <MenuDeroulant
         libelle="Ajouter"
         cote="droite"

@@ -115,6 +115,8 @@ Règle : le suivi porte sur les étapes de publication, jamais sur la qualité a
 
 ## Partout
 
+- **Téléphone** : la même app, adaptée. Onglets en bas, fenêtres en feuille du bas, lecteur compact, board au doigt (glisser, pincer). Installable sur l’écran d’accueil
+
 - **Bouton +** en haut à droite de chaque écran : une tâche, un événement, un contact, une note (posée sur le board), un morceau (import audio), un mémo vocal (rangé dans Musique, statut Idée)
 - **Retour** : bouton ← à côté du fil d’Ariane sur les écrans de détail
 - Recherche ⌘K

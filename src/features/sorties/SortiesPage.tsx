@@ -144,7 +144,7 @@ function Calendrier({
           </div>
         ))}
         {cases.map((jour, i) => {
-          if (!jour) return <div key={i} className="min-h-28 border-r border-b border-filet bg-surface/40" />;
+          if (!jour) return <div key={i} className="min-h-14 border-r border-b border-filet bg-surface/40 md:min-h-28" />;
           const sortiesDuJour = sorties.filter((s) => s.date === jour);
           const postsDuJour = posts.filter((p) => p.date === jour);
           const evenementsDuJour = evenements.filter((e) => e.date === jour).sort((a, b) => (a.heure ?? "").localeCompare(b.heure ?? ""));
@@ -156,7 +156,7 @@ function Calendrier({
               aria-label={`Planifier un post le ${libelleJour(jour)}`}
               onClick={() => onJour(jour)}
               onKeyDown={(e) => e.key === "Enter" && e.target === e.currentTarget && onJour(jour)}
-              className="group flex min-h-28 cursor-pointer flex-col gap-1 border-r border-b border-filet p-2 transition-colors duration-150 hover:bg-surface"
+              className="group flex min-h-14 cursor-pointer flex-col gap-1 border-r border-b border-filet p-1 transition-colors duration-150 hover:bg-surface md:min-h-28 md:p-2"
             >
               <span
                 className={`flex size-7 items-center justify-center rounded-full text-libelle tabular-nums ${
@@ -165,6 +165,16 @@ function Calendrier({
               >
                 {depuisJour(jour).getDate()}
               </span>
+              {/* Téléphone : un point par élément, le détail est dans l’agenda en dessous. */}
+              <span aria-hidden className="flex flex-wrap gap-1 px-1 md:hidden">
+                {sortiesDuJour.map((x) => (
+                  <span key={x.id} className="size-1.5 rounded-full bg-texte" />
+                ))}
+                {[...evenementsDuJour, ...postsDuJour, ...objectifs.filter((o) => o.objectif === jour)].map((x) => (
+                  <span key={x.id} className="size-1.5 rounded-full bg-texte-2" />
+                ))}
+              </span>
+              <div className="contents max-md:hidden">
               {sortiesDuJour.map((s) => (
                 <button
                   key={s.id}
@@ -222,11 +232,24 @@ function Calendrier({
                 </button>
               ))}
               <span className="mt-auto text-[12px] text-texte-2 opacity-0 transition-opacity duration-150 group-hover:opacity-100">+ post</span>
+              </div>
             </div>
           );
         })}
       </div>
-      <p className="text-libelle text-texte-2">{fr("Clique sur un jour pour planifier un post. Les sorties apparaissent sur fond plein, tes événements en texte (ajoute-les avec le bouton +).")}</p>
+      <Agenda
+        mois={mois}
+        sorties={sorties}
+        posts={posts}
+        evenements={evenements}
+        objectifs={objectifs}
+        morceaux={morceaux}
+        onSortie={(id) => naviguer(`/sorties/${id}`)}
+        onPost={onPost}
+        onEvenement={onEvenement}
+        onObjectif={() => naviguer("/parcours")}
+      />
+      <p className="text-libelle text-texte-2 max-md:hidden">{fr("Clique sur un jour pour planifier un post. Les sorties apparaissent sur fond plein, tes événements en texte (ajoute-les avec le bouton +).")}</p>
     </section>
   );
 }
@@ -481,5 +504,62 @@ function EditionEvenement({ evenement, onFermer }: { evenement: Evenement | null
         </div>
       </div>
     </Modale>
+  );
+}
+
+/* ---------- Agenda du mois (téléphone) ---------- */
+
+function Agenda({
+  mois,
+  sorties,
+  posts,
+  evenements,
+  objectifs,
+  morceaux,
+  onSortie,
+  onPost,
+  onEvenement,
+  onObjectif,
+}: {
+  mois: Date;
+  sorties: Sortie[];
+  posts: PostReseau[];
+  evenements: Evenement[];
+  objectifs: Etape[];
+  morceaux: Morceau[];
+  onSortie(id: string): void;
+  onPost(p: PostReseau): void;
+  onEvenement(e: Evenement): void;
+  onObjectif(): void;
+}) {
+  const prefixe = jourIso(mois).slice(0, 7);
+  const elements = [
+    ...sorties.filter((s) => s.date?.startsWith(prefixe)).map((s) => ({
+      id: s.id,
+      jour: s.date!,
+      titre: morceaux.find((m) => m.id === s.morceauId)?.titre ?? s.metadonnees.titre,
+      detail: "Sortie",
+      action: () => onSortie(s.id),
+    })),
+    ...evenements.filter((e) => e.date.startsWith(prefixe)).map((e) => ({ id: e.id, jour: e.date, titre: e.titre, detail: e.heure ?? "Événement", action: () => onEvenement(e) })),
+    ...posts.filter((p) => p.date.startsWith(prefixe)).map((p) => ({ id: p.id, jour: p.date, titre: p.description || p.plateforme, detail: `Post ${p.plateforme}`, action: () => onPost(p) })),
+    ...objectifs.filter((o) => o.objectif!.startsWith(prefixe)).map((o) => ({ id: o.id, jour: o.objectif!, titre: contenuDe(o).titre, detail: "Objectif du parcours", action: onObjectif })),
+  ].sort((a, b) => a.jour.localeCompare(b.jour));
+
+  return (
+    <ul className="flex flex-col md:hidden">
+      {elements.length === 0 && <li className="py-3 text-libelle text-texte-2">{fr("Rien ce mois-ci. Touche un jour pour planifier un post.")}</li>}
+      {elements.map((e) => (
+        <li key={e.id} className="border-b border-filet">
+          <button type="button" onClick={e.action} className="flex w-full items-baseline gap-4 py-3 text-left">
+            <span className="w-16 shrink-0 text-libelle text-texte-2 tabular-nums">{libelleJour(e.jour)}</span>
+            <span className="flex min-w-0 flex-col">
+              <span className="truncate">{e.titre}</span>
+              <span className="text-libelle text-texte-2">{e.detail}</span>
+            </span>
+          </button>
+        </li>
+      ))}
+    </ul>
   );
 }

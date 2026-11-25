@@ -34,12 +34,18 @@ export function AccueilPage() {
 
   return (
     <div className="flex flex-col gap-16">
-      <header className="flex items-end justify-between gap-6">
+      <header className="flex flex-wrap items-end justify-between gap-6 max-md:flex-col-reverse max-md:items-stretch">
         <div>
           <p className="mb-1 text-libelle text-texte-2">{dateLongue()}</p>
-          <h1 className="text-[40px] leading-tight font-medium tracking-[-0.03em]">{nom ? `Bonjour ${nom}` : "Bonjour"}</h1>
+          <h1 className="text-page">{nom ? `Bonjour ${nom}` : "Bonjour"}</h1>
         </div>
-        <ActionsEnTete />
+        <div className="flex items-center justify-between gap-2">
+          {/* Sur téléphone, Réglages n’a pas d’onglet : il s’ouvre d’ici. */}
+          <Link to="/reglages" aria-label="Réglages" className="flex size-11 items-center justify-center rounded-full border border-filet text-texte-2 hover:text-texte md:hidden">
+            <Icone nom="reglages" taille={18} />
+          </Link>
+          <ActionsEnTete />
+        </div>
       </header>
 
       <BlocParcours donnees={donnees} />
@@ -85,7 +91,7 @@ function BlocParcours({ donnees }: { donnees: Donnees }) {
 
   return (
     <section aria-labelledby="titre-parcours" className="flex flex-col gap-8">
-      <div className="flex items-start justify-between gap-8">
+      <div className="flex items-start justify-between gap-8 max-md:flex-col-reverse max-md:gap-4">
         <div className="flex min-w-0 flex-col gap-4">
           <p className="text-libelle text-texte-2">Ton parcours · {parcours.titre}</p>
           <h2 id="titre-parcours" className="text-titre">
@@ -280,7 +286,7 @@ function Stats() {
           {saisis.map((r) => (
             <li key={r.plateforme} className="flex flex-col">
               <span className="text-libelle text-texte-2">{r.plateforme}</span>
-              <span className="text-[40px] leading-tight font-light tracking-[-0.03em] tabular-nums">
+              <span className="text-[clamp(28px,1.6vw+22px,40px)] leading-tight font-light tracking-[-0.03em] tabular-nums">
                 {r.abonnes!.toLocaleString("fr-FR")}
               </span>
               <span className="text-libelle text-texte-2">abonnés · saisi par toi</span>

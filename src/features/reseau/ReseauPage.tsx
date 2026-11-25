@@ -113,13 +113,14 @@ function Contacts({ contacts, envois, onCreer }: { contacts: Contact[]; envois: 
           const dernier = envois.filter((e) => e.contactId === c.id).sort((a, b) => b.envoyeAt.localeCompare(a.envoyeAt))[0];
           return (
             <li key={c.id} className="border-t border-filet last:border-b">
-              <Link to={`/reseau/${c.id}`} className="grid grid-cols-[40px_1fr_120px_200px] items-center gap-6 py-4 transition-colors duration-150 hover:bg-surface/60">
+              <Link to={`/reseau/${c.id}`} className="grid grid-cols-[40px_minmax(0,1fr)] items-center gap-4 py-4 max-md:[&>*:nth-child(n+3)]:hidden md:grid-cols-[40px_minmax(0,1fr)_120px_200px] md:gap-6 transition-colors duration-150 hover:bg-surface/60">
                 <span aria-hidden className="flex size-10 items-center justify-center rounded-full border border-filet text-libelle uppercase">
                   {c.nom.slice(0, 2)}
                 </span>
                 <span className="flex min-w-0 flex-col">
                   <span className="truncate">{c.nom}</span>
-                  {c.email && <span className="truncate text-libelle text-texte-2">{c.email}</span>}
+                  {c.email && <span className="truncate text-libelle text-texte-2 max-md:hidden">{c.email}</span>}
+                  <span className="truncate text-libelle text-texte-2 md:hidden">{libelleRole(c.role)}</span>
                 </span>
                 <span className="text-libelle text-texte-2">{libelleRole(c.role)}</span>
                 <span className="text-right text-libelle text-texte-2">

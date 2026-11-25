@@ -27,12 +27,12 @@ export function Modale({ ouverte, titre, onFermer, children, actions }: Props) {
       ref={ref}
       onClose={onFermer}
       onClick={(e) => e.target === ref.current && onFermer()}
-      className="m-auto w-[min(560px,calc(100vw-32px))] rounded-28 border border-filet bg-surface p-0 text-texte backdrop:bg-fond/80"
+      className="m-auto w-[min(560px,calc(100vw-32px))] rounded-28 border border-filet bg-surface p-0 text-texte backdrop:bg-fond/80 max-md:mb-0 max-md:max-h-[92dvh] max-md:w-full max-md:max-w-none max-md:rounded-b-none max-md:border-b-0"
     >
       {ouverte && (
-        <div className="flex flex-col gap-8 p-8">
+        <div className="flex flex-col gap-8 p-6 pb-[calc(24px+env(safe-area-inset-bottom))] md:p-8">
           <div className="flex items-start justify-between gap-4">
-            <h2 className="text-[28px] leading-tight font-medium tracking-[-0.02em]">{fr(titre)}</h2>
+            <h2 className="text-[24px] leading-tight font-medium tracking-[-0.02em] md:text-[28px]">{fr(titre)}</h2>
             <BoutonIcone icone="fermer" libelle="Fermer" onClick={onFermer} className="-mt-1 -mr-2 border-transparent" />
           </div>
           {children}

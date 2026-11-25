@@ -39,7 +39,7 @@ export function BarreLaterale() {
   return (
     <nav
       aria-label="Navigation principale"
-      className="sticky top-0 flex h-dvh w-[88px] shrink-0 flex-col items-center border-r border-filet py-10"
+      className="sticky top-0 hidden h-dvh w-[88px] shrink-0 flex-col items-center border-r border-filet py-10 md:flex"
     >
       <NavLink to="/" aria-label="ctrl.app, accueil" className="mb-14 flex size-11 items-center justify-center">
         <Chevron taille={28} />
@@ -71,6 +71,37 @@ export function BarreLaterale() {
           <Infobulle texte="Réglages" />
         </NavLink>
       </div>
+    </nav>
+  );
+}
+
+/** Sur téléphone : les onglets passent en bas de l’écran, à portée du pouce.
+    Réglages s’ouvre depuis l’Accueil. */
+export function BarreOnglets() {
+  const surParcours = ["/parcours", "/taches", "/reglages"].includes(useLocation().pathname);
+  return (
+    <nav
+      aria-label="Navigation principale"
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-filet bg-fond pb-[env(safe-area-inset-bottom)] md:hidden"
+    >
+      <ul className="flex h-16 items-stretch">
+        {onglets.map((o) => (
+          <li key={o.vers} className="flex-1">
+            <NavLink
+              to={o.vers}
+              end={o.vers === "/"}
+              className={({ isActive }) =>
+                `flex h-full flex-col items-center justify-center gap-1 text-[11px] transition-colors duration-150 ${
+                  isActive || (o.vers === "/" && surParcours) ? "text-texte" : "text-texte-2"
+                }`
+              }
+            >
+              <Icone nom={o.nom} taille={22} />
+              {o.libelle}
+            </NavLink>
+          </li>
+        ))}
+      </ul>
     </nav>
   );
 }

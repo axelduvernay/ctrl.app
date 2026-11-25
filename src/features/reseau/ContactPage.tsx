@@ -61,7 +61,7 @@ export function ContactPage() {
             valeur={contact.nom}
             onEnregistrer={(nom) => nom.trim() && void modifierContact(contact.id, { nom: nom.trim() })}
             className="min-w-0 flex-1 [&>span]:sr-only"
-            classeChamp="-mx-2 w-full rounded-12 bg-transparent px-2 text-[40px] leading-tight font-medium tracking-[-0.03em] text-texte hover:bg-surface focus:bg-surface focus:outline-none"
+            classeChamp="-mx-2 w-full rounded-12 bg-transparent px-2 text-page text-texte hover:bg-surface focus:bg-surface focus:outline-none"
           />
           <Bouton icone="envoyer" onClick={() => naviguer(`/reseau/envoi?contact=${contact.id}`)}>
             Écrire un mail

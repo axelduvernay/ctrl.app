@@ -178,7 +178,9 @@ function pisteDe(m: Morceau, v: Version, projets: Projet[]): Piste {
 
 /* ---------- Lignes ---------- */
 
-const ligne = "group grid grid-cols-[36px_44px_minmax(0,1fr)_120px_56px_36px] items-center gap-4 border-t border-filet py-3 last:border-b";
+// Sur téléphone, le statut et la durée (4e et 5e colonnes) laissent la place au titre.
+const ligne =
+  "group grid grid-cols-[36px_44px_minmax(0,1fr)_36px] items-center gap-3 border-t border-filet py-3 last:border-b max-md:[&>*:nth-child(4)]:hidden max-md:[&>*:nth-child(5)]:hidden md:grid-cols-[36px_44px_minmax(0,1fr)_120px_56px_36px] md:gap-4";
 
 function MenuLigne({ libelle, elements }: { libelle: string; elements: { libelle: string; icone: "dossier" | "supprimer" | "crayon"; onClick(): void }[] }) {
   return (
@@ -224,7 +226,12 @@ function LigneMorceau({
       )}
       <Vignette fichierId={morceau.coverFichierId} taille={44} arrondi="rounded-[10px]" />
       <Link to={`/musique/${morceau.id}`} className="flex min-w-0 flex-col hover:underline-offset-4 [&:hover>span:first-child]:underline">
-        <span className="truncate">{morceau.titre}</span>
+        <span className="flex min-w-0 items-center gap-2">
+          <span className="md:hidden">
+            <PastilleStatut valeur={morceau.statut} libelle={false} />
+          </span>
+          <span className="truncate">{morceau.titre}</span>
+        </span>
         {details && <span className="truncate text-libelle text-texte-2">{details}</span>}
       </Link>
       <span className="text-libelle text-texte-2">

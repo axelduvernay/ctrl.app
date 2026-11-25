@@ -92,7 +92,7 @@ export function ProjetPage() {
           valeur={projet.titre}
           onEnregistrer={(t) => t.trim() && void depots.projets.modifier(projet.id, { titre: t.trim() })}
           className="[&>span]:sr-only"
-          classeChamp="-mx-2 w-full rounded-12 bg-transparent px-2 text-[40px] leading-tight font-medium tracking-[-0.03em] text-texte hover:bg-surface focus:bg-surface focus:outline-none"
+          classeChamp="-mx-2 w-full rounded-12 bg-transparent px-2 text-page text-texte hover:bg-surface focus:bg-surface focus:outline-none"
         />
         <Segmente libelle="Type" options={typesProjet} valeur={projet.type} onChange={(type) => void depots.projets.modifier(projet.id, { type })} />
       </div>
@@ -164,14 +164,16 @@ export function ProjetPage() {
 
 function Piste({ morceau, index, total, projet, version, file }: { morceau: Morceau; index: number; total: number; projet: Projet; version?: Version; file: PisteLecteur[] }) {
   return (
-    <li className="group flex items-center gap-4 rounded-12 px-3 py-2 transition-colors duration-150 hover:bg-filet/60">
+    <li className="group flex items-center gap-2 rounded-12 px-2 py-2 transition-colors duration-150 hover:bg-filet/60 md:gap-4 md:px-3">
       <span className="w-6 text-right text-libelle text-texte-2 tabular-nums">{index + 1}</span>
       {version ? (
         <LecteurAudio compact fichierId={version.fichierId} libelle={morceau.titre} file={file} />
       ) : (
         <span className="size-9 shrink-0" title="Aucune version à écouter" />
       )}
-      <Vignette fichierId={morceau.coverFichierId} taille={36} arrondi="rounded-[8px]" />
+      <span className="max-md:hidden">
+        <Vignette fichierId={morceau.coverFichierId} taille={36} arrondi="rounded-[8px]" />
+      </span>
       <Link to={`/musique/${morceau.id}`} className="min-w-0 flex-1 truncate hover:underline underline-offset-4">
         {morceau.titre}
       </Link>

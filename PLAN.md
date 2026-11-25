@@ -96,3 +96,11 @@ Un lot à la fois. Cocher quand le lot est fait et commité ; Axel valide au fil
 - [x] Bouton « Partager » sur le board (emplacement, mention « bientôt »)
 - [x] Lecteur : aléatoire, boucle (liste ou son), volume gardé
 - [x] Glisser un morceau sur un projet dans la librairie l’y ajoute
+
+## Lot 14 - Version mobile
+- [x] Barre d’onglets en bas, Réglages depuis l’Accueil, recherche et + en icônes
+- [x] Typo fluide (titres réduits sur téléphone), écrans en une colonne
+- [x] Fenêtres en feuille du bas, lecteur compact au-dessus des onglets
+- [x] Calendrier : points dans les cases et agenda du mois
+- [x] Board au doigt : glisser à un doigt, pincer pour zoomer ; barres d’outils adaptées
+- [x] Installable sur l’écran d’accueil (manifeste, icônes, encoche de l’iPhone)

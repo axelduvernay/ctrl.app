@@ -34,7 +34,7 @@ export function Progression({ total, faites, enCours = true, className = "" }: P
 /** Grand numéro « 02 » avec « /08 » en exposant, comme sur l’Accueil du dossier. */
 export function NumeroEtape({ numero, total, taille = 140 }: { numero: string; total: string; taille?: number }) {
   return (
-    <p className="flex items-start font-light leading-[0.85] tracking-[-0.04em] tabular-nums" style={{ fontSize: taille }}>
+    <p className="flex items-start font-light leading-[0.85] tracking-[-0.04em] tabular-nums" style={{ fontSize: `clamp(${Math.round(taille * 0.5)}px, ${(taille / 7.5).toFixed(1)}vw, ${taille}px)` }}>
       {numero}
       <span className="mt-[0.06em] ml-1 text-[22px] font-medium tracking-normal text-texte-2" style={{ fontSize: Math.max(16, taille * 0.16) }}>
         /{total}
