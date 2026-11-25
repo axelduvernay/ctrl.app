@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Bouton } from "@/components/Bouton";
 import { ChampTexte } from "@/components/Champs";
 import { fr } from "@/content/typo";
-import { envoyerCode, verifierCode } from "@/data/remote/sync";
+import { depots } from "@/data";
+import { envoyerCode, rejoindreAutreOnglet, verifierCode } from "@/data/remote/sync";
 
 /** Connexion par mail : on reçoit un code à 6 chiffres, on le tape. Pas de
     mot de passe. Utilisé à la fin du questionnaire et dans Réglages. */
@@ -13,6 +14,19 @@ export function ConnexionCompte({ onConnecte }: { onConnecte(r: { compteExistant
   const [attente, setAttente] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const emailValide = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+
+  // Le lien du mail s’ouvre dans un nouvel onglet, qui se connecte : on le
+  // détecte ici pour continuer sans rien retaper.
+  useEffect(() => {
+    if (!envoye) return;
+    const t = setInterval(async () => {
+      if (!(await rejoindreAutreOnglet())) return;
+      clearInterval(t);
+      const profils = await depots.profils.lister();
+      onConnecte({ compteExistant: profils.some((p) => p.onboardingTermineAt) });
+    }, 1500);
+    return () => clearInterval(t);
+  }, [envoye, onConnecte]);
 
   async function demander() {
     if (!emailValide || attente) return;
@@ -61,7 +75,7 @@ export function ConnexionCompte({ onConnecte }: { onConnecte(r: { compteExistant
       />
       {envoye && (
         <ChampTexte
-          libelle="Code reçu par mail"
+          libelle="Code reçu par mail (s’il y en a un)"
           inputMode="numeric"
           autoComplete="one-time-code"
           autoFocus
@@ -88,7 +102,13 @@ export function ConnexionCompte({ onConnecte }: { onConnecte(r: { compteExistant
           </Bouton>
         )}
       </div>
-      {envoye && <p className="text-libelle text-texte-2">{fr(`Code envoyé à ${email.trim()}. Pense à regarder dans les spams.`)}</p>}
+      {envoye && (
+        <p className="text-libelle text-texte-2">
+          {fr(
+            `Mail envoyé à ${email.trim()} (pense aux spams). Clique le lien du mail : un onglet s’ouvre et te connecte, celui-ci suit tout seul. Si le mail contient un code, tape-le ci-dessus.`,
+          )}
+        </p>
+      )}
     </form>
   );
 }

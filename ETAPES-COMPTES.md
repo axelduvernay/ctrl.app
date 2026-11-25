@@ -1,6 +1,6 @@
 # ctrl.app : activer les comptes et la synchronisation
 
-À faire une seule fois, dans l’ordre. Compte 10 minutes. Le code est prêt et
+À faire une seule fois, dans l’ordre. Étapes 1 à 4 : 5 minutes, et les comptes marchent. Étapes 5 et 6 : avant le jury. Le code est prêt et
 en ligne. Les noms des menus Supabase peuvent changer un peu : les liens
 directs ci-dessous mènent à la bonne page de ton projet (`hsxsgszdzcupguuhgzlb`).
 Si quelque chose ne correspond pas, envoie une capture à Claude.
@@ -18,30 +18,7 @@ Si quelque chose ne correspond pas, envoie une capture à Claude.
 Ça crée la table des données, l’espace privé pour les sons et les images, et
 les règles qui font que chaque compte ne voit que ses propres données.
 
-## Étape 2 · Mettre le code dans le mail (2 minutes, important)
-
-Par défaut, le mail ne contient qu’un lien. L’app accepte ce lien, mais le
-**code à 6 chiffres** est plus pratique (surtout sur téléphone, ou si le mail
-s’ouvre sur un autre appareil).
-
-1. Ouvre les modèles de mails :
-   <https://supabase.com/dashboard/project/hsxsgszdzcupguuhgzlb/auth/templates>
-   (menu de gauche → **Authentication** → **Emails** ou « Email Templates »).
-2. Dans le modèle **Magic Link**, remplace tout le contenu (« Message body »)
-   par le texte ci-dessous, puis **Save** :
-
-   ```html
-   <h2>Connexion à ctrl.app</h2>
-   <p>Ton code : <strong>{{ .Token }}</strong></p>
-   <p>Ou clique : <a href="{{ .ConfirmationURL }}">se connecter</a></p>
-   ```
-
-3. Fais **la même chose** dans le modèle **Confirm signup** (c’est le mail
-   reçu la toute première fois, quand le compte est créé). Save.
-4. Tu peux aussi changer l’objet (« Subject ») : par exemple
-   « Ton code ctrl.app ».
-
-## Étape 3 · Régler les adresses (1 minute)
+## Étape 2 · Régler les adresses (1 minute)
 
 <https://supabase.com/dashboard/project/hsxsgszdzcupguuhgzlb/auth/url-configuration>
 (Authentication → **URL Configuration**) :
@@ -52,37 +29,83 @@ s’ouvre sur un autre appareil).
   - `http://localhost:5173/ctrl.app/`
 - Save.
 
-## Étape 4 · Vérifier le code à 6 chiffres (30 secondes)
+Sans ça, le lien du mail ouvre la mauvaise adresse.
+
+## Étape 3 · Vérifier le fournisseur Email (30 secondes)
 
 <https://supabase.com/dashboard/project/hsxsgszdzcupguuhgzlb/auth/providers>
 (Authentication → **Sign In / Providers** → **Email**) :
 
 - « Enable Email provider » : activé.
-- « Email OTP Length » (longueur du code) : **6**. Save.
-- Laisse les inscriptions ouvertes (« Allow new users to sign up ») : au
-  stand, chaque visiteur peut créer son compte.
+- « Email OTP Length » : **6**. Save.
+- Laisse « Allow new users to sign up » activé (au stand, chaque visiteur peut
+  créer son compte).
 
-## Étape 5 · Essayer
+## Étape 4 · Essayer (avec le lien du mail)
+
+Sans SMTP, le mail de Supabase ne contient qu’un lien. Ça suffit :
 
 1. Ouvre <https://axelduvernay.github.io/ctrl.app/> et recharge (⌘⇧R).
 2. Réglages → **Compte et synchronisation** → ton adresse → « Recevoir un
-   code » → tape le code du mail (ou clique le lien).
-3. « À jour » avec une coche : c’est synchronisé.
-4. Ajoute un morceau, puis ouvre l’app dans un autre navigateur (ou sur ton
-   téléphone) et connecte-toi avec la même adresse : le morceau arrive.
+   code ».
+3. Clique le lien du mail **dans le même navigateur** : un onglet s’ouvre et te
+   connecte, l’onglet de départ suit tout seul.
+4. « À jour » avec une coche : c’est synchronisé.
+5. Ajoute un morceau, connecte-toi ailleurs avec la même adresse : il arrive.
 
 Si Réglages affiche « Synchronisation impossible : … », envoie le message
 exact à Claude.
 
-## Étape 6 · Avant le jury : un vrai envoi de mails (recommandé)
+## Étape 5 · Avant le jury : envoi de mails par Gmail (10 minutes, recommandé)
 
-L’envoi intégré à Supabase est limité à quelques mails par heure : au stand,
-avec plusieurs visiteurs, ça bloquera vite (« Trop de mails envoyés »).
+L’envoi intégré à Supabase est limité à **2 mails par heure** : au stand, ça
+bloque dès le 3ᵉ visiteur. Un SMTP règle ça et débloque les modèles de mails
+(étape 6). Le plus simple : un compte Gmail dédié (ex. une adresse créée pour
+ctrl.app).
 
-<https://supabase.com/dashboard/project/hsxsgszdzcupguuhgzlb/auth/smtp>
-(Authentication → Emails → **SMTP Settings**) : active « Custom SMTP » avec
-un service gratuit comme Resend ou Brevo (ils donnent l’hôte, le port,
-l’identifiant et le mot de passe à recopier). Claude peut t’aider pas à pas.
+1. Sur ce compte Google, active la **validation en deux étapes** :
+   <https://myaccount.google.com/signinoptions/twosv>
+2. Crée un **mot de passe d’application** (nom : « Supabase ») :
+   <https://myaccount.google.com/apppasswords>
+   Google affiche 16 lettres : copie-les (sans les espaces).
+3. Ouvre <https://supabase.com/dashboard/project/hsxsgszdzcupguuhgzlb/auth/smtp>
+   (Authentication → Emails → **SMTP Settings**), active **Enable Custom SMTP** :
+   - Sender email : l’adresse Gmail
+   - Sender name : `ctrl.app`
+   - Host : `smtp.gmail.com`
+   - Port : `465`
+   - Username : l’adresse Gmail
+   - Password : les 16 lettres
+   - Save.
+4. Juste en dessous (ou Authentication → **Rate Limits**), monte
+   « Rate limit for sending emails » à **30 par heure**.
+
+Gmail accepte environ 500 mails par jour, largement assez pour le stand.
+Ce mot de passe d’application reste dans Supabase : ne le donne à personne,
+pas même à Claude.
+
+Alternative sans Gmail : Brevo (gratuit, 300 mails par jour). Host
+`smtp-relay.brevo.com`, port `587`, identifiant et « clé SMTP » donnés dans
+Brevo → SMTP & API ; l’adresse d’envoi doit y être validée.
+
+## Étape 6 · Mettre le code dans le mail (2 minutes, après l’étape 5)
+
+Le code à 6 chiffres est plus pratique que le lien (le mail peut s’ouvrir sur
+le téléphone pendant que l’app tourne sur l’ordinateur du stand).
+
+1. Ouvre <https://supabase.com/dashboard/project/hsxsgszdzcupguuhgzlb/auth/templates>
+2. Modèle **Magic Link** : objet « Ton code ctrl.app », et remplace le
+   « Message body » par :
+
+   ```html
+   <h2>Connexion à ctrl.app</h2>
+   <p>Ton code : <strong>{{ .Token }}</strong></p>
+   <p>Ou clique : <a href="{{ .ConfirmationURL }}">se connecter</a></p>
+   ```
+
+3. Même chose dans le modèle **Confirm signup** (premier mail d’un nouveau
+   compte). Save.
+4. Essaie : l’app affiche un champ pour taper le code.
 
 ## À savoir
 

@@ -62,6 +62,18 @@ async function terminerConnexion(session: Session) {
   return { compteExistant };
 }
 
+/** Connexion faite dans un autre onglet (lien du mail ouvert à côté) :
+    les onglets partagent la même base locale, on la reprend ici. */
+export async function rejoindreAutreOnglet(): Promise<Session | null> {
+  if (useCompte.getState().session) return useCompte.getState().session;
+  const session = await moteurLocal.meta<Session | null>(CLE_COMPTE);
+  if (!session) return null;
+  maj({ session });
+  ecouter();
+  void synchroniser();
+  return session;
+}
+
 export async function deconnecter(effacerAppareil = false) {
   arreter();
   try {
@@ -84,6 +96,7 @@ export async function demarrer() {
     const session = await (await serveur()).session().catch(() => null);
     history.replaceState(null, "", location.pathname);
     if (session) {
+      maj({ viaLien: true });
       await terminerConnexion(session);
       return;
     }

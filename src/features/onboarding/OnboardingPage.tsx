@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { useNavigate } from "react-router";
+import { Navigate, useNavigate } from "react-router";
 import { Logo } from "@/components/Logo";
 import { Bouton } from "@/components/Bouton";
 import { ChampTexte, Compteur, Option, Segmente } from "@/components/Champs";
@@ -49,6 +49,7 @@ const TOTAL = 5;
 export function OnboardingPage() {
   const naviguer = useNavigate();
   const session = useCompte((c) => c.session);
+  const viaLien = useCompte((c) => c.viaLien);
   // Questionnaire refait depuis Réglages : on peut revenir sans rien changer.
   const { donnees: profils } = useRequete(() => depots.profils.lister());
   const dejaInscrit = !!profils?.some((p) => p.onboardingTermineAt);
@@ -86,6 +87,12 @@ export function OnboardingPage() {
     };
     await terminerOnboarding(reponses);
     setTermine(true);
+  }
+
+  // Onglet ouvert par le lien du mail : le questionnaire continue dans l’onglet de départ.
+  if (viaLien && session && !termine) {
+    if (dejaInscrit) return <Navigate to="/" replace />;
+    if (profils) return <ConnecteParLien email={session.email} onContinuer={() => useCompte.getState().maj({ viaLien: false })} />;
   }
 
   if (termine && dejaPublie) return <Resultat dejaPublie={dejaPublie} onCommencer={() => naviguer("/", { replace: true })} />;
@@ -231,7 +238,7 @@ export function OnboardingPage() {
           numero="05"
           theme="Compte"
           titre="Garde ta progression"
-          sousTitre="Facultatif. Avec ton mail, ton parcours, tes morceaux et tes boards sont sauvegardés et te suivent sur tes autres appareils. Pas de mot de passe : tu reçois un code."
+          sousTitre="Facultatif. Avec ton mail, ton parcours, tes morceaux et tes boards sont sauvegardés et te suivent sur tes autres appareils. Pas de mot de passe : tu reçois un mail."
         >
           {session ? (
             <p className="flex items-center gap-2">
@@ -340,6 +347,30 @@ function Connexions() {
         </span>
       </li>
     </ul>
+  );
+}
+
+/* ---------- Onglet ouvert par le lien du mail ---------- */
+
+function ConnecteParLien({ email, onContinuer }: { email: string; onContinuer(): void }) {
+  return (
+    <Cadre
+      haut={<Logo taille={22} />}
+      bas={
+        <>
+          <span />
+          <Bouton onClick={onContinuer}>Continuer ici</Bouton>
+        </>
+      }
+    >
+      <section className="flex flex-col gap-4">
+        <p className="text-libelle text-texte-2">Compte</p>
+        <h1 className="text-titre">{fr("Tu es connecté")}</h1>
+        <p className="max-w-[560px] text-texte-2">
+          {fr(`Connecté avec ${email}. Tu peux fermer cet onglet et revenir au précédent : il a continué tout seul.`)}
+        </p>
+      </section>
+    </Cadre>
   );
 }
 

@@ -10,6 +10,8 @@ interface EtatCompte {
   erreur: string | null;
   derniere: string | null;
   attente: number;
+  /** Cet onglet vient d’être ouvert par le lien du mail. */
+  viaLien: boolean;
   maj(e: Partial<Omit<EtatCompte, "maj">>): void;
 }
 
@@ -19,5 +21,6 @@ export const useCompte = create<EtatCompte>((set) => ({
   erreur: null,
   derniere: null,
   attente: 0,
+  viaLien: false,
   maj: (e) => set(e),
 }));
