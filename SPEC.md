@@ -79,7 +79,7 @@ Tous les blocs ont un état vide propre (app vierge au départ).
 - **Analyse du son** à l’import : forme d’onde, BPM et tonalité détectés automatiquement (corrigeables, avec ×2 / ÷2 pour le BPM)
 - **Lecteur** : une barre de lecture en bas de l’écran (précédent, lecture, suivant, forme d’onde), un seul son à la fois
 - **Fiche morceau** : le son (forme d’onde) et ses versions à gauche, un espace de notes à droite. « Détails » : cover, paroles, BPM, tonalité, supprimer
-- **Projets** : EP, album, mixtape, tracklist (liste ordonnée). Un morceau peut être dans plusieurs projets. Une tracklist créée sur un board est un projet de la librairie
+- **Projets** : EP, album, mixtape, tracklist (liste ordonnée). On y importe les sons depuis l’ordinateur (bouton centré sous la tracklist, ou glisser-déposer) ; ils restent rangés dans le projet, sans apparaître en plus comme singles. Un morceau de la librairie peut aussi être ajouté à un projet. Une tracklist créée sur un board est un projet de la librairie
 
 ## 3. Sorties
 

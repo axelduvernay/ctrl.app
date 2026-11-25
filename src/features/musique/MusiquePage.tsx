@@ -75,7 +75,9 @@ export function MusiquePage() {
 
   const elements: Element[] = [
     ...projets.filter((p) => (p.dossierId ?? null) === ici).map((projet) => ({ type: "projet" as const, projet })),
-    ...morceaux.filter((m) => (m.dossierId ?? null) === ici).map((morceau) => ({ type: "morceau" as const, morceau })),
+    ...morceaux
+      .filter((m) => (m.dossierId ?? null) === ici && !projets.some((p) => p.id === m.projetId))
+      .map((morceau) => ({ type: "morceau" as const, morceau })),
   ].sort((a, b) => maj(b).localeCompare(maj(a)));
   const dossiersIci = ici ? [] : [...dossiers].sort((a, b) => a.titre.localeCompare(b.titre, "fr"));
   const vide = elements.length === 0 && dossiersIci.length === 0;

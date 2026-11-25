@@ -8,8 +8,10 @@ import { PastilleStatut } from "@/components/PastilleStatut";
 import { depots, useRequete } from "@/data";
 import { typesProjet } from "@/content/statuts";
 import type { Morceau, Projet, Version } from "@/types";
-import { ajouterAuProjet, deplacerDansProjet, retirerDuProjet, supprimerProjet } from "./actions";
-import { ChampEnregistre, Vignette, versionAEcouter } from "./communs";
+import { ajouterAuProjet, deplacerDansProjet, estAudio, importerDansProjet, retirerDuProjet, supprimerProjet } from "./actions";
+import { ChampEnregistre, DepotFichiers, Vignette, versionAEcouter } from "./communs";
+import { ACCEPTE_AUDIO, choisirFichiers } from "@/lib/choisirFichiers";
+import { fr } from "@/content/typo";
 import { ActionsEnTete } from "@/app/ActionsEnTete";
 import { FilAriane } from "@/components/FilAriane";
 import type { Piste as PisteLecteur } from "@/stores/lecteur";
@@ -20,6 +22,8 @@ export function ProjetPage() {
   const naviguer = useNavigate();
   const [ajout, setAjout] = useState(false);
   const [confirmer, setConfirmer] = useState(false);
+  const [imports, setImports] = useState(0);
+  const [erreur, setErreur] = useState<string | null>(null);
 
   const { donnees, chargement } = useRequete(async () => {
     const projet = await depots.projets.obtenir(id);
@@ -47,6 +51,34 @@ export function ProjetPage() {
     return v ? [{ fichierId: v.fichierId, titre: m.titre, sousTitre: projet.titre, morceauId: m.id, coverFichierId: m.coverFichierId }] : [];
   });
   const parents = [{ libelle: "Musique", vers: "/musique" }, ...(dossier ? [{ libelle: dossier.titre, vers: `/musique?dossier=${dossier.id}` }] : [])];
+  const autres = morceaux.filter((m) => !projet.morceauIds.includes(m.id));
+
+  async function importer(fichiers: File[]) {
+    const audios = fichiers.filter(estAudio);
+    setErreur(audios.length < fichiers.length ? "Seuls les fichiers audio sont acceptés (wav, mp3, m4a, aiff, flac)." : null);
+    if (!audios.length) return;
+    setImports(audios.length);
+    try {
+      await importerDansProjet(projet.id, audios);
+    } finally {
+      setImports(0);
+    }
+  }
+  const choisir = () => void choisirFichiers(ACCEPTE_AUDIO).then(importer);
+
+  // Bouton principal, centré sous la tracklist : importer depuis l’ordinateur.
+  const boutons = (
+    <div className="flex flex-col items-center gap-3">
+      <Bouton icone="importer" onClick={choisir} disabled={imports > 0}>
+        {imports > 0 ? fr(`Import et analyse de ${imports} son${imports > 1 ? "s" : ""}…`) : "Importer des morceaux"}
+      </Bouton>
+      {autres.length > 0 && (
+        <button type="button" onClick={() => setAjout(true)} className="text-libelle text-texte-2 hover:text-texte">
+          ou ajouter un morceau déjà dans ta librairie
+        </button>
+      )}
+    </div>
+  );
 
   return (
     <div className="flex flex-col gap-12">
@@ -55,42 +87,48 @@ export function ProjetPage() {
           <FilAriane liens={parents} courant={projet.titre} />
           <ActionsEnTete />
         </div>
-        <div className="flex items-start justify-between gap-6">
-          <ChampEnregistre
-            libelle="Titre du projet"
-            valeur={projet.titre}
-            onEnregistrer={(t) => t.trim() && void depots.projets.modifier(projet.id, { titre: t.trim() })}
-            className="min-w-0 flex-1 [&>span]:sr-only"
-            classeChamp="-mx-2 w-full rounded-12 bg-transparent px-2 text-[40px] leading-tight font-medium tracking-[-0.03em] text-texte hover:bg-surface focus:bg-surface focus:outline-none"
-          />
-          <Bouton icone="plus" onClick={() => setAjout(true)}>
-            Ajouter des morceaux
-          </Bouton>
-        </div>
+        <ChampEnregistre
+          libelle="Titre du projet"
+          valeur={projet.titre}
+          onEnregistrer={(t) => t.trim() && void depots.projets.modifier(projet.id, { titre: t.trim() })}
+          className="[&>span]:sr-only"
+          classeChamp="-mx-2 w-full rounded-12 bg-transparent px-2 text-[40px] leading-tight font-medium tracking-[-0.03em] text-texte hover:bg-surface focus:bg-surface focus:outline-none"
+        />
         <Segmente libelle="Type" options={typesProjet} valeur={projet.type} onChange={(type) => void depots.projets.modifier(projet.id, { type })} />
       </div>
 
-      <section aria-labelledby="titre-tracklist" className="flex flex-col gap-4">
-        <h2 id="titre-tracklist" className="text-libelle text-texte-2">
-          Tracklist {pistes.length > 0 && <span className="tabular-nums">· {pistes.length}</span>}
-        </h2>
-        {pistes.length === 0 ? (
-          <button
-            type="button"
-            onClick={() => setAjout(true)}
-            className="rounded-18 border border-filet px-6 py-8 text-left transition-colors duration-150 hover:bg-surface"
-          >
-            <span className="block">Aucun morceau dans ce projet.</span>
-            <span className="text-libelle text-texte-2">Ajoute des morceaux de ta librairie, puis range-les dans l’ordre.</span>
-          </button>
-        ) : (
-          <ol className="flex flex-col rounded-18 border border-filet bg-surface p-2">
-            {pistes.map((m, i) => (
-              <Piste key={m.id} morceau={m} index={i} total={pistes.length} projet={projet} version={versionAEcouter(m, versions)} file={file} />
-            ))}
-          </ol>
+      <DepotFichiers accept={ACCEPTE_AUDIO} multiple onFichiers={(l) => void importer(l)}>
+        {(_ouvrir, survol) => (
+          <section aria-labelledby="titre-tracklist" className="flex flex-col gap-4">
+            <h2 id="titre-tracklist" className="text-libelle text-texte-2">
+              Tracklist {pistes.length > 0 && <span className="tabular-nums">· {pistes.length}</span>}
+            </h2>
+            {pistes.length === 0 ? (
+              <div
+                className={`flex min-h-[320px] flex-col items-center justify-end gap-8 rounded-18 border border-dashed px-6 py-12 text-center transition-colors duration-150 ${
+                  survol ? "border-texte-2 bg-surface" : "border-filet"
+                }`}
+              >
+                <div className="flex flex-col gap-1">
+                  <span>Aucun morceau dans ce projet.</span>
+                  <span className="text-libelle text-texte-2">{fr("Importe tes sons depuis ton ordinateur, ou glisse-les ici. Ils s’ajoutent dans l’ordre des noms de fichiers.")}</span>
+                </div>
+                {boutons}
+              </div>
+            ) : (
+              <>
+                <ol className={`flex flex-col rounded-18 border bg-surface p-2 transition-colors duration-150 ${survol ? "border-texte-2" : "border-filet"}`}>
+                  {pistes.map((m, i) => (
+                    <Piste key={m.id} morceau={m} index={i} total={pistes.length} projet={projet} version={versionAEcouter(m, versions)} file={file} />
+                  ))}
+                </ol>
+                <div className="pt-4">{boutons}</div>
+              </>
+            )}
+            {erreur && <p className="text-center text-libelle text-texte-2">{fr(erreur)}</p>}
+          </section>
         )}
-      </section>
+      </DepotFichiers>
 
       <button type="button" onClick={() => setConfirmer(true)} className="self-start text-libelle text-texte-2 hover:text-texte">
         Supprimer le projet
@@ -118,7 +156,7 @@ export function ProjetPage() {
           </>
         }
       >
-        <p className="text-texte-2">Ses morceaux restent dans ta librairie.</p>
+        <p className="text-texte-2">Ses morceaux restent dans ta librairie, comme singles.</p>
       </Modale>
     </div>
   );
@@ -172,7 +210,7 @@ function AjoutMorceaux({
   return (
     <Modale
       ouverte={ouverte}
-      titre="Ajouter des morceaux"
+      titre="Depuis ta librairie"
       onFermer={onFermer}
       actions={
         disponibles.length > 0 && (

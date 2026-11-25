@@ -6,13 +6,15 @@ import type { Id, Modification, Morceau, StatutMorceau, TypeNote, TypeProjet } f
 
 /* ---------- Morceaux ---------- */
 
-export function creerMorceau(titre: string, statut: StatutMorceau, dossierId: Id | null = null) {
+/** projetId : projet où le morceau est rangé (importé dans un EP, il
+    n’apparaît pas en plus comme single dans la librairie). */
+export function creerMorceau(titre: string, statut: StatutMorceau, dossierId: Id | null = null, projetId: Id | null = null) {
   return depots.morceaux.creer({
     titre: titre.trim(),
     statut,
     bpm: null,
     tonalite: null,
-    projetId: null,
+    projetId,
     dossierId,
     analyseAuto: true,
     coverFichierId: null,
@@ -30,6 +32,18 @@ export async function importerSingles(fichiers: File[], dossierId: Id | null = n
     crees.push(m);
   }
   return crees;
+}
+
+/** Sons importés depuis l’ordinateur directement dans un projet (EP, album,
+    mixtape), dans l’ordre des noms de fichiers (« 01 … », « 02 … »). */
+export async function importerDansProjet(projetId: Id, fichiers: File[]) {
+  const tries = fichiers.filter(estAudio).sort((a, b) => a.name.localeCompare(b.name, "fr", { numeric: true }));
+  for (const f of tries) {
+    const m = await creerMorceau(f.name.replace(/\.[^.]+$/, "") || "Sans titre", "maquette", null, projetId);
+    await importerVersion(m.id, f);
+    await ajouterAuProjet(projetId, [m.id]);
+  }
+  return tries.length;
 }
 
 /** BPM ou tonalité corrigés à la main : l’analyse ne les remplace plus. */
@@ -50,7 +64,8 @@ export async function supprimerMorceau(morceau: Morceau) {
   }
   for (const n of await depots.notes.trouver("morceauId", morceau.id)) await supprimerNote(n.id);
   if (morceau.coverFichierId) await depots.fichiers.supprimer(morceau.coverFichierId);
-  for (const p of await depots.projets.lister()) if (p.morceauIds.includes(morceau.id)) await retirerDuProjet(p.id, morceau.id);
+  for (const p of await depots.projets.lister())
+    if (p.morceauIds.includes(morceau.id)) await depots.projets.transformer(p.id, (x) => ({ morceauIds: x.morceauIds.filter((id) => id !== morceau.id) }));
   await depots.morceaux.supprimer(morceau.id);
 }
 
@@ -164,9 +179,12 @@ export async function ajouterAuProjet(projetId: Id, morceauIds: Id[]) {
   await depots.projets.transformer(projetId, (p) => ({ morceauIds: [...p.morceauIds, ...morceauIds.filter((id) => !p.morceauIds.includes(id))] }));
 }
 
+/** Retiré du projet où il était rangé, le morceau revient dans la librairie. */
 export async function retirerDuProjet(projetId: Id, morceauId: Id) {
   if (await depots.projets.obtenir(projetId))
     await depots.projets.transformer(projetId, (p) => ({ morceauIds: p.morceauIds.filter((id) => id !== morceauId) }));
+  const m = await depots.morceaux.obtenir(morceauId);
+  if (m?.projetId === projetId) await depots.morceaux.modifier(morceauId, { projetId: null });
 }
 
 export async function deplacerDansProjet(projetId: Id, index: number, sens: -1 | 1) {
@@ -185,6 +203,7 @@ export async function supprimerProjet(projetId: Id) {
   const projet = await depots.projets.obtenir(projetId);
   if (!projet) return;
   for (const b of await depots.blocs.trouver("refId", projetId)) await depots.blocs.modifier(b.id, { refId: null, morceauIds: projet.morceauIds, titre: projet.titre });
+  for (const m of await depots.morceaux.trouver("projetId", projetId)) await depots.morceaux.modifier(m.id, { projetId: null });
   await depots.projets.supprimer(projetId);
 }
 

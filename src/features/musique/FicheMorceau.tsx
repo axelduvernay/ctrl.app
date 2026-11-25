@@ -62,7 +62,12 @@ export function FicheMorceau() {
     );
 
   const { morceau, versions, fichiers, notes, projets, dossier } = donnees;
-  const parents = [{ libelle: "Musique", vers: "/musique" }, ...(dossier ? [{ libelle: dossier.titre, vers: `/musique?dossier=${dossier.id}` }] : [])];
+  const maison = projets.find((p) => p.id === morceau.projetId);
+  const parents = [
+    { libelle: "Musique", vers: "/musique" },
+    ...(dossier ? [{ libelle: dossier.titre, vers: `/musique?dossier=${dossier.id}` }] : []),
+    ...(maison ? [{ libelle: maison.titre, vers: `/musique/projets/${maison.id}` }] : []),
+  ];
   const infos = [morceau.bpm && `${morceau.bpm} BPM`, morceau.tonalite].filter(Boolean).join(" · ");
 
   return (
