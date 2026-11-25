@@ -44,6 +44,12 @@ export async function envoyerCode(email: string) {
 export async function verifierCode(email: string, code: string) {
   const d = await serveur();
   const session = await d.verifierCode(email.trim().toLowerCase(), code.trim());
+  return terminerConnexion(session);
+}
+
+/** Relie cet appareil au compte (après le code ou le lien du mail). */
+async function terminerConnexion(session: Session) {
+  const d = await serveur();
   const compteExistant = (await d.compter("profils")) > 0;
   if (compteExistant) await moteurLocal.effacerSansJournal(["profils", "parcours", "etapes"]);
   await moteurLocal.changerProprietaire(session.uid, session.email);
@@ -70,7 +76,18 @@ export async function deconnecter(effacerAppareil = false) {
 
 /** Au lancement : reprend la session si cet appareil est relié à un compte.
     Sans compte, la librairie Supabase n’est même pas chargée. */
+/** Le lien du mail ramène ici avec la session dans l’adresse. */
+const lienDansAdresse = () => /access_token=|[?&]code=|token_hash=/.test(location.hash + location.search);
+
 export async function demarrer() {
+  if (lienDansAdresse()) {
+    const session = await (await serveur()).session().catch(() => null);
+    history.replaceState(null, "", location.pathname);
+    if (session) {
+      await terminerConnexion(session);
+      return;
+    }
+  }
   const enregistre = await moteurLocal.meta<Session | null>(CLE_COMPTE);
   if (!enregistre) return;
   const d = await serveur();

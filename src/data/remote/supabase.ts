@@ -20,7 +20,8 @@ export function creerDistantSupabase(): Distant {
       sb.auth.onAuthStateChange((_e, s) => rappel(versSession(s?.user)));
     },
     async envoyerCode(email) {
-      const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
+      // Le mail contient un code (à taper) et un lien (qui ramène ici et connecte aussi).
+      const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: true, emailRedirectTo: `${location.origin}${import.meta.env.BASE_URL}` } });
       if (error) throw new Error(traduire(error.message));
     },
     async verifierCode(email, code) {
