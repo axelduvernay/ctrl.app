@@ -91,3 +91,8 @@ Un lot à la fois. Cocher quand le lot est fait et commité ; Axel valide au fil
 - [x] Date objectif par étape (fixer, changer, retirer)
 - [x] « Planifier mes étapes » au rythme choisi
 - [x] Compte à rebours sur l’Accueil, objectif dans « Cette semaine » et dans le calendrier
+
+## Lot 13 - Petits ajouts
+- [x] Bouton « Partager » sur le board (emplacement, mention « bientôt »)
+- [x] Lecteur : aléatoire, boucle (liste ou son), volume gardé
+- [x] Glisser un morceau sur un projet dans la librairie l’y ajoute

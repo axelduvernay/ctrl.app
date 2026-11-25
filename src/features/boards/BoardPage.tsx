@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
-import { BoutonIcone } from "@/components/Bouton";
+import { Bouton, BoutonIcone } from "@/components/Bouton";
+import { Modale } from "@/components/Modale";
 import { Icone, type NomIcone } from "@/components/Icone";
 import { depots, useRequete } from "@/data";
 import { ActionsEnTete } from "@/app/ActionsEnTete";
@@ -143,6 +144,7 @@ function Canvas({ board, blocs, liens, morceaux, contacts, taches, versions, fic
   const [choix, setChoix] = useState<{ type: "morceau" | "contact" | "tracklist"; cible?: Id; point?: Point } | null>(null);
   const [recherche, setRecherche] = useState<{ texte: string; index: number } | null>(null);
   const [filtre, setFiltre] = useState<Id | null>(null);
+  const [partage, setPartage] = useState(false);
   const [espace, setEspace] = useState(false);
   const dernierClic = useRef<{ id: Id | "fond"; t: number; x: number; y: number } | null>(null);
   const tracer = useRef<Point[]>([]);
@@ -1053,6 +1055,7 @@ function Canvas({ board, blocs, liens, morceaux, contacts, taches, versions, fic
           </div>
           <div className="pointer-events-auto flex flex-col items-end gap-2">
             <div className="flex items-center gap-2">
+              <BoutonIcone icone="partager" libelle="Partager ce board" onClick={() => setPartage(true)} className="bg-fond" />
               <ActionsEnTete />
               <BoutonIcone icone="annuler" libelle="Annuler (⌘Z)" onClick={annuler} className="bg-fond" />
               <BoutonIcone icone="retablir" libelle="Rétablir (⌘⇧Z)" onClick={retablir} className="bg-fond" />
@@ -1215,6 +1218,12 @@ function Canvas({ board, blocs, liens, morceaux, contacts, taches, versions, fic
         )}
 
         <GestionCategories ouverte={categoriesOuvert} board={board} onFermer={() => setCategoriesOuvert(false)} />
+
+        <Modale ouverte={partage} titre="Partager ce board" onFermer={() => setPartage(false)} actions={<Bouton onClick={() => setPartage(false)}>Compris</Bouton>}>
+          <p className="text-texte-2">
+            {fr("Bientôt : un lien pour montrer ce board à quelqu’un (ingé son, graphiste, collab), en lecture seule, sans qu’il ait besoin d’un compte. Il passera par ton compte ctrl.app.")}
+          </p>
+        </Modale>
 
         <ChoixObjet
           choix={choix?.type ?? null}

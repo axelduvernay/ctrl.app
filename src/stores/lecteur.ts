@@ -19,7 +19,15 @@ interface EtatLecteur {
   lecture: boolean;
   position: number;
   duree: number;
+  aleatoire: boolean;
+  /** Boucle : rien, toute la file, ou le son en cours. */
+  boucle: "non" | "tout" | "un";
+  /** Volume entre 0 et 1, gardé d’une visite à l’autre. */
+  volume: number;
   courante(): Piste | null;
+  basculerAleatoire(): void;
+  changerBoucle(): void;
+  regler(volume: number): void;
   /** Lance la piste « index » de la file (ou met en pause si c’est déjà elle). */
   jouer(file: Piste[], index?: number): void;
   basculer(): void;
@@ -30,6 +38,11 @@ interface EtatLecteur {
 }
 
 const audio = typeof Audio !== "undefined" ? new Audio() : null;
+const CLE_VOLUME = "ctrlapp.volume";
+const volumeGarde = () => {
+  const v = Number(typeof localStorage !== "undefined" ? localStorage.getItem(CLE_VOLUME) : null);
+  return localStorage.getItem(CLE_VOLUME) !== null && Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 1;
+};
 let adresse: string | null = null;
 let chargee: string | null = null;
 
@@ -50,7 +63,17 @@ export const useLecteur = create<EtatLecteur>((set, get) => ({
   lecture: false,
   position: 0,
   duree: 0,
+  aleatoire: false,
+  boucle: "non",
+  volume: audio ? volumeGarde() : 1,
   courante: () => get().file[get().index] ?? null,
+  basculerAleatoire: () => set((e) => ({ aleatoire: !e.aleatoire })),
+  changerBoucle: () => set((e) => ({ boucle: e.boucle === "non" ? "tout" : e.boucle === "tout" ? "un" : "non" })),
+  regler(volume) {
+    if (audio) audio.volume = volume;
+    localStorage.setItem(CLE_VOLUME, String(volume));
+    set({ volume });
+  },
   jouer(file, index = 0) {
     const cible = file[index];
     if (!audio || !cible) return;
@@ -67,8 +90,14 @@ export const useLecteur = create<EtatLecteur>((set, get) => ({
     else audio.pause();
   },
   suivant() {
-    const { file, index } = get();
+    const { file, index, aleatoire, boucle } = get();
+    if (aleatoire && file.length > 1) {
+      let i = index;
+      while (i === index) i = Math.floor(Math.random() * file.length);
+      return get().jouer(file, i);
+    }
     if (index + 1 < file.length) get().jouer(file, index + 1);
+    else if (boucle === "tout" && file.length) get().jouer(file, 0);
     else audio?.pause();
   },
   precedent() {
@@ -93,9 +122,17 @@ export const useLecteur = create<EtatLecteur>((set, get) => ({
 
 if (audio) {
   audio.preload = "metadata";
+  audio.volume = useLecteur.getState().volume;
   audio.addEventListener("play", () => useLecteur.setState({ lecture: true }));
   audio.addEventListener("pause", () => useLecteur.setState({ lecture: false }));
   audio.addEventListener("timeupdate", () => useLecteur.setState({ position: audio.currentTime }));
   audio.addEventListener("loadedmetadata", () => Number.isFinite(audio.duration) && useLecteur.setState({ duree: audio.duration }));
-  audio.addEventListener("ended", () => useLecteur.getState().suivant());
+  audio.addEventListener("ended", () => {
+    const l = useLecteur.getState();
+    if (l.boucle === "un") {
+      audio.currentTime = 0;
+      void audio.play();
+    } else if (l.file.length === 1 && l.boucle !== "tout") audio.pause();
+    else l.suivant();
+  });
 }

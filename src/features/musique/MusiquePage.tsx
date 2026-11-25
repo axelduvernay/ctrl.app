@@ -17,6 +17,7 @@ import { duree } from "@/lib/format";
 import type { Piste } from "@/stores/lecteur";
 import type { Dossier, Fichier, Id, Morceau, Projet, TypeProjet, Version } from "@/types";
 import {
+  ajouterAuProjet,
   creerDossier,
   creerProjet,
   estAudio,
@@ -261,8 +262,30 @@ function LigneProjet({
   });
   const total = file.reduce((s, p) => s + (durees.get(p.fichierId) ?? 0), 0);
   const cover = pistes.find((m) => m.coverFichierId)?.coverFichierId ?? null;
+  const [survol, setSurvol] = useState(false);
   return (
-    <li draggable onDragStart={(e) => e.dataTransfer.setData(GLISSE, JSON.stringify({ type: "projet", id: projet.id }))} className={ligne}>
+    <li
+      draggable
+      onDragStart={(e) => e.dataTransfer.setData(GLISSE, JSON.stringify({ type: "projet", id: projet.id }))}
+      // Un morceau glissé sur un projet s’ajoute à la fin de sa tracklist.
+      onDragOver={(e) => {
+        if (!e.dataTransfer.types.includes(GLISSE)) return;
+        e.preventDefault();
+        setSurvol(true);
+      }}
+      onDragLeave={() => setSurvol(false)}
+      onDrop={(e) => {
+        setSurvol(false);
+        const brut = e.dataTransfer.getData(GLISSE);
+        if (!brut) return;
+        const element = JSON.parse(brut) as { type: string; id: Id };
+        if (element.type !== "morceau") return;
+        e.preventDefault();
+        e.stopPropagation();
+        void ajouterAuProjet(projet.id, [element.id]);
+      }}
+      className={`${ligne} transition-colors duration-150 ${survol ? "bg-surface" : ""}`}
+    >
       {file[0] ? <LecteurAudio compact fichierId={file[0].fichierId} libelle={projet.titre} file={file} /> : <span className="size-9" />}
       {cover ? (
         <Vignette fichierId={cover} taille={44} arrondi="rounded-[10px]" />

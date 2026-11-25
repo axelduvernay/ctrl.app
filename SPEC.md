@@ -84,7 +84,7 @@ Tous les blocs ont un état vide propre (app vierge au départ).
 - **Librairie** (façon Untitled) : dossiers, projets et singles dans une seule liste, du plus récent au plus ancien. Un seul bouton « + Ajouter » : Nouveau single (import audio), Nouveau projet, Nouveau dossier. Glisser des sons sur la page les importe ; glisser une ligne sur un dossier l’y range
 - **Statuts** : Idée, Maquette, Finition, Prêt, Sorti. Discrets : pastille + menu déroulant
 - **Analyse du son** à l’import : forme d’onde, BPM et tonalité détectés automatiquement (corrigeables, avec ×2 / ÷2 pour le BPM)
-- **Lecteur** : une barre de lecture en bas de l’écran (précédent, lecture, suivant, forme d’onde), un seul son à la fois
+- **Lecteur** : une barre de lecture en bas de l’écran (précédent, lecture, suivant, forme d’onde, aléatoire, boucle, volume), un seul son à la fois
 - **Fiche morceau** : le son (forme d’onde) et ses versions à gauche, un espace de notes à droite. « Détails » : cover, paroles, BPM, tonalité, supprimer
 - **Projets** : EP, album, mixtape, tracklist (liste ordonnée). On y importe les sons depuis l’ordinateur (bouton centré sous la tracklist, ou glisser-déposer) ; ils restent rangés dans le projet, sans apparaître en plus comme singles. Un morceau de la librairie peut aussi être ajouté à un projet. Une tracklist créée sur un board est un projet de la librairie
 

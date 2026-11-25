@@ -55,6 +55,12 @@ import {
   UserPlus,
   StickyNote,
   Settings2,
+  Shuffle,
+  Repeat,
+  Repeat1,
+  Volume2,
+  VolumeX,
+  Share2,
 } from "lucide-react";
 import { personnalisees } from "./icones/personnalisees";
 
@@ -118,6 +124,12 @@ const librairie = {
   note: StickyNote,
   details: Settings2,
   chevronBas: ChevronDown,
+  aleatoire: Shuffle,
+  boucle: Repeat,
+  boucleUn: Repeat1,
+  volume: Volume2,
+  muet: VolumeX,
+  partager: Share2,
 } as const;
 
 export type NomIcone = keyof typeof librairie;
