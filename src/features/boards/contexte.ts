@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import type { Bloc, Categorie, Contact, Fichier, Id, Morceau, Tache, Version } from "@/types";
+import type { Bloc, Categorie, Contact, Fichier, Id, Morceau, Projet, Tache, Version } from "@/types";
 import type { Commande } from "./EditeurTexte";
 
 export interface Edition {
@@ -13,6 +13,8 @@ export interface ContexteBoard {
   boardId: Id;
   categories: Categorie[];
   morceaux: Morceau[];
+  /** Projets de la librairie : une tracklist en est un. */
+  projets: Projet[];
   contacts: Contact[];
   taches: Tache[];
   versions: Version[];

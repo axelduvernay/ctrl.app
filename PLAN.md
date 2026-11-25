@@ -53,7 +53,7 @@ Un lot à la fois. Cocher quand le lot est fait et commité ; Axel valide au fil
 - [x] Tout le board du prototype ctrl.mind (texte riche, commandes /, catégories, échéance et rappel, images, dessin, tableaux, dossiers, variantes, zone « Fait », lasso, aimant, sous-zones, annuler / rétablir, recherche, filtres, raccourcis) : voir `BOARDS-ANALYSE.md`
 
 ## Lot 7 - Transverse
-- [x] Bouton Capturer : mémo vocal, note, tâche
+- [x] Bouton Capturer : mémo vocal, note, tâche (devenu le bouton + au lot 11)
 - [x] Recherche globale ⌘K
 
 ## Lot 8 - Réglages
@@ -76,3 +76,13 @@ Un lot à la fois. Cocher quand le lot est fait et commité ; Axel valide au fil
 - [x] États vides partout
 - [x] Mode plein écran, performance, aucune erreur console
 - [ ] Build de production qui tourne hors ligne
+
+## Lot 11 - Simplifier (retours d’Axel du 25 novembre)
+- [x] Musique = une librairie : dossiers, projets, singles ; un seul « + Ajouter » (single, projet, dossier) ; fin de Catalogue / Projets / Captures
+- [x] Analyse à l’import : forme d’onde, BPM, tonalité (sans dépendance, dans un worker)
+- [x] Formes d’onde et barre de lecture en bas de l’écran
+- [x] Fiche morceau épurée : son + versions, notes à droite, « Détails » (cover, paroles, BPM, tonalité), statut en menu discret ; « C’est le son que je sors » retiré (choix du son déplacé sur l’Accueil)
+- [x] Bouton + partout : tâche, événement, contact, note, morceau, mémo vocal ; événements dans le calendrier
+- [x] Boards : un board ouvert d’office ; une tracklist du board = un projet de la librairie
+- [x] Bouton retour à côté du fil d’Ariane
+- [x] Numéro de version dans Réglages

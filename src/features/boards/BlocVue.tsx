@@ -13,7 +13,7 @@ import { Vignette } from "@/features/musique/communs";
 import { modifierMorceau } from "@/features/musique/actions";
 import { basculerTache, modifierTache } from "@/features/taches/actions";
 import type { Bloc, Morceau, Tache, Version } from "@/types";
-import { modifierBloc } from "./actions";
+import { modifierBloc, ordonnerTracklist, pistesDe, renommerTracklist } from "./actions";
 import { useBoard } from "./contexte";
 import { EditeurTexte } from "./EditeurTexte";
 import { Tableau } from "./Tableau";
@@ -313,17 +313,24 @@ function ListeOrdonnee<T extends { id: string }>({
 }
 
 function Tracklist({ bloc }: { bloc: Bloc }) {
-  const { morceaux, versions, ajouterMorceaux, memoriser } = useBoard();
-  const pistes = bloc.morceauIds.map((id) => morceaux.find((m) => m.id === id)).filter((m): m is Morceau => !!m);
+  const { morceaux, projets, versions, ajouterMorceaux, memoriser } = useBoard();
+  const projet = projets.find((p) => p.id === bloc.refId);
+  const pistes = pistesDe(bloc, projets)
+    .map((id) => morceaux.find((m) => m.id === id))
+    .filter((m): m is Morceau => !!m);
+  const file = pistes.flatMap((m) => {
+    const v = versionAEcouter(m, versions);
+    return v ? [{ fichierId: v.fichierId, titre: m.titre, sousTitre: projet?.titre ?? bloc.titre, morceauId: m.id, coverFichierId: m.coverFichierId }] : [];
+  });
   return (
     <div className={`${carte} flex flex-col gap-1 p-3`} style={{ width: bloc.largeur }}>
       <div className="flex items-center gap-2 px-2 py-1">
         <Icone nom="tracklist" taille={16} className="text-texte-2" />
         <TexteLigne
           id={bloc.id}
-          valeur={bloc.titre}
+          valeur={projet?.titre ?? bloc.titre}
           placeholder="Tracklist"
-          onEnregistrer={(titre) => void modifierBloc(bloc.id, { titre: titre.trim() || "Tracklist" })}
+          onEnregistrer={(titre) => void renommerTracklist(bloc, titre)}
           className="flex-1"
         />
         <span className="text-libelle text-texte-2 tabular-nums">{pistes.length}</span>
@@ -332,13 +339,13 @@ function Tracklist({ bloc }: { bloc: Bloc }) {
         elements={pistes}
         onOrdre={(ids) => {
           memoriser();
-          void modifierBloc(bloc.id, { morceauIds: ids });
+          void ordonnerTracklist(bloc, ids);
         }}
         rendu={(m, i) => {
           const v = versionAEcouter(m, versions);
           return (
             <>
-              {v ? <LecteurAudio compact fichierId={v.fichierId} libelle={m.titre} /> : <span className="size-9 shrink-0" />}
+              {v ? <LecteurAudio compact fichierId={v.fichierId} libelle={m.titre} file={file} /> : <span className="size-9 shrink-0" />}
               <span className="w-4 text-libelle text-texte-2 tabular-nums">{i + 1}</span>
               <NomRenommable valeur={m.titre} onRenommer={(t) => void modifierMorceau(m.id, { titre: t })} />
             </>

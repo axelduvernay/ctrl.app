@@ -74,17 +74,16 @@ Tous les blocs ont un état vide propre (app vierge au départ).
 
 ## 2. Musique
 
-- **Catalogue** : toutes les prods et morceaux, filtrables par statut
-- **Statuts** : Idée, Maquette, Finition, Prêt, Sorti
-- **Fiche morceau** :
-  - Versions : import de fichiers audio, lecture, historique, version validée en tête
-  - Notes : paroles, idées, retours reçus, notes de mix
-  - Infos : BPM, tonalité, projet, cover (image importée)
-- **Projets** : EP et tracklists (liste ordonnée de morceaux)
+- **Librairie** (façon Untitled) : dossiers, projets et singles dans une seule liste, du plus récent au plus ancien. Un seul bouton « + Ajouter » : Nouveau single (import audio), Nouveau projet, Nouveau dossier. Glisser des sons sur la page les importe ; glisser une ligne sur un dossier l’y range
+- **Statuts** : Idée, Maquette, Finition, Prêt, Sorti. Discrets : pastille + menu déroulant
+- **Analyse du son** à l’import : forme d’onde, BPM et tonalité détectés automatiquement (corrigeables, avec ×2 / ÷2 pour le BPM)
+- **Lecteur** : une barre de lecture en bas de l’écran (précédent, lecture, suivant, forme d’onde), un seul son à la fois
+- **Fiche morceau** : le son (forme d’onde) et ses versions à gauche, un espace de notes à droite. « Détails » : cover, paroles, BPM, tonalité, supprimer
+- **Projets** : EP, album, mixtape, tracklist (liste ordonnée). Un morceau peut être dans plusieurs projets. Une tracklist créée sur un board est un projet de la librairie
 
 ## 3. Sorties
 
-- **Calendrier** : sorties et posts réseaux planifiés
+- **Calendrier** : sorties, posts réseaux planifiés et événements (studio, concert…) ajoutés avec le bouton +
 - **Checklist de sortie** par morceau, adaptée au niveau (cover, mix/master, distributeur, métadonnées, date, contenus réseaux)
 - **Métadonnées** : titre, artistes, crédits, cover, ISRC, genre
 - **Distribution** : à terme depuis l'app. Pour l'instant : écran « bientôt », pas de fausse fonctionnalité
@@ -100,11 +99,18 @@ Règle : le suivi porte sur les étapes de publication, jamais sur la qualité a
 
 ## 5. Boards
 
+- L’onglet ouvre directement un board (le dernier ouvert ; « Mon board » est créé au premier passage). Les autres boards se choisissent dans le menu du titre
 - **Whiteboard** infini avec grille de points : zones, blocs, liens entre blocs, zoom (−, %, +)
 - Types de blocs : note, tâche, tracklist (liste de morceaux à écouter, numérotée), zone
 - **Nœuds liés** : un morceau, un contact ou une tâche posé sur un board est le même objet que dans les autres onglets. Modifié à un endroit, il l'est partout
 - **Partage** d'un board ou d'une zone par lien : plus tard (nécessite le backend), prévoir l'emplacement du bouton seulement
 - Reprendre ce qui est utile du prototype `axelduvernay/ctrl.app`
+
+## Partout
+
+- **Bouton +** en haut à droite de chaque écran : une tâche, un événement, un contact, une note (posée sur le board), un morceau (import audio), un mémo vocal (rangé dans Musique, statut Idée)
+- **Retour** : bouton ← à côté du fil d’Ariane sur les écrans de détail
+- Recherche ⌘K
 
 ## 6. Réglages
 
@@ -113,6 +119,7 @@ Règle : le suivi porte sur les étapes de publication, jamais sur la qualité a
 - Mode d'affichage : sombre ou clair
 - Compte et synchronisation : connexion par mail (code à 6 chiffres) et synchro entre appareils via Supabase. Sans compte, export et import des données en fichier
 - **Réinitialiser l'app** (efface tout, retour à l'onboarding). Utile au stand entre deux visiteurs
+- Numéro de version (commit publié et date), pour vérifier qu’on a la dernière mise en ligne
 
 ## Hors périmètre pour l'instant
 

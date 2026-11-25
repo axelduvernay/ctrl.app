@@ -10,8 +10,8 @@ import { depots, useRequete } from "@/data";
 import { plateformesPost } from "@/content/checklist";
 import { fr } from "@/content/typo";
 import { depuisJour, jourIso, libelleJour } from "@/lib/format";
-import type { Morceau, PostReseau, Sortie } from "@/types";
-import { creerSortie, enregistrerPost, estFait, pointsAutomatiques, supprimerPost } from "./actions";
+import type { Evenement, Morceau, PostReseau, Sortie } from "@/types";
+import { creerSortie, enregistrerPost, estFait, modifierEvenement, pointsAutomatiques, supprimerEvenement, supprimerPost } from "./actions";
 
 const joursSemaine = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
@@ -19,6 +19,7 @@ export function SortiesPage() {
   const [params, setParams] = useSearchParams();
   const [creation, setCreation] = useState<string | null>(null);
   const [post, setPost] = useState<Partial<PostReseau> | null>(null);
+  const [evenement, setEvenement] = useState<Evenement | null>(null);
   const [mois, setMois] = useState(() => {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), 1);
@@ -34,11 +35,16 @@ export function SortiesPage() {
   }, [params, setParams]);
 
   const { donnees } = useRequete(async () => {
-    const [sorties, posts, morceaux] = await Promise.all([depots.sorties.lister(), depots.postsReseaux.lister(), depots.morceaux.lister()]);
-    return { sorties, posts, morceaux };
+    const [sorties, posts, morceaux, evenements] = await Promise.all([
+      depots.sorties.lister(),
+      depots.postsReseaux.lister(),
+      depots.morceaux.lister(),
+      depots.evenements.lister(),
+    ]);
+    return { sorties, posts, morceaux, evenements };
   });
   if (!donnees) return null;
-  const { sorties, posts, morceaux } = donnees;
+  const { sorties, posts, morceaux, evenements } = donnees;
 
   return (
     <div className="flex flex-col gap-10">
@@ -57,6 +63,8 @@ export function SortiesPage() {
           setMois={setMois}
           sorties={sorties}
           posts={posts}
+          evenements={evenements}
+          onEvenement={setEvenement}
           morceaux={morceaux}
           onJour={(date) => setPost({ date, plateforme: "Instagram", description: "", sortieId: null })}
           onPost={setPost}
@@ -72,6 +80,7 @@ export function SortiesPage() {
 
       <NouvelleSortie morceauInitial={creation} morceaux={morceaux} sorties={sorties} onFermer={() => setCreation(null)} />
       <EditionPost post={post} sorties={sorties} morceaux={morceaux} onFermer={() => setPost(null)} />
+      <EditionEvenement evenement={evenement} onFermer={() => setEvenement(null)} />
     </div>
   );
 }
@@ -83,6 +92,8 @@ function Calendrier({
   setMois,
   sorties,
   posts,
+  evenements,
+  onEvenement,
   morceaux,
   onJour,
   onPost,
@@ -91,6 +102,8 @@ function Calendrier({
   setMois(d: Date): void;
   sorties: Sortie[];
   posts: PostReseau[];
+  evenements: Evenement[];
+  onEvenement(e: Evenement): void;
   morceaux: Morceau[];
   onJour(jour: string): void;
   onPost(p: PostReseau): void;
@@ -128,6 +141,7 @@ function Calendrier({
           if (!jour) return <div key={i} className="min-h-28 border-r border-b border-filet bg-surface/40" />;
           const sortiesDuJour = sorties.filter((s) => s.date === jour);
           const postsDuJour = posts.filter((p) => p.date === jour);
+          const evenementsDuJour = evenements.filter((e) => e.date === jour).sort((a, b) => (a.heure ?? "").localeCompare(b.heure ?? ""));
           return (
             <div
               key={jour}
@@ -158,6 +172,20 @@ function Calendrier({
                   {morceaux.find((m) => m.id === s.morceauId)?.titre ?? s.metadonnees.titre}
                 </button>
               ))}
+              {evenementsDuJour.map((ev) => (
+                <button
+                  key={ev.id}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEvenement(ev);
+                  }}
+                  className="truncate px-2 py-0.5 text-left text-[13px] text-texte hover:underline underline-offset-4"
+                >
+                  {ev.heure && <span className="text-texte-2 tabular-nums">{ev.heure} </span>}
+                  {ev.titre}
+                </button>
+              ))}
               {postsDuJour.map((p) => (
                 <button
                   key={p.id}
@@ -177,7 +205,7 @@ function Calendrier({
           );
         })}
       </div>
-      <p className="text-libelle text-texte-2">{fr("Clique sur un jour pour planifier un post. Les sorties apparaissent sur fond plein.")}</p>
+      <p className="text-libelle text-texte-2">{fr("Clique sur un jour pour planifier un post. Les sorties apparaissent sur fond plein, tes événements en texte (ajoute-les avec le bouton +).")}</p>
     </section>
   );
 }
@@ -380,6 +408,56 @@ export function EditionPost({
           ]}
           onChange={(v) => setBrouillon((b) => ({ ...b, sortieId: v || null }))}
         />
+      </div>
+    </Modale>
+  );
+}
+
+/* ---------- Événement ajouté avec le bouton + ---------- */
+
+function EditionEvenement({ evenement, onFermer }: { evenement: Evenement | null; onFermer(): void }) {
+  const [titre, setTitre] = useState("");
+  const [date, setDate] = useState("");
+  const [heure, setHeure] = useState("");
+  useEffect(() => {
+    setTitre(evenement?.titre ?? "");
+    setDate(evenement?.date ?? "");
+    setHeure(evenement?.heure ?? "");
+  }, [evenement]);
+  if (!evenement) return null;
+
+  const champ = "h-12 w-full rounded-12 border border-filet bg-surface px-4 text-texte focus:border-texte-2 focus:outline-none";
+  return (
+    <Modale
+      ouverte
+      titre="Événement"
+      onFermer={onFermer}
+      actions={
+        <>
+          <Bouton variante="lien" onClick={() => void supprimerEvenement(evenement.id).then(onFermer)}>
+            Supprimer
+          </Bouton>
+          <Bouton
+            disabled={!titre.trim() || !date}
+            onClick={() => void modifierEvenement(evenement.id, { titre: titre.trim(), date, heure: heure || null }).then(onFermer)}
+          >
+            Enregistrer
+          </Bouton>
+        </>
+      }
+    >
+      <div className="flex flex-col gap-6">
+        <ChampTexte libelle="Événement" valeur={titre} onChange={setTitre} maxLength={140} />
+        <div className="grid grid-cols-[1fr_160px] gap-4">
+          <label className="flex flex-col gap-2">
+            <span className="text-libelle text-texte-2">Date</span>
+            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={champ} />
+          </label>
+          <label className="flex flex-col gap-2">
+            <span className="text-libelle text-texte-2">Heure</span>
+            <input type="time" value={heure} onChange={(e) => setHeure(e.target.value)} className={champ} />
+          </label>
+        </div>
       </div>
     </Modale>
   );

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { Bouton } from "@/components/Bouton";
 import { ChampSelect, ChampTexte, Option, ZoneTexte } from "@/components/Champs";
 import { depots, useRequete } from "@/data";
@@ -7,6 +7,7 @@ import { integrations } from "@/integrations";
 import { modelesMail, remplir } from "@/content/modelesMail";
 import { fr } from "@/content/typo";
 import { ActionsEnTete } from "@/app/ActionsEnTete";
+import { FilAriane } from "@/components/FilAriane";
 import { envoyerMail } from "./actions";
 
 /** Composer un mail (prods, maquettes, liens) depuis l’app. Gmail est
@@ -56,13 +57,7 @@ export function EnvoiPage() {
   return (
     <div className="flex flex-col gap-12">
       <div className="flex items-center justify-between gap-6">
-        <nav aria-label="Fil d’Ariane" className="flex items-center gap-2 text-libelle text-texte-2">
-          <Link to="/reseau" className="hover:text-texte">
-            Réseau
-          </Link>
-          <span aria-hidden>/</span>
-          <span className="text-texte">Nouveau mail</span>
-        </nav>
+        <FilAriane liens={[{ libelle: "Réseau", vers: "/reseau" }]} courant={"Nouveau mail"} />
         <ActionsEnTete />
       </div>
 
@@ -112,7 +107,7 @@ export function EnvoiPage() {
         <aside className="flex flex-col gap-3">
           <h2 className="text-libelle text-texte-2">Morceaux joints</h2>
           {donnees.morceaux.length === 0 ? (
-            <p className="text-texte-2">Aucun morceau dans ton catalogue.</p>
+            <p className="text-texte-2">Aucun morceau dans ta librairie.</p>
           ) : (
             <div className="flex max-h-[60vh] flex-col gap-2 overflow-y-auto">
               {donnees.morceaux

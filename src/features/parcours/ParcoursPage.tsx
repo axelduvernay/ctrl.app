@@ -10,6 +10,7 @@ import { contenuDe, contenuEtape, etapes as catalogue, parcoursParCas } from "@/
 import { fr } from "@/content/typo";
 import type { Etape } from "@/types";
 import { ActionsEnTete } from "@/app/ActionsEnTete";
+import { FilAriane } from "@/components/FilAriane";
 import { ChampEnregistre } from "@/features/musique/communs";
 import {
   ajouterEtape,
@@ -43,7 +44,8 @@ export function ParcoursPage() {
 
   return (
     <div className="flex flex-col gap-12">
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between gap-6">
+        <FilAriane liens={[{ libelle: "Accueil", vers: "/" }]} courant="Parcours" />
         <ActionsEnTete />
       </div>
       <div className="flex items-end justify-between gap-8">

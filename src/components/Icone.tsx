@@ -48,6 +48,13 @@ import {
   CircleCheck,
   Undo2,
   Redo2,
+  SkipBack,
+  SkipForward,
+  Mic,
+  CalendarPlus,
+  UserPlus,
+  StickyNote,
+  Settings2,
 } from "lucide-react";
 import { personnalisees } from "./icones/personnalisees";
 
@@ -103,6 +110,14 @@ const librairie = {
   tacheBloc: CircleCheck,
   annuler: Undo2,
   retablir: Redo2,
+  precedentPiste: SkipBack,
+  suivantPiste: SkipForward,
+  micro: Mic,
+  calendrier: CalendarPlus,
+  contactPlus: UserPlus,
+  note: StickyNote,
+  details: Settings2,
+  chevronBas: ChevronDown,
 } as const;
 
 export type NomIcone = keyof typeof librairie;

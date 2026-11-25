@@ -1,4 +1,4 @@
-/* Tâches : créées depuis Capturer, le Réseau (relances), les Boards. */
+/* Tâches : créées depuis le bouton +, le Réseau (relances), les Boards. */
 
 import { depots } from "@/data";
 import type { Id, Jour, Tache } from "@/types";

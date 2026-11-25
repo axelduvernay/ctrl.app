@@ -1,312 +1,454 @@
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
+import { Bouton, BoutonIcone } from "@/components/Bouton";
+import { ChampTexte, Option, Segmente } from "@/components/Champs";
 import { EnTete } from "@/components/EnTete";
 import { EtatVide } from "@/components/EtatVide";
-import { Bouton } from "@/components/Bouton";
-import { ChampTexte, Segmente } from "@/components/Champs";
+import { Icone } from "@/components/Icone";
+import { LecteurAudio } from "@/components/LecteurAudio";
+import { MenuDeroulant } from "@/components/MenuDeroulant";
 import { Modale } from "@/components/Modale";
 import { PastilleStatut } from "@/components/PastilleStatut";
 import { depots, useRequete } from "@/data";
-import { statuts, typeProjet, typesProjet } from "@/content/statuts";
-import { dateRelative } from "@/lib/format";
-import type { Morceau, StatutMorceau, TypeProjet } from "@/types";
-import { creerMorceau, creerProjet } from "./actions";
-import { ChoixStatut, Vignette } from "./communs";
-import { Captures } from "./Captures";
+import { typeProjet, typesProjet } from "@/content/statuts";
+import { fr } from "@/content/typo";
+import { ACCEPTE_AUDIO, choisirFichiers } from "@/lib/choisirFichiers";
+import { duree } from "@/lib/format";
+import type { Piste } from "@/stores/lecteur";
+import type { Dossier, Fichier, Id, Morceau, Projet, TypeProjet, Version } from "@/types";
+import {
+  creerDossier,
+  creerProjet,
+  estAudio,
+  importerSingles,
+  ranger,
+  renommerDossier,
+  supprimerDossier,
+  supprimerMorceau,
+  supprimerProjet,
+} from "./actions";
+import { DepotFichiers, Vignette, versionAEcouter } from "./communs";
 
-type Vue = "catalogue" | "projets" | "captures";
+/* Musique : une librairie. Des dossiers, des projets (EP, album…) et des
+   singles, rangés du plus récent au plus ancien. Un seul bouton : Ajouter. */
 
-const vues: { valeur: Vue; libelle: string }[] = [
-  { valeur: "catalogue", libelle: "Catalogue" },
-  { valeur: "projets", libelle: "Projets" },
-  { valeur: "captures", libelle: "Captures" },
-];
+type Element = { type: "morceau"; morceau: Morceau } | { type: "projet"; projet: Projet };
+type Fenetre = null | "projet" | "dossier" | { renommer: Dossier } | { ranger: { type: "morceau" | "projet"; id: Id } } | { supprimer: Element | { type: "dossier"; dossier: Dossier } };
+
+const GLISSE = "application/x-ctrl-element";
 
 export function MusiquePage() {
-  const [params, setParams] = useSearchParams();
-  const brut = params.get("vue");
-  const vue: Vue = brut === "projets" || brut === "captures" ? brut : "catalogue";
-  const [creation, setCreation] = useState(false);
+  const naviguer = useNavigate();
+  const [params] = useSearchParams();
+  const dossierId = params.get("dossier");
+  const [fenetre, setFenetre] = useState<Fenetre>(null);
+  const [imports, setImports] = useState(0);
+  const [erreur, setErreur] = useState<string | null>(null);
 
-  return (
-    <div className="flex flex-col gap-10">
-      <EnTete
-        titre="Musique"
-        actions={
-          vue !== "captures" && (
-            <Bouton icone="plus" onClick={() => setCreation(true)}>
-              {vue === "catalogue" ? "Nouveau morceau" : "Nouveau projet"}
-            </Bouton>
-          )
-        }
-      />
-
-      <div role="tablist" aria-label="Vue" className="flex gap-6 border-b border-filet">
-        {vues.map(({ valeur: v, libelle }) => (
-          <button
-            key={v}
-            role="tab"
-            aria-selected={vue === v}
-            onClick={() => setParams(v === "catalogue" ? {} : { vue: v })}
-            className={`-mb-px border-b pb-3 transition-colors duration-150 ${
-              vue === v ? "border-texte text-texte" : "border-transparent text-texte-2 hover:text-texte"
-            }`}
-          >
-            {libelle}
-          </button>
-        ))}
-      </div>
-
-      {vue === "catalogue" && <Catalogue onCreer={() => setCreation(true)} />}
-      {vue === "projets" && <Projets onCreer={() => setCreation(true)} />}
-      {vue === "captures" && <Captures />}
-
-      {vue === "catalogue" ? (
-        <NouveauMorceau ouverte={creation} onFermer={() => setCreation(false)} />
-      ) : (
-        <NouveauProjet ouverte={creation} onFermer={() => setCreation(false)} />
-      )}
-    </div>
-  );
-}
-
-/* ---------- Catalogue ---------- */
-
-function Catalogue({ onCreer }: { onCreer(): void }) {
-  const [filtre, setFiltre] = useState<StatutMorceau | "tous">("tous");
   const { donnees } = useRequete(async () => {
-    const [morceaux, projets, versions] = await Promise.all([
+    const [morceaux, projets, dossiers, versions, fichiers] = await Promise.all([
       depots.morceaux.lister(),
       depots.projets.lister(),
+      depots.dossiers.lister(),
       depots.versions.lister(),
+      depots.fichiers.lister(),
     ]);
-    return { morceaux, projets, versions };
+    return { morceaux, projets, dossiers, versions, durees: new Map(fichiers.map((f: Fichier) => [f.id, f.duree])) };
   });
   if (!donnees) return null;
+  const { morceaux, projets, dossiers, versions, durees } = donnees;
+  const dossier = dossierId ? dossiers.find((d) => d.id === dossierId) : undefined;
+  const ici = dossier?.id ?? null;
 
-  const { morceaux, projets, versions } = donnees;
-  if (morceaux.length === 0)
-    return (
-      <EtatVide
-        titre="Aucun morceau pour l’instant."
-        texte="Ajoute tes prods et tes maquettes, même à l’état d’idée : tout sera au même endroit, avec leurs versions et leurs notes."
-        action={
-          <Bouton variante="contour" icone="plus" onClick={onCreer}>
-            Ajouter ton premier morceau
-          </Bouton>
-        }
-      />
-    );
+  async function importer(fichiers: File[]) {
+    const audios = fichiers.filter(estAudio);
+    setErreur(audios.length < fichiers.length ? "Seuls les fichiers audio sont acceptés (wav, mp3, m4a, aiff, flac)." : null);
+    if (!audios.length) return;
+    setImports((n) => n + audios.length);
+    try {
+      const crees = await importerSingles(audios, ici);
+      if (crees.length === 1) naviguer(`/musique/${crees[0]!.id}`);
+    } finally {
+      setImports((n) => n - audios.length);
+    }
+  }
 
-  const compte = (s: StatutMorceau) => morceaux.filter((m) => m.statut === s).length;
-  const visibles = morceaux
-    .filter((m) => filtre === "tous" || m.statut === filtre)
-    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  const elements: Element[] = [
+    ...projets.filter((p) => (p.dossierId ?? null) === ici).map((projet) => ({ type: "projet" as const, projet })),
+    ...morceaux.filter((m) => (m.dossierId ?? null) === ici).map((morceau) => ({ type: "morceau" as const, morceau })),
+  ].sort((a, b) => maj(b).localeCompare(maj(a)));
+  const dossiersIci = ici ? [] : [...dossiers].sort((a, b) => a.titre.localeCompare(b.titre, "fr"));
+  const vide = elements.length === 0 && dossiersIci.length === 0;
 
-  return (
-    <div className="flex flex-col gap-6">
-      <div role="radiogroup" aria-label="Filtrer par statut" className="flex flex-wrap gap-2">
-        <Filtre actif={filtre === "tous"} onClick={() => setFiltre("tous")} libelle="Tous" nombre={morceaux.length} />
-        {statuts.map((s) => (
-          <Filtre
-            key={s.valeur}
-            actif={filtre === s.valeur}
-            onClick={() => setFiltre(s.valeur)}
-            libelle={s.libelle}
-            nombre={compte(s.valeur)}
-            couleur={s.couleur}
-          />
-        ))}
-      </div>
+  // File d’écoute : les singles de la vue, dans l’ordre affiché.
+  const file: Piste[] = elements.flatMap((e) => {
+    if (e.type !== "morceau") return [];
+    const v = versionAEcouter(e.morceau, versions);
+    return v ? [pisteDe(e.morceau, v, projets)] : [];
+  });
 
-      {visibles.length === 0 ? (
-        <p className="py-8 text-texte-2">Aucun morceau avec ce statut.</p>
-      ) : (
-        <ul className="flex flex-col">
-          {visibles.map((m) => (
-            <LigneMorceau
-              key={m.id}
-              morceau={m}
-              projet={projets.find((p) => p.id === m.projetId)?.titre}
-              nbVersions={versions.filter((v) => v.morceauId === m.id).length}
-            />
-          ))}
-        </ul>
+  const ajouter = (
+    <MenuDeroulant
+      libelle="Ajouter"
+      cote="droite"
+      declencheur={(ouvert, basculer) => (
+        <Bouton icone="plus" onClick={basculer} aria-expanded={ouvert}>
+          Ajouter
+        </Bouton>
       )}
-    </div>
+      elements={[
+        { libelle: "Nouveau single", icone: "musique", onClick: () => void choisirFichiers(ACCEPTE_AUDIO).then(importer) },
+        { libelle: "Nouveau projet", icone: "tracklist", onClick: () => setFenetre("projet") },
+        ...(ici ? [] : [{ libelle: "Nouveau dossier", icone: "dossier" as const, onClick: () => setFenetre("dossier") }]),
+      ]}
+    />
+  );
+
+  return (
+    <DepotFichiers accept={ACCEPTE_AUDIO} multiple onFichiers={(l) => void importer(l)}>
+      {(choisir, survol) => (
+        <div className={`flex flex-col gap-10 rounded-28 transition-colors duration-150 ${survol ? "outline outline-1 outline-offset-8 outline-texte-2" : ""}`}>
+          <EnTete titre={dossier?.titre ?? "Musique"} retour={dossier ? [{ libelle: "Musique", vers: "/musique" }] : undefined} actions={ajouter} />
+
+          {imports > 0 && (
+            <p role="status" className="text-libelle text-texte-2">
+              {fr(imports === 1 ? "Import et analyse du son…" : `Import et analyse de ${imports} sons…`)}
+            </p>
+          )}
+          {erreur && <p className="text-libelle text-texte-2">{fr(erreur)}</p>}
+
+          {vide ? (
+            <EtatVide
+              titre={dossier ? "Ce dossier est vide." : "Ta librairie est vide."}
+              texte={
+                dossier
+                  ? "Glisse un son ici, ou range des morceaux dedans depuis la librairie (menu … d’un morceau)."
+                  : "Glisse un fichier audio ici, ou clique sur « Ajouter ». Le BPM et la tonalité sont détectés tout seuls."
+              }
+              action={
+                <Bouton variante="contour" icone="importer" onClick={choisir}>
+                  Importer un son
+                </Bouton>
+              }
+            />
+          ) : (
+            <ul className="flex flex-col">
+              {dossiersIci.map((d) => (
+                <LigneDossier
+                  key={d.id}
+                  dossier={d}
+                  nombre={morceaux.filter((m) => m.dossierId === d.id).length + projets.filter((p) => p.dossierId === d.id).length}
+                  onMenu={setFenetre}
+                />
+              ))}
+              {elements.map((e) =>
+                e.type === "morceau" ? (
+                  <LigneMorceau
+                    key={e.morceau.id}
+                    morceau={e.morceau}
+                    projets={projets.filter((p) => p.morceauIds.includes(e.morceau.id))}
+                    version={versionAEcouter(e.morceau, versions)}
+                    duree={durees.get(versionAEcouter(e.morceau, versions)?.fichierId ?? "")}
+                    file={file}
+                    onMenu={setFenetre}
+                  />
+                ) : (
+                  <LigneProjet key={e.projet.id} projet={e.projet} morceaux={morceaux} versions={versions} durees={durees} onMenu={setFenetre} />
+                ),
+              )}
+            </ul>
+          )}
+
+          <Fenetres fenetre={fenetre} onFermer={() => setFenetre(null)} dossiers={dossiers} ici={ici} />
+        </div>
+      )}
+    </DepotFichiers>
   );
 }
 
-function Filtre({ actif, onClick, libelle, nombre, couleur }: { actif: boolean; onClick(): void; libelle: string; nombre: number; couleur?: string }) {
+const maj = (e: Element) => (e.type === "morceau" ? e.morceau.updatedAt : e.projet.updatedAt);
+
+function pisteDe(m: Morceau, v: Version, projets: Projet[]): Piste {
+  const projet = projets.find((p) => p.morceauIds.includes(m.id));
+  return { fichierId: v.fichierId, titre: m.titre, sousTitre: projet?.titre, morceauId: m.id, coverFichierId: m.coverFichierId };
+}
+
+/* ---------- Lignes ---------- */
+
+const ligne = "group grid grid-cols-[36px_44px_minmax(0,1fr)_120px_56px_36px] items-center gap-4 border-t border-filet py-3 last:border-b";
+
+function MenuLigne({ libelle, elements }: { libelle: string; elements: { libelle: string; icone: "dossier" | "supprimer" | "crayon"; onClick(): void }[] }) {
   return (
-    <button
-      type="button"
-      role="radio"
-      aria-checked={actif}
-      onClick={onClick}
-      className={`inline-flex h-10 items-center gap-2 rounded-full border px-4 text-[15px] transition-colors duration-150 ${
-        actif ? "border-texte-2 bg-surface text-texte" : "border-filet text-texte-2 hover:text-texte"
-      }`}
-    >
-      {couleur && <span aria-hidden className="size-2 rounded-full" style={{ background: couleur }} />}
-      {libelle}
-      <span className="text-texte-2 tabular-nums">{nombre}</span>
-    </button>
+    <MenuDeroulant
+      libelle={libelle}
+      cote="droite"
+      elements={elements}
+      declencheur={(ouvert, basculer) => (
+        <BoutonIcone
+          icone="menu"
+          libelle={libelle}
+          onClick={basculer}
+          aria-expanded={ouvert}
+          className={`size-9 border-transparent text-texte-2 transition-opacity duration-150 group-hover:opacity-100 focus-visible:opacity-100 ${ouvert ? "opacity-100" : "opacity-0"}`}
+        />
+      )}
+    />
   );
 }
 
-function LigneMorceau({ morceau, projet, nbVersions }: { morceau: Morceau; projet?: string; nbVersions: number }) {
+function LigneMorceau({
+  morceau,
+  projets,
+  version,
+  duree: d,
+  file,
+  onMenu,
+}: {
+  morceau: Morceau;
+  projets: Projet[];
+  version?: Version;
+  duree?: number | null;
+  file: Piste[];
+  onMenu(f: Fenetre): void;
+}) {
+  const details = [projets.map((p) => p.titre).join(", "), morceau.bpm && `${morceau.bpm} BPM`, morceau.tonalite].filter(Boolean).join(" · ");
   return (
-    <li className="border-t border-filet last:border-b">
-      <Link
-        to={`/musique/${morceau.id}`}
-        className="grid grid-cols-[48px_1fr_140px_110px_130px] items-center gap-6 py-4 transition-colors duration-150 hover:bg-surface/60"
-      >
-        <Vignette fichierId={morceau.coverFichierId} />
-        <span className="flex min-w-0 flex-col">
-          <span className="truncate">{morceau.titre}</span>
-          {projet && <span className="truncate text-libelle text-texte-2">{projet}</span>}
-        </span>
-        <span className="text-libelle text-texte-2">
-          <PastilleStatut valeur={morceau.statut} />
-        </span>
-        <span className="text-libelle text-texte-2 tabular-nums">
-          {nbVersions === 0 ? "Aucune version" : nbVersions === 1 ? "1 version" : `${nbVersions} versions`}
-        </span>
-        <span className="text-right text-libelle text-texte-2">modifié {dateRelative(morceau.updatedAt)}</span>
+    <li draggable onDragStart={(e) => e.dataTransfer.setData(GLISSE, JSON.stringify({ type: "morceau", id: morceau.id }))} className={ligne}>
+      {version ? (
+        <LecteurAudio compact fichierId={version.fichierId} libelle={morceau.titre} file={file} />
+      ) : (
+        <span className="size-9" title="Aucun son pour l’instant" />
+      )}
+      <Vignette fichierId={morceau.coverFichierId} taille={44} arrondi="rounded-[10px]" />
+      <Link to={`/musique/${morceau.id}`} className="flex min-w-0 flex-col hover:underline-offset-4 [&:hover>span:first-child]:underline">
+        <span className="truncate">{morceau.titre}</span>
+        {details && <span className="truncate text-libelle text-texte-2">{details}</span>}
       </Link>
+      <span className="text-libelle text-texte-2">
+        <PastilleStatut valeur={morceau.statut} />
+      </span>
+      <span className="text-right text-libelle text-texte-2 tabular-nums">{d ? duree(d) : ""}</span>
+      <MenuLigne
+        libelle={`Options de ${morceau.titre}`}
+        elements={[
+          { libelle: "Ranger dans un dossier", icone: "dossier", onClick: () => onMenu({ ranger: { type: "morceau", id: morceau.id } }) },
+          { libelle: "Supprimer", icone: "supprimer", onClick: () => onMenu({ supprimer: { type: "morceau", morceau } }) },
+        ]}
+      />
     </li>
   );
 }
 
-function NouveauMorceau({ ouverte, onFermer }: { ouverte: boolean; onFermer(): void }) {
-  const naviguer = useNavigate();
-  const [titre, setTitre] = useState("");
-  const [statut, setStatut] = useState<StatutMorceau>("maquette");
-
-  async function creer() {
-    if (!titre.trim()) return;
-    const m = await creerMorceau(titre, statut);
-    setTitre("");
-    onFermer();
-    naviguer(`/musique/${m.id}`);
-  }
-
+function LigneProjet({
+  projet,
+  morceaux,
+  versions,
+  durees,
+  onMenu,
+}: {
+  projet: Projet;
+  morceaux: Morceau[];
+  versions: Version[];
+  durees: Map<string, number | null>;
+  onMenu(f: Fenetre): void;
+}) {
+  const pistes = projet.morceauIds.map((id) => morceaux.find((m) => m.id === id)).filter((m): m is Morceau => !!m);
+  const file: Piste[] = pistes.flatMap((m) => {
+    const v = versionAEcouter(m, versions);
+    return v ? [{ fichierId: v.fichierId, titre: m.titre, sousTitre: projet.titre, morceauId: m.id, coverFichierId: m.coverFichierId }] : [];
+  });
+  const total = file.reduce((s, p) => s + (durees.get(p.fichierId) ?? 0), 0);
+  const cover = pistes.find((m) => m.coverFichierId)?.coverFichierId ?? null;
   return (
-    <Modale
-      ouverte={ouverte}
-      titre="Nouveau morceau"
-      onFermer={onFermer}
-      actions={
-        <>
-          <Bouton variante="lien" onClick={onFermer}>
-            Annuler
-          </Bouton>
-          <Bouton onClick={creer} disabled={!titre.trim()}>
-            Créer
-          </Bouton>
-        </>
-      }
-    >
-      <form
-        className="flex flex-col gap-6"
-        onSubmit={(e) => {
-          e.preventDefault();
-          void creer();
-        }}
-      >
-        <ChampTexte libelle="Titre" valeur={titre} onChange={setTitre} placeholder="Même provisoire" autoFocus maxLength={120} />
-        <div className="flex flex-col gap-2">
-          <span className="text-libelle text-texte-2">Statut</span>
-          <ChoixStatut valeur={statut} onChange={setStatut} />
-        </div>
-      </form>
-    </Modale>
-  );
-}
-
-/* ---------- Projets ---------- */
-
-function Projets({ onCreer }: { onCreer(): void }) {
-  const { donnees: projets } = useRequete(() => depots.projets.lister());
-  if (!projets) return null;
-  if (projets.length === 0)
-    return (
-      <EtatVide
-        titre="Aucun projet pour l’instant."
-        texte="Un EP, une mixtape ou une simple tracklist : une liste ordonnée de tes morceaux, à écouter dans l’ordre."
-        action={
-          <Bouton variante="contour" icone="plus" onClick={onCreer}>
-            Créer un projet
-          </Bouton>
-        }
+    <li draggable onDragStart={(e) => e.dataTransfer.setData(GLISSE, JSON.stringify({ type: "projet", id: projet.id }))} className={ligne}>
+      {file[0] ? <LecteurAudio compact fichierId={file[0].fichierId} libelle={projet.titre} file={file} /> : <span className="size-9" />}
+      {cover ? (
+        <Vignette fichierId={cover} taille={44} arrondi="rounded-[10px]" />
+      ) : (
+        <span className="flex size-11 items-center justify-center rounded-[10px] border border-filet text-texte-2">
+          <Icone nom="tracklist" taille={18} />
+        </span>
+      )}
+      <Link to={`/musique/projets/${projet.id}`} className="flex min-w-0 flex-col [&:hover>span:first-child]:underline">
+        <span className="truncate underline-offset-4">{projet.titre}</span>
+        <span className="truncate text-libelle text-texte-2">
+          {typeProjet(projet.type)} · {pistes.length === 0 ? "vide" : pistes.length === 1 ? "1 morceau" : `${pistes.length} morceaux`}
+        </span>
+      </Link>
+      <span />
+      <span className="text-right text-libelle text-texte-2 tabular-nums">{total ? duree(total) : ""}</span>
+      <MenuLigne
+        libelle={`Options de ${projet.titre}`}
+        elements={[
+          { libelle: "Ranger dans un dossier", icone: "dossier", onClick: () => onMenu({ ranger: { type: "projet", id: projet.id } }) },
+          { libelle: "Supprimer", icone: "supprimer", onClick: () => onMenu({ supprimer: { type: "projet", projet } }) },
+        ]}
       />
-    );
-
-  return (
-    <ul className="flex flex-col">
-      {[...projets]
-        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
-        .map((p) => (
-          <li key={p.id} className="border-t border-filet last:border-b">
-            <Link
-              to={`/musique/projets/${p.id}`}
-              className="grid grid-cols-[48px_1fr_140px_130px] items-center gap-6 py-4 transition-colors duration-150 hover:bg-surface/60"
-            >
-              <span className="flex size-12 items-center justify-center rounded-12 border border-filet text-texte-2">
-                <span className="text-libelle">{typeProjet(p.type)}</span>
-              </span>
-              <span className="truncate">{p.titre}</span>
-              <span className="text-libelle text-texte-2 tabular-nums">
-                {p.morceauIds.length === 0 ? "Vide" : p.morceauIds.length === 1 ? "1 morceau" : `${p.morceauIds.length} morceaux`}
-              </span>
-              <span className="text-right text-libelle text-texte-2">modifié {dateRelative(p.updatedAt)}</span>
-            </Link>
-          </li>
-        ))}
-    </ul>
+    </li>
   );
 }
 
-function NouveauProjet({ ouverte, onFermer }: { ouverte: boolean; onFermer(): void }) {
+function LigneDossier({ dossier, nombre, onMenu }: { dossier: Dossier; nombre: number; onMenu(f: Fenetre): void }) {
+  const [survol, setSurvol] = useState(false);
+  return (
+    <li
+      onDragOver={(e) => {
+        if (!e.dataTransfer.types.includes(GLISSE)) return;
+        e.preventDefault();
+        setSurvol(true);
+      }}
+      onDragLeave={() => setSurvol(false)}
+      onDrop={(e) => {
+        const brut = e.dataTransfer.getData(GLISSE);
+        if (!brut) return;
+        e.preventDefault();
+        e.stopPropagation();
+        setSurvol(false);
+        void ranger(JSON.parse(brut), dossier.id);
+      }}
+      className={`${ligne} transition-colors duration-150 ${survol ? "bg-surface" : ""}`}
+    >
+      <span />
+      <span className="flex size-11 items-center justify-center rounded-[10px] bg-surface text-texte-2">
+        <Icone nom="dossier" taille={18} />
+      </span>
+      <Link to={`/musique?dossier=${dossier.id}`} className="flex min-w-0 flex-col [&:hover>span:first-child]:underline">
+        <span className="truncate underline-offset-4">{dossier.titre}</span>
+        <span className="text-libelle text-texte-2">{nombre === 0 ? "vide" : nombre === 1 ? "1 élément" : `${nombre} éléments`}</span>
+      </Link>
+      <span />
+      <span />
+      <MenuLigne
+        libelle={`Options de ${dossier.titre}`}
+        elements={[
+          { libelle: "Renommer", icone: "crayon", onClick: () => onMenu({ renommer: dossier }) },
+          { libelle: "Supprimer", icone: "supprimer", onClick: () => onMenu({ supprimer: { type: "dossier", dossier } }) },
+        ]}
+      />
+    </li>
+  );
+}
+
+/* ---------- Fenêtres : créer, renommer, ranger, supprimer ---------- */
+
+function Fenetres({ fenetre, onFermer, dossiers, ici }: { fenetre: Fenetre; onFermer(): void; dossiers: Dossier[]; ici: Id | null }) {
   const naviguer = useNavigate();
   const [titre, setTitre] = useState("");
   const [type, setType] = useState<TypeProjet>("ep");
-
-  async function creer() {
-    if (!titre.trim()) return;
-    const p = await creerProjet(titre, type);
+  const fermer = () => {
     setTitre("");
     onFermer();
-    naviguer(`/musique/projets/${p.id}`);
+  };
+
+  if (fenetre === "projet" || fenetre === "dossier" || (fenetre && "renommer" in fenetre)) {
+    const renomme = fenetre !== "projet" && fenetre !== "dossier" ? fenetre.renommer : null;
+    const valider = async () => {
+      if (!titre.trim() && !renomme) return;
+      if (fenetre === "projet") {
+        const p = await creerProjet(titre, type, ici);
+        fermer();
+        naviguer(`/musique/projets/${p.id}`);
+      } else if (fenetre === "dossier") {
+        await creerDossier(titre);
+        fermer();
+      } else if (renomme) {
+        if (titre.trim()) await renommerDossier(renomme.id, titre);
+        fermer();
+      }
+    };
+    return (
+      <Modale
+        ouverte
+        titre={fenetre === "projet" ? "Nouveau projet" : fenetre === "dossier" ? "Nouveau dossier" : "Renommer le dossier"}
+        onFermer={fermer}
+        actions={
+          <>
+            <Bouton variante="lien" onClick={fermer}>
+              Annuler
+            </Bouton>
+            <Bouton onClick={() => void valider()} disabled={!titre.trim() && !renomme}>
+              {renomme ? "Renommer" : "Créer"}
+            </Bouton>
+          </>
+        }
+      >
+        <form
+          className="flex flex-col gap-6"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void valider();
+          }}
+        >
+          <ChampTexte
+            libelle="Titre"
+            valeur={titre || (renomme && !titre ? renomme.titre : titre)}
+            onChange={setTitre}
+            placeholder={fenetre === "projet" ? "Ex. Projet EP" : "Ex. Prods 2026"}
+            autoFocus
+            maxLength={120}
+          />
+          {fenetre === "projet" && <Segmente libelle="Type" options={typesProjet.filter((t) => t.valeur !== "tracklist")} valeur={type} onChange={setType} />}
+        </form>
+      </Modale>
+    );
   }
 
-  return (
-    <Modale
-      ouverte={ouverte}
-      titre="Nouveau projet"
-      onFermer={onFermer}
-      actions={
-        <>
-          <Bouton variante="lien" onClick={onFermer}>
-            Annuler
-          </Bouton>
-          <Bouton onClick={creer} disabled={!titre.trim()}>
-            Créer
-          </Bouton>
-        </>
+  if (fenetre && "ranger" in fenetre) {
+    const choix = async (d: Id | null) => {
+      await ranger(fenetre.ranger, d);
+      fermer();
+    };
+    return (
+      <Modale ouverte titre="Ranger dans un dossier" onFermer={fermer}>
+        {dossiers.length === 0 ? (
+          <p className="text-texte-2">{fr("Aucun dossier pour l’instant. Crée-en un avec « Ajouter », à la racine de Musique.")}</p>
+        ) : (
+          <div className="-mx-2 flex max-h-[50vh] flex-col gap-2 overflow-y-auto px-2">
+            <Option forme="radio" choisi={ici === null} onClick={() => void choix(null)} titre="Aucun dossier" />
+            {dossiers.map((d) => (
+              <Option key={d.id} forme="radio" choisi={ici === d.id} onClick={() => void choix(d.id)} titre={d.titre} />
+            ))}
+          </div>
+        )}
+      </Modale>
+    );
+  }
+
+  if (fenetre && "supprimer" in fenetre) {
+    const cible = fenetre.supprimer;
+    const nom = cible.type === "morceau" ? cible.morceau.titre : cible.type === "projet" ? cible.projet.titre : cible.dossier.titre;
+    const texte =
+      cible.type === "morceau"
+        ? "Ses versions, ses notes et sa cover seront effacées de l’app."
+        : cible.type === "projet"
+          ? "Ses morceaux restent dans ta librairie."
+          : "Ce qu’il contient revient à la racine de Musique.";
+    const supprimer = async () => {
+      if (cible.type === "morceau") await supprimerMorceau(cible.morceau);
+      else if (cible.type === "projet") await supprimerProjet(cible.projet.id);
+      else {
+        await supprimerDossier(cible.dossier.id);
+        if (ici === cible.dossier.id) naviguer("/musique", { replace: true });
       }
-    >
-      <form
-        className="flex flex-col gap-6"
-        onSubmit={(e) => {
-          e.preventDefault();
-          void creer();
-        }}
+      fermer();
+    };
+    return (
+      <Modale
+        ouverte
+        titre={`Supprimer « ${nom} » ?`}
+        onFermer={fermer}
+        actions={
+          <>
+            <Bouton variante="lien" onClick={fermer}>
+              Annuler
+            </Bouton>
+            <Bouton onClick={() => void supprimer()}>Supprimer</Bouton>
+          </>
+        }
       >
-        <ChampTexte libelle="Titre" valeur={titre} onChange={setTitre} placeholder="Ex. Projet EP" autoFocus maxLength={120} />
-        <Segmente libelle="Type" options={typesProjet} valeur={type} onChange={setType} />
-      </form>
-    </Modale>
-  );
+        <p className="text-texte-2">{fr(texte)}</p>
+      </Modale>
+    );
+  }
+  return null;
 }

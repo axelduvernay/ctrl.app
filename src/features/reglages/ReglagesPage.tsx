@@ -32,7 +32,20 @@ export function ReglagesPage() {
       <Affichage />
       <Donnees />
       <Reinitialiser />
+      <Version />
     </div>
+  );
+}
+
+/* ---------- Version ---------- */
+
+/** Pour vérifier qu’on a bien la dernière mise en ligne (sinon : ⌘⇧R). */
+function Version() {
+  const date = new Date(__CONSTRUIT_LE__).toLocaleString("fr-FR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  return (
+    <p className="border-t border-filet pt-8 text-libelle text-texte-2 tabular-nums">
+      ctrl.app · version {__VERSION__} · publiée le {date}
+    </p>
   );
 }
 

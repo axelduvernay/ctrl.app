@@ -89,7 +89,13 @@ export interface Morceau extends Entite {
   statut: StatutMorceau;
   bpm: number | null;
   tonalite: string | null;
+  /** Ancien lien vers un projet (un morceau peut maintenant être dans
+      plusieurs projets : c’est Projet.morceauIds qui fait foi). */
   projetId: Id | null;
+  /** Dossier de la librairie (facultatif). */
+  dossierId?: Id | null;
+  /** Vrai quand BPM et tonalité viennent de l’analyse du son (pas saisis). */
+  analyseAuto?: boolean;
   /** Image importée par l’utilisateur. */
   coverFichierId: Id | null;
   /** Version validée, affichée en tête. */
@@ -104,6 +110,8 @@ export interface Fichier extends Entite {
   blob: Blob;
   /** Durée en secondes pour l’audio. */
   duree: number | null;
+  /** Forme d’onde : niveaux entre 0 et 1, calculés à l’import. */
+  pics?: number[] | null;
 }
 
 export interface Version extends Entite {
@@ -130,8 +138,25 @@ export type TypeProjet = "ep" | "album" | "mixtape" | "tracklist";
 export interface Projet extends Entite {
   titre: string;
   type: TypeProjet;
-  /** Liste ordonnée de morceaux. */
+  /** Liste ordonnée de morceaux (un morceau peut être dans plusieurs projets). */
   morceauIds: Id[];
+  dossierId?: Id | null;
+}
+
+/** Dossier de la librairie : range des morceaux et des projets. */
+export interface Dossier extends Entite {
+  titre: string;
+}
+
+/* ---------- Calendrier ---------- */
+
+/** Événement ajouté à la main (studio, concert, rendez-vous…). */
+export interface Evenement extends Entite {
+  titre: string;
+  date: Jour;
+  /** « 14:30 », ou null pour toute la journée. */
+  heure: string | null;
+  notes: string;
 }
 
 /* ---------- Tâches ---------- */

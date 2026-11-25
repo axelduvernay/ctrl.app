@@ -19,6 +19,8 @@ import type {
   Bloc,
   Lien,
   Connexion,
+  Dossier,
+  Evenement,
 } from "@/types";
 
 /* Nom distinct de celui de ctrl.mind (« ctrl-app ») : les deux apps sont
@@ -45,6 +47,8 @@ export class BaseLocale extends Dexie {
   blocs!: Table<Bloc, string>;
   liens!: Table<Lien, string>;
   connexions!: Table<Connexion, string>;
+  dossiers!: Table<Dossier, string>;
+  evenements!: Table<Evenement, string>;
   _attente!: Table<{ cle: string; collection: string; id: string; supprime: boolean; at: string }, string>;
   _meta!: Table<{ cle: string; valeur: unknown }, string>;
 
@@ -75,6 +79,11 @@ export class BaseLocale extends Dexie {
     this.version(2).stores({
       _attente: "cle",
       _meta: "cle",
+    });
+    // Librairie en dossiers, et événements du calendrier.
+    this.version(3).stores({
+      dossiers: "id",
+      evenements: "id, date",
     });
   }
 }

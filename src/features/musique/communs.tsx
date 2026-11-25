@@ -4,7 +4,13 @@ import { useRef, useState, type ReactNode } from "react";
 import { useUrlFichier } from "@/data";
 import { Icone } from "@/components/Icone";
 import { statuts } from "@/content/statuts";
-import type { StatutMorceau } from "@/types";
+import type { Morceau, StatutMorceau, Version } from "@/types";
+
+/** La version validée si elle existe, sinon la plus récente. */
+export function versionAEcouter(m: Morceau, versions: Version[]) {
+  const siennes = versions.filter((v) => v.morceauId === m.id);
+  return siennes.find((v) => v.id === m.versionValideeId) ?? siennes.sort((a, b) => b.numero - a.numero)[0];
+}
 
 /** Cover importée, ou carré vide si aucune. */
 export function Vignette({ fichierId, taille = 48, arrondi = "rounded-12" }: { fichierId: string | null; taille?: number | "plein"; arrondi?: string }) {

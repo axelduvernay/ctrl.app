@@ -23,7 +23,7 @@ export const etapes = {
     titre: "Choisir le son à sortir",
     explication:
       "Pas besoin d’attendre le morceau parfait : choisis celui qui te ressemble le plus aujourd’hui. Un son sorti t’en apprend plus qu’une version de plus. Tout le parcours se fera avec lui.",
-    action: { libelle: "Choisir dans ton catalogue", vers: "/musique" },
+    action: { libelle: "Choisir le son", vers: "/musique" },
   },
   "mix-master": {
     titre: "Finaliser le mix et le master",

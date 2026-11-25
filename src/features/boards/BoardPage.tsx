@@ -6,7 +6,7 @@ import { depots, useRequete } from "@/data";
 import { ActionsEnTete } from "@/app/ActionsEnTete";
 import { fr } from "@/content/typo";
 import { basculerTache, modifierTache } from "@/features/taches/actions";
-import type { Bloc, Board, Contact, Fichier, Id, Lien, Morceau, Tache, TypeBloc, Version, VueBoard } from "@/types";
+import type { Bloc, Board, Contact, Fichier, Id, Lien, Morceau, Projet, Tache, TypeBloc, Version, VueBoard } from "@/types";
 import {
   convertir,
   creerBloc,
@@ -17,8 +17,11 @@ import {
   importerFichiers,
   modifierBloc,
   noteEnTache,
+  lierTracklist,
+  pistesDe,
   rangerDansFait,
   relierOuDelier,
+  retenirBoard,
   supprimerBlocs,
   supprimerLien,
 } from "./actions";
@@ -76,7 +79,7 @@ export function BoardPage() {
   const { donnees, chargement } = useRequete(async () => {
     const board = await depots.boards.obtenir(id);
     if (!board) return null;
-    const [blocs, liens, morceaux, contacts, taches, versions, fichiers, boards] = await Promise.all([
+    const [blocs, liens, morceaux, contacts, taches, versions, fichiers, boards, projets] = await Promise.all([
       depots.blocs.trouver("boardId", id),
       depots.liens.trouver("boardId", id),
       depots.morceaux.lister(),
@@ -85,8 +88,9 @@ export function BoardPage() {
       depots.versions.lister(),
       depots.fichiers.lister(),
       depots.boards.lister(),
+      depots.projets.lister(),
     ]);
-    return { board, blocs, liens, morceaux, contacts, taches, versions, fichiers, boards };
+    return { board, blocs, liens, morceaux, contacts, taches, versions, fichiers, boards, projets };
   }, [id]);
 
   if (chargement) return null;
@@ -112,10 +116,11 @@ interface PropsCanvas {
   versions: Version[];
   fichiers: Fichier[];
   boards: Board[];
+  projets: Projet[];
   onQuitter(): void;
 }
 
-function Canvas({ board, blocs, liens, morceaux, contacts, taches, versions, fichiers, boards, onQuitter }: PropsCanvas) {
+function Canvas({ board, blocs, liens, morceaux, contacts, taches, versions, fichiers, boards, projets, onQuitter }: PropsCanvas) {
   const naviguer = useNavigate();
   const cadre = useRef<HTMLDivElement>(null);
   const [vue, setVue] = useState<VueBoard>(board.vue);
@@ -146,6 +151,13 @@ function Canvas({ board, blocs, liens, morceaux, contacts, taches, versions, fic
   const categories = categoriesDe(board);
   const parId = useMemo(() => new Map(blocs.map((b) => [b.id, b])), [blocs]);
   const fichiersParId = useMemo(() => new Map(fichiers.map((f) => [f.id, f])), [fichiers]);
+
+  // Ce board s’ouvrira la prochaine fois ; les anciennes tracklists
+  // deviennent des projets de la librairie.
+  useEffect(() => retenirBoard(board.id), [board.id]);
+  useEffect(() => {
+    for (const b of blocs) if (b.type === "tracklist" && !projets.some((p) => p.id === b.refId)) void lierTracklist(b);
+  }, [blocs, projets]);
 
   /* ---------- Vue : centrage initial, enregistrement au repos ---------- */
 
@@ -828,13 +840,13 @@ function Canvas({ board, blocs, liens, morceaux, contacts, taches, versions, fic
         contact?.nom,
         tache?.titre,
         ...(b.cellules ?? []).flat(),
-        ...(b.morceauIds.map((id) => morceaux.find((m) => m.id === id)?.titre) ?? []),
+        ...(b.type === "tracklist" ? pistesDe(b, projets).map((id) => morceaux.find((m) => m.id === id)?.titre) : []),
         ...((b.fichierIds ?? []).map((id) => fichiersParId.get(id)?.nom) ?? []),
       ]
         .filter(Boolean)
         .join(" ");
     },
-    [morceaux, contacts, taches, fichiersParId],
+    [morceaux, contacts, taches, fichiersParId, projets],
   );
   const normaliser = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   const resultats = useMemo(() => {
@@ -869,6 +881,7 @@ function Canvas({ board, blocs, liens, morceaux, contacts, taches, versions, fic
     boardId: board.id,
     categories,
     morceaux,
+    projets,
     contacts,
     taches,
     versions,
@@ -1034,9 +1047,7 @@ function Canvas({ board, blocs, liens, morceaux, contacts, taches, versions, fic
         {/* Barre du haut */}
         <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-6 px-8 pt-8 lg:px-[72px]">
           <div className="pointer-events-auto flex items-center gap-2 rounded-full bg-fond/90 py-1 pr-2 text-libelle text-texte-2">
-            <Link to="/boards" className="hover:text-texte">
-              Boards
-            </Link>
+            <span>Boards</span>
             <span aria-hidden>/</span>
             <SelecteurBoards board={board} boards={boards} onSupprime={onQuitter} onOuvrir={(id) => naviguer(`/boards/${id}`)} />
           </div>
@@ -1210,6 +1221,7 @@ function Canvas({ board, blocs, liens, morceaux, contacts, taches, versions, fic
           morceaux={morceaux}
           contacts={contacts}
           tracklist={choix?.cible ? parId.get(choix.cible) : undefined}
+          projets={projets}
           onFermer={() => setChoix(null)}
           onChoisir={(type, refId) => {
             setChoix(null);

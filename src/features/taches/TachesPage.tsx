@@ -42,7 +42,7 @@ export function TachesPage() {
 
   return (
     <div className="flex flex-col gap-10">
-      <EnTete surtitre="Accueil" titre="Tâches" />
+      <EnTete retour={[{ libelle: "Accueil", vers: "/" }]} titre="Tâches" />
 
       <form
         className="flex flex-wrap items-center gap-3"
@@ -72,7 +72,7 @@ export function TachesPage() {
       </form>
 
       {aFaire.length === 0 && faites.length === 0 ? (
-        <EtatVide titre="Aucune tâche pour l’instant." texte="Les tâches que tu ajoutes ici, avec « Capturer », sur un board ou en prévoyant une relance arrivent toutes dans cette liste." />
+        <EtatVide titre="Aucune tâche pour l’instant." texte="Les tâches que tu ajoutes ici, avec le bouton +, sur un board ou en prévoyant une relance arrivent toutes dans cette liste." />
       ) : (
         <>
           {aFaire.length === 0 && <p className="text-texte-2">Tout est fait.</p>}

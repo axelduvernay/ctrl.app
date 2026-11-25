@@ -9,6 +9,7 @@ import { ordreChecklist, pointsChecklist } from "@/content/checklist";
 import { fr } from "@/content/typo";
 import { depuisJour, jourIso, libelleJour } from "@/lib/format";
 import { ActionsEnTete } from "@/app/ActionsEnTete";
+import { FilAriane } from "@/components/FilAriane";
 import { ChampEnregistre, Vignette } from "@/features/musique/communs";
 import { modifierMorceau } from "@/features/musique/actions";
 import type { CasParcours, CleChecklist, Metadonnees, Morceau, PostReseau, Sortie } from "@/types";
@@ -56,13 +57,7 @@ export function SortiePage() {
     <div className="flex flex-col gap-12">
       <div className="flex flex-col gap-6">
         <div className="flex items-center justify-between gap-6">
-          <nav aria-label="Fil d’Ariane" className="flex items-center gap-2 text-libelle text-texte-2">
-            <Link to="/sorties" className="hover:text-texte">
-              Sorties
-            </Link>
-            <span aria-hidden>/</span>
-            <span className="truncate text-texte">{titre}</span>
-          </nav>
+          <FilAriane liens={[{ libelle: "Sorties", vers: "/sorties" }]} courant={titre} />
           <ActionsEnTete />
         </div>
         <div className="flex flex-wrap items-end justify-between gap-6">

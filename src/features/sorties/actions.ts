@@ -2,7 +2,7 @@
 
 import { depots } from "@/data";
 import { ordreChecklist } from "@/content/checklist";
-import type { CleChecklist, Id, Jour, Metadonnees, Morceau, PostReseau, Sortie } from "@/types";
+import type { CleChecklist, Evenement, Id, Jour, Metadonnees, Modification, Morceau, PostReseau, Sortie } from "@/types";
 
 export async function creerSortie(morceau: Morceau, date: Jour | null) {
   const [profil] = await depots.profils.lister();
@@ -61,4 +61,18 @@ export function enregistrerPost(post: { id?: Id; date: Jour; plateforme: string;
 
 export function supprimerPost(id: Id) {
   return depots.postsReseaux.supprimer(id);
+}
+
+/* ---------- Événements du calendrier ---------- */
+
+export function creerEvenement(e: { titre: string; date: Jour; heure: string | null; notes?: string }) {
+  return depots.evenements.creer({ titre: e.titre.trim(), date: e.date, heure: e.heure, notes: e.notes ?? "" });
+}
+
+export function modifierEvenement(id: Id, modifs: Modification<Evenement>) {
+  return depots.evenements.modifier(id, modifs);
+}
+
+export function supprimerEvenement(id: Id) {
+  return depots.evenements.supprimer(id);
 }

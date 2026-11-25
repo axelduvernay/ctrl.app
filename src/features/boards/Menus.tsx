@@ -9,8 +9,8 @@ import { ChampTexte, Option } from "@/components/Champs";
 import { Icone, type NomIcone } from "@/components/Icone";
 import { Modale } from "@/components/Modale";
 import { fr } from "@/content/typo";
-import type { Board, Bloc, Categorie, Contact, Id, Morceau, Tache, TypeBloc } from "@/types";
-import { basculerMorceauTracklist, creerBoard, majCategories, renommerBoard, supprimerBoard } from "./actions";
+import type { Board, Bloc, Categorie, Contact, Id, Morceau, Projet, Tache, TypeBloc } from "@/types";
+import { basculerMorceauTracklist, creerBoard, majCategories, pistesDe, renommerBoard, supprimerBoard } from "./actions";
 import { categoriesDe, enCommande, PALETTE } from "./categories";
 import { ajouterColonne, ajouterLigne, supprimerColonne, supprimerLigne } from "./Tableau";
 
@@ -410,6 +410,7 @@ export function ChoixObjet({
   morceaux,
   contacts,
   tracklist,
+  projets,
   onFermer,
   onChoisir,
   memoriser,
@@ -418,6 +419,7 @@ export function ChoixObjet({
   morceaux: Morceau[];
   contacts: Contact[];
   tracklist?: Bloc;
+  projets: Projet[];
   onFermer(): void;
   onChoisir(type: "morceau" | "contact", refId: Id): void;
   memoriser(): void;
@@ -437,7 +439,7 @@ export function ChoixObjet({
               <Option
                 key={o.id}
                 forme="case"
-                choisi={tracklist.morceauIds.includes(o.id)}
+                choisi={pistesDe(tracklist, projets).includes(o.id)}
                 onClick={() => {
                   memoriser();
                   void basculerMorceauTracklist(tracklist.id, o.id);

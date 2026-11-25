@@ -14,7 +14,7 @@ export function DistributionPage() {
         <span aria-hidden>/</span>
         <span className="text-texte">Distribution</span>
       </nav>
-      <EnTete surtitre="Bientôt" titre="Distribution" />
+      <EnTete surtitre="Bientôt" titre="Distribution" retour={[{ libelle: "Sorties", vers: "/sorties" }]} />
       <div className="flex max-w-[640px] flex-col gap-6 text-texte-2">
         <p className="text-[22px] leading-snug text-texte">
           {fr("À terme, tu pourras envoyer ton morceau sur les plateformes sans quitter ctrl.app.")}

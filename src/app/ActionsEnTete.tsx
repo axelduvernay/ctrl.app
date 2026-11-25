@@ -1,10 +1,25 @@
+import { useNavigate } from "react-router";
 import { Icone } from "@/components/Icone";
+import { MenuDeroulant } from "@/components/MenuDeroulant";
+import { importerSingles } from "@/features/musique/actions";
+import { ACCEPTE_AUDIO, choisirFichiers } from "@/lib/choisirFichiers";
 import { useUi } from "@/stores/ui";
 
-/** Recherche ⌘K et bouton Capturer, en haut à droite des écrans. */
+/** Recherche ⌘K et bouton +, en haut à droite de tous les écrans. */
 export function ActionsEnTete() {
-  const { ouvrirCapture, ouvrirRecherche } = useUi();
+  const naviguer = useNavigate();
+  const { ouvrirAjout, ouvrirRecherche, annoncer } = useUi();
   const mac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
+
+  async function morceaux(fichiers: File[]) {
+    if (!fichiers.length) return;
+    annoncer(fichiers.length === 1 ? "Import et analyse du son…" : `Import et analyse de ${fichiers.length} sons…`);
+    const crees = await importerSingles(fichiers);
+    useUi.setState({ annonce: null });
+    if (crees.length === 1) naviguer(`/musique/${crees[0]!.id}`);
+    else if (crees.length) naviguer("/musique");
+  }
+
   return (
     <div className="flex items-center gap-2">
       <button
@@ -16,14 +31,29 @@ export function ActionsEnTete() {
         <span className="flex-1 text-left text-[15px]">Rechercher</span>
         <kbd className="font-sans text-libelle">{mac ? "⌘K" : "Ctrl K"}</kbd>
       </button>
-      <button
-        type="button"
-        onClick={ouvrirCapture}
-        className="inline-flex h-11 items-center gap-2 rounded-full bg-surface px-5 text-[15px] font-medium text-texte transition-colors duration-150 hover:bg-filet"
-      >
-        <Icone nom="plus" taille={18} className="text-accent" />
-        Capturer
-      </button>
+      <MenuDeroulant
+        libelle="Ajouter"
+        cote="droite"
+        declencheur={(ouvert, basculer) => (
+          <button
+            type="button"
+            onClick={basculer}
+            aria-label="Ajouter"
+            aria-expanded={ouvert}
+            className="flex size-11 items-center justify-center rounded-full bg-surface text-accent transition-colors duration-150 hover:bg-filet"
+          >
+            <Icone nom="plus" taille={20} />
+          </button>
+        )}
+        elements={[
+          { libelle: "Une tâche", icone: "tacheBloc", onClick: () => ouvrirAjout("tache") },
+          { libelle: "Un événement", icone: "calendrier", onClick: () => ouvrirAjout("evenement") },
+          { libelle: "Un contact", icone: "contactPlus", onClick: () => ouvrirAjout("contact") },
+          { libelle: "Une note", icone: "note", onClick: () => ouvrirAjout("note") },
+          { libelle: "Un morceau", icone: "musique", onClick: () => void choisirFichiers(ACCEPTE_AUDIO).then(morceaux) },
+          { libelle: "Un mémo vocal", icone: "micro", onClick: () => ouvrirAjout("memo") },
+        ]}
+      />
     </div>
   );
 }

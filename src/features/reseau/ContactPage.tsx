@@ -10,6 +10,7 @@ import { rolesContact } from "@/content/modelesMail";
 import { fr } from "@/content/typo";
 import { ajouterJours, dateRelative, jourIso, libelleJour } from "@/lib/format";
 import { ActionsEnTete } from "@/app/ActionsEnTete";
+import { FilAriane } from "@/components/FilAriane";
 import { ChampEnregistre } from "@/features/musique/communs";
 import { basculerTache } from "@/features/taches/actions";
 import type { Contact, Envoi, Morceau, RoleContact } from "@/types";
@@ -51,13 +52,7 @@ export function ContactPage() {
     <div className="flex flex-col gap-12">
       <div className="flex flex-col gap-6">
         <div className="flex items-center justify-between gap-6">
-          <nav aria-label="Fil d’Ariane" className="flex items-center gap-2 text-libelle text-texte-2">
-            <Link to="/reseau" className="hover:text-texte">
-              Réseau
-            </Link>
-            <span aria-hidden>/</span>
-            <span className="truncate text-texte">{contact.nom}</span>
-          </nav>
+          <FilAriane liens={[{ libelle: "Réseau", vers: "/reseau" }]} courant={contact.nom} />
           <ActionsEnTete />
         </div>
         <div className="flex items-start justify-between gap-6">

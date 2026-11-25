@@ -8,9 +8,11 @@ import { PastilleStatut } from "@/components/PastilleStatut";
 import { depots, useRequete } from "@/data";
 import { typesProjet } from "@/content/statuts";
 import type { Morceau, Projet, Version } from "@/types";
-import { definirProjet, deplacerDansProjet, supprimerProjet } from "./actions";
-import { ChampEnregistre, Vignette } from "./communs";
+import { ajouterAuProjet, deplacerDansProjet, retirerDuProjet, supprimerProjet } from "./actions";
+import { ChampEnregistre, Vignette, versionAEcouter } from "./communs";
 import { ActionsEnTete } from "@/app/ActionsEnTete";
+import { FilAriane } from "@/components/FilAriane";
+import type { Piste as PisteLecteur } from "@/stores/lecteur";
 
 /** Projet : liste ordonnée de morceaux, à écouter dans l’ordre. */
 export function ProjetPage() {
@@ -22,12 +24,9 @@ export function ProjetPage() {
   const { donnees, chargement } = useRequete(async () => {
     const projet = await depots.projets.obtenir(id);
     if (!projet) return null;
-    const [morceaux, versions, projets] = await Promise.all([
-      depots.morceaux.lister(),
-      depots.versions.lister(),
-      depots.projets.lister(),
-    ]);
-    return { projet, morceaux, versions, projets };
+    const [morceaux, versions] = await Promise.all([depots.morceaux.lister(), depots.versions.lister()]);
+    const dossier = projet.dossierId ? await depots.dossiers.obtenir(projet.dossierId) : undefined;
+    return { projet, morceaux, versions, dossier };
   }, [id]);
 
   if (chargement) return null;
@@ -35,30 +34,25 @@ export function ProjetPage() {
     return (
       <div className="flex flex-col gap-4">
         <p className="text-texte-2">Ce projet n’existe plus.</p>
-        <Link to="/musique?vue=projets" className="underline-offset-4 hover:underline">
-          Retour aux projets
+        <Link to="/musique" className="underline-offset-4 hover:underline">
+          Retour à la librairie
         </Link>
       </div>
     );
 
-  const { projet, morceaux, versions, projets } = donnees;
+  const { projet, morceaux, versions, dossier } = donnees;
   const pistes = projet.morceauIds.map((mid) => morceaux.find((m) => m.id === mid)).filter((m): m is Morceau => !!m);
+  const file: PisteLecteur[] = pistes.flatMap((m) => {
+    const v = versionAEcouter(m, versions);
+    return v ? [{ fichierId: v.fichierId, titre: m.titre, sousTitre: projet.titre, morceauId: m.id, coverFichierId: m.coverFichierId }] : [];
+  });
+  const parents = [{ libelle: "Musique", vers: "/musique" }, ...(dossier ? [{ libelle: dossier.titre, vers: `/musique?dossier=${dossier.id}` }] : [])];
 
   return (
     <div className="flex flex-col gap-12">
       <div className="flex flex-col gap-6">
         <div className="flex items-center justify-between gap-6">
-        <nav aria-label="Fil d’Ariane" className="flex items-center gap-2 text-libelle text-texte-2">
-          <Link to="/musique" className="hover:text-texte">
-            Musique
-          </Link>
-          <span aria-hidden>/</span>
-          <Link to="/musique?vue=projets" className="hover:text-texte">
-            Projets
-          </Link>
-          <span aria-hidden>/</span>
-          <span className="truncate text-texte">{projet.titre}</span>
-        </nav>
+          <FilAriane liens={parents} courant={projet.titre} />
           <ActionsEnTete />
         </div>
         <div className="flex items-start justify-between gap-6">
@@ -87,12 +81,12 @@ export function ProjetPage() {
             className="rounded-18 border border-filet px-6 py-8 text-left transition-colors duration-150 hover:bg-surface"
           >
             <span className="block">Aucun morceau dans ce projet.</span>
-            <span className="text-libelle text-texte-2">Ajoute des morceaux du catalogue, puis range-les dans l’ordre.</span>
+            <span className="text-libelle text-texte-2">Ajoute des morceaux de ta librairie, puis range-les dans l’ordre.</span>
           </button>
         ) : (
           <ol className="flex flex-col rounded-18 border border-filet bg-surface p-2">
             {pistes.map((m, i) => (
-              <Piste key={m.id} morceau={m} index={i} total={pistes.length} projet={projet} version={versionAEcouter(m, versions)} />
+              <Piste key={m.id} morceau={m} index={i} total={pistes.length} projet={projet} version={versionAEcouter(m, versions)} file={file} />
             ))}
           </ol>
         )}
@@ -102,7 +96,7 @@ export function ProjetPage() {
         Supprimer le projet
       </button>
 
-      <AjoutMorceaux ouverte={ajout} onFermer={() => setAjout(false)} projet={projet} morceaux={morceaux} projets={projets} />
+      <AjoutMorceaux ouverte={ajout} onFermer={() => setAjout(false)} projet={projet} morceaux={morceaux} />
 
       <Modale
         ouverte={confirmer}
@@ -116,7 +110,7 @@ export function ProjetPage() {
             <Bouton
               onClick={async () => {
                 await supprimerProjet(projet.id);
-                naviguer("/musique?vue=projets", { replace: true });
+                naviguer(dossier ? `/musique?dossier=${dossier.id}` : "/musique", { replace: true });
               }}
             >
               Supprimer
@@ -124,24 +118,18 @@ export function ProjetPage() {
           </>
         }
       >
-        <p className="text-texte-2">Ses morceaux restent dans ton catalogue.</p>
+        <p className="text-texte-2">Ses morceaux restent dans ta librairie.</p>
       </Modale>
     </div>
   );
 }
 
-/** La version validée si elle existe, sinon la plus récente. */
-function versionAEcouter(m: Morceau, versions: Version[]) {
-  const siennes = versions.filter((v) => v.morceauId === m.id);
-  return siennes.find((v) => v.id === m.versionValideeId) ?? siennes.sort((a, b) => b.numero - a.numero)[0];
-}
-
-function Piste({ morceau, index, total, projet, version }: { morceau: Morceau; index: number; total: number; projet: Projet; version?: Version }) {
+function Piste({ morceau, index, total, projet, version, file }: { morceau: Morceau; index: number; total: number; projet: Projet; version?: Version; file: PisteLecteur[] }) {
   return (
     <li className="group flex items-center gap-4 rounded-12 px-3 py-2 transition-colors duration-150 hover:bg-filet/60">
       <span className="w-6 text-right text-libelle text-texte-2 tabular-nums">{index + 1}</span>
       {version ? (
-        <LecteurAudio compact fichierId={version.fichierId} libelle={morceau.titre} />
+        <LecteurAudio compact fichierId={version.fichierId} libelle={morceau.titre} file={file} />
       ) : (
         <span className="size-9 shrink-0" title="Aucune version à écouter" />
       )}
@@ -155,7 +143,7 @@ function Piste({ morceau, index, total, projet, version }: { morceau: Morceau; i
       <span className="flex items-center opacity-0 transition-opacity duration-150 group-focus-within:opacity-100 group-hover:opacity-100">
         <BoutonIcone icone="monter" libelle={`Monter ${morceau.titre}`} disabled={index === 0} onClick={() => void deplacerDansProjet(projet.id, index, -1)} className="size-8 border-transparent disabled:opacity-30" />
         <BoutonIcone icone="descendre" libelle={`Descendre ${morceau.titre}`} disabled={index === total - 1} onClick={() => void deplacerDansProjet(projet.id, index, 1)} className="size-8 border-transparent disabled:opacity-30" />
-        <BoutonIcone icone="fermer" libelle={`Retirer ${morceau.titre} du projet`} onClick={() => void definirProjet(morceau.id, null)} className="size-8 border-transparent" />
+        <BoutonIcone icone="fermer" libelle={`Retirer ${morceau.titre} du projet`} onClick={() => void retirerDuProjet(projet.id, morceau.id)} className="size-8 border-transparent" />
       </span>
     </li>
   );
@@ -166,19 +154,17 @@ function AjoutMorceaux({
   onFermer,
   projet,
   morceaux,
-  projets,
 }: {
   ouverte: boolean;
   onFermer(): void;
   projet: Projet;
   morceaux: Morceau[];
-  projets: Projet[];
 }) {
   const [choix, setChoix] = useState<string[]>([]);
-  const disponibles = morceaux.filter((m) => m.projetId !== projet.id).sort((a, b) => a.titre.localeCompare(b.titre, "fr"));
+  const disponibles = morceaux.filter((m) => !projet.morceauIds.includes(m.id)).sort((a, b) => a.titre.localeCompare(b.titre, "fr"));
 
   async function ajouter() {
-    for (const id of choix) await definirProjet(id, projet.id);
+    await ajouterAuProjet(projet.id, choix);
     setChoix([]);
     onFermer();
   }
@@ -202,11 +188,10 @@ function AjoutMorceaux({
       }
     >
       {disponibles.length === 0 ? (
-        <p className="text-texte-2">Tous tes morceaux sont déjà dans ce projet. Crée-en de nouveaux dans le catalogue.</p>
+        <p className="text-texte-2">Tous tes morceaux sont déjà dans ce projet. Ajoute des sons dans ta librairie.</p>
       ) : (
         <div className="-mx-2 flex max-h-[50vh] flex-col gap-2 overflow-y-auto px-2">
           {disponibles.map((m) => {
-            const ailleurs = projets.find((p) => p.id === m.projetId);
             return (
               <Option
                 key={m.id}
@@ -214,7 +199,6 @@ function AjoutMorceaux({
                 choisi={choix.includes(m.id)}
                 onClick={() => setChoix((c) => (c.includes(m.id) ? c.filter((x) => x !== m.id) : [...c, m.id]))}
                 titre={m.titre}
-                detail={ailleurs ? `Dans « ${ailleurs.titre} » : il sera déplacé ici` : undefined}
               />
             );
           })}

@@ -138,6 +138,8 @@ export function creerDepotsLocaux(): { depots: Depots; moteur: MoteurLocal } {
     blocs: repo(db.blocs, "blocs"),
     liens: repo(db.liens, "liens"),
     connexions: repo(db.connexions, "connexions"),
+    dossiers: repo(db.dossiers, "dossiers"),
+    evenements: repo(db.evenements, "evenements"),
 
     proprietaire: obtenirProprietaire,
     abonner(ecouteur) {

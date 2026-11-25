@@ -1,4 +1,7 @@
+import { useState } from "react";
 import { Link, useNavigate } from "react-router";
+import { Option } from "@/components/Champs";
+import { Modale } from "@/components/Modale";
 import { Bouton } from "@/components/Bouton";
 import { NumeroEtape, Progression } from "@/components/Progression";
 import { PastilleStatut } from "@/components/PastilleStatut";
@@ -7,7 +10,7 @@ import { integrations } from "@/integrations";
 import { contenuDe } from "@/content/parcours";
 import { fr } from "@/content/typo";
 import { ajouterJours, dateLongue, dateRelative, jourIso, libelleJour } from "@/lib/format";
-import { lireParcours } from "@/features/parcours/actions";
+import { definirSonDuParcours, lireParcours } from "@/features/parcours/actions";
 import { deuxChiffres } from "@/features/parcours/regles";
 import { basculerTache, tachesDeLaSemaine } from "@/features/taches/actions";
 import { cibleAction } from "./cible";
@@ -57,6 +60,7 @@ type Donnees = Awaited<ReturnType<typeof lireParcours>> & {
 
 function BlocParcours({ donnees }: { donnees: Donnees }) {
   const naviguer = useNavigate();
+  const [choix, setChoix] = useState(false);
   const { parcours, etapes, enCours, morceaux, sorties } = donnees;
   if (!parcours) return null;
 
@@ -86,18 +90,45 @@ function BlocParcours({ donnees }: { donnees: Donnees }) {
             {contenu.titre}
             {morceau && <span className="block truncate text-texte-2">{morceau.titre}</span>}
           </h2>
+          {parcours.cas === "A" && morceaux.length > 0 && (
+            <button type="button" onClick={() => setChoix(true)} className="self-start text-libelle text-texte-2 hover:text-texte">
+              {morceau ? "Changer de son" : "Choisir le son que tu sors"}
+            </button>
+          )}
         </div>
         <NumeroEtape numero={deuxChiffres(enCours.ordre)} total={total} taille={140} />
       </div>
       <Progression total={etapes.length} faites={faites} />
       <div className="flex flex-wrap items-center gap-6">
         {contenu.action && (
-          <Bouton onClick={() => naviguer(cibleAction(contenu.action!.vers, morceau, sorties))}>{contenu.action.libelle}</Bouton>
+          <Bouton
+            onClick={() =>
+              // Étape « Choisir le son » : le choix se fait ici, dans la liste de tes morceaux.
+              enCours.cle === "choisir-son" && morceaux.length > 0 ? setChoix(true) : naviguer(cibleAction(contenu.action!.vers, morceau, sorties))
+            }
+          >
+            {contenu.action.libelle}
+          </Bouton>
         )}
         <Bouton variante={contenu.action ? "lien" : "principal"} iconeApres="fleche" onClick={() => naviguer("/parcours")}>
           Voir le parcours
         </Bouton>
       </div>
+      <Modale ouverte={choix} titre="Le son que tu sors" onFermer={() => setChoix(false)}>
+        <div className="-mx-2 flex max-h-[50vh] flex-col gap-2 overflow-y-auto px-2">
+          {[...morceaux]
+            .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+            .map((m) => (
+              <Option
+                key={m.id}
+                forme="radio"
+                choisi={m.id === morceau?.id}
+                titre={m.titre}
+                onClick={() => void definirSonDuParcours(m.id === morceau?.id ? null : m.id).then(() => setChoix(false))}
+              />
+            ))}
+        </div>
+      </Modale>
     </section>
   );
 }
@@ -119,7 +150,7 @@ function CetteSemaine({ taches, morceaux }: { taches: Tache[]; morceaux: Morceau
         </Link>
       </div>
       {liste.length === 0 ? (
-        <p className="text-texte-2">{fr("Rien de prévu. Ajoute une tâche avec « Capturer ».")}</p>
+        <p className="text-texte-2">{fr("Rien de prévu. Ajoute une tâche avec le bouton +.")}</p>
       ) : (
         <ul className="flex flex-col gap-4">
           {liste.map((t) => {

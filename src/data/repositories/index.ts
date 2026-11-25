@@ -26,6 +26,8 @@ import type {
   Bloc,
   Lien,
   Connexion,
+  Dossier,
+  Evenement,
 } from "@/types";
 
 export interface Repo<T extends Entite> {
@@ -62,6 +64,8 @@ export type BoardsRepo = Repo<Board>;
 export type BlocsRepo = Repo<Bloc>;
 export type LiensRepo = Repo<Lien>;
 export type ConnexionsRepo = Repo<Connexion>;
+export type DossiersRepo = Repo<Dossier>;
+export type EvenementsRepo = Repo<Evenement>;
 
 /** Nom de chaque collection, utilisé pour signaler les changements. */
 export type Collection = keyof Omit<Depots, "abonner" | "toutEffacer" | "proprietaire" | "exporter" | "importer">;
@@ -86,6 +90,8 @@ export interface Depots {
   blocs: BlocsRepo;
   liens: LiensRepo;
   connexions: ConnexionsRepo;
+  dossiers: DossiersRepo;
+  evenements: EvenementsRepo;
 
   /** Utilisateur à qui appartiennent les données (un seul, en local). */
   proprietaire(): Promise<Utilisateur>;

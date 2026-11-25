@@ -2,7 +2,7 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { Icone, type NomIcone } from "./Icone";
 
 /* principal : la pilule claire, une seule par écran.
-   secondaire : pilule pleine discrète (ex. « + Capturer »).
+   secondaire : pilule pleine discrète (ex. un bouton de page discret).
    contour : pilule avec filet (ex. « Voir le parcours »).
    lien : texte seul, souvent suivi d’une flèche.
    accent : orange, réservé aux actions de création (ex. le + du board). */
